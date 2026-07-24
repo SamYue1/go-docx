@@ -1,66 +1,75 @@
 # go-docx Development Guide
 
-## Project Status
+Go rewrite of `python-docx` (v1.2.0). WIP — unit tests mostly green, acceptance tests partially passing (~200/650 scenarios).
 
-A Go-equivalent rewrite of `python-docx` (v1.2.0), **no Go source code exists yet** — before §9 Phase 1. The sole design document is `docs/REFACTORING.md`; must read before modifying any code.
+## Dependencies
 
-## Core Constraints
+Two external test-only deps (`go.mod`): `cucumber/godog`, `stretchr/testify`. **Zero runtime deps.**
 
-- **Zero third-party runtime dependencies** — stdlib first. `encoding/xml` for DOM/serialization, `archive/zip` for OPC, `image/*` for image decoding.
-- **Go 1.21+** — for `go:embed` (1.16) and per-iteration loop variable scoping (explicit capture needed before 1.22).
-
-## Architecture At a Glance
-
-```
-go-docx/                     # public API re-export entry
-internal/oxml/{dom,ns,parser,xmodel,stypes,text,table,section,...}
-internal/opc/                # OPC zip package read/write
-internal/image/              # image header parsing + DPI supplement
-internal/parts/              # DocumentPart/ImagePart/...
-internal/otext/otable/osect/odoc/  # user-facing object layer
-internal/shared/             # Length/Pt/Inches/Emu/RGBColor
-internal/enums/              # iota + ToXML/FromXML
-internal/tpl/                # default.docx (go:embed)
-internal/testutil/           # test data / snippetSeq / mock
-test/features/*.feature      # 67 Gherkin files (from upstream)
-test/features/steps/*.go     # godog steps
-```
-
-Cross-package dependencies are strictly unidirectional (public → internal → oxml/opc), zero circular deps.
-
-## Commands
+## Quick Commands
 
 ```bash
-go vet ./...                              # must pass
-go test ./...                             # unit tests
-go test ./test/features/...               # acceptance tests (godog Gherkin)
-# All three must be green before commit:
-go vet ./... && go test ./... && go test ./test/features/...
+go vet ./...                     # must pass before commit
+go test ./...                    # unit tests (all packages)
+go test ./test/features/         # BDD acceptance tests (godog, 67 .feature files)
 ```
 
-Currently no `Makefile`, no CI, no `golangci-lint` config. Prioritize adding them when needed.
+No Makefile, no CI, no golangci-lint config yet.
+
+## Key Architecture
+
+```
+docx.go              # public API — type aliases re-exporting internal types
+internal/oxml/       # low-level XML: dom/, ns/, xmodel/ (declarative registry), text/, table/, section/…
+internal/opc/        # OPC zip package read/write
+internal/odoc/       # Document open/save/paragraphs/tables/sections
+internal/otext/      # Paragraph/Run/Font/ParagraphFormat/Hyperlink/TabStops
+internal/otable/     # Table/Row/Cell/Column
+internal/osect/      # Section/HeaderFooter
+internal/parts/      # DocumentPart/StylesPart/…
+internal/styles/     # Styles/Style/LatentStyles/LatentStyle
+internal/shared/     # Length/Inches/Pt/Cm/Emu/Twips/RGBColor
+internal/image/      # DPI extraction from PNG/JPEG headers
+internal/enums/      # iota enumerations
+internal/tpl/        # default.docx (go:embed)
+internal/testutil/   # test data helpers
+```
+
+Cross-package dep direction: `public → internal → oxml/opc`. No circular deps.
 
 ## Testing Conventions
 
-- **TDD**: red → green → refactor; no "implement first, test later".
-- **BDD subtest names**: `TestDescribeXxx` + `t.Run("it_*"/"and_*"/"but_*", ...)`.
-- **Table-driven first**: `cases := []struct{...}` + `t.Run(c.name, ...)`.
-- **Package boundary**: root `docx` package uses external test package `docx_test`; `internal/*` uses in-package tests to access private members.
-- **Assertions**: `testify/assert`, avoid handwritten `if + t.Errorf`.
-- **Fakes over mocks**: dependency injection with interfaces + handwritten fakes; `testify/mock` only for large interfaces.
-- **Round-trip testing**: `Open→Save` uses byte-level golden files in `testdata/golden/`, updated via `go test -update` (custom flag), reviewed manually.
-- **CXEL not ported**: build DOM with `oxml.Elem("w:p", ...)` or parse with `dom.Parse(xmlStr)`.
-- **testdata** loaded via `go:embed`; `snippetSeq(name)` reads `testdata/snippets/<name>.txt`.
-- Acceptance tests run via `test/features/features_test.go`'s `TestMain` + `godog.TestSuite`.
+- Subtests named `it_*` / `and_*` / `but_*` per python-docx BDD style.
+- `internal/*` tests use in-package access; root `docx` tests use `docx_test` (external).
+- Test files live beside source; acceptance step defs in `test/features/steps/steps.go`.
+- testdata `.docx` files in `test/features/steps/test_files/`.
 
-## DPI Caveat
+## Step Definitions
 
-Go `image/*` decoders **do not return DPI**. Must hand-parse PNG `pHYs` and JPEG `JFIF`/`EXIF` for DPI (`internal/image`), using `encoding/binary` only.
+All BDD step implementations are in the single file `test/features/steps/steps.go` (~4400 lines, growing). Step patterns and feature files follow the upstream python-docx Gherkin spec. When adding a new step:
+1. Add Go code to the relevant `internal/` package (e.g., Font property → `internal/otext/font.go`)
+2. Wire the step in `steps.go` with `ctx.Step(pattern, handler)`
+3. The step handler extracts state from `s.document` / `s.paragraph` / `s.run` etc. (see `featureSuite` struct)
 
-## xmlchemy Equivalent
+## Common Gotchas
 
-Python's metaclass auto-generated methods are the core Go challenge. Adopting **Plan A**: thin DOM + declarative registry (`internal/oxml/xmodel`) + explicit CT_ methods. ~130 CT_ classes added incrementally on demand.
+- **`getRelOfType` returns nil, not panic**: OPC relationship lookup (e.g., for styles, core-properties) returns nil if not found. Callers must check nil before dereferencing.
+- **All internal types have nil-receiver guards**: `Table`, `Run`, `Section`, `Paragraph`, `Font`, `ParagraphFormat`, etc. Methods check `t == nil || t.field == nil` before accessing inner fields.
+- **LatentStyle uses `*bool` (tri-state)**, not plain bool: `nil` = unset, `&true`/`&false` = on/off.
+- **`ParagraphFormat.KeepNext`/`KeepTogether`/`PageBreakBefore`/`WidowControl`** use `*bool` tri-state, not bool.
+- **TabStops** exist as `internal/otext/tabstops.go` with `AddTabStop`/`ClearAll`/`Get`/`Remove`/`Len` methods.
+- **Hyperlink.Address()** requires relationships to be loaded from the OPC package; it returns empty string if the external relationship is not resolved.
+- **DPI not available from stdlib** `image/*` decoders — hand-parsed in `internal/image/`.
+- **~130 CT_ classes** (XML element proxies in `internal/oxml/`) added incrementally on demand — not auto-generated.
 
-## Revision Notes
+## Project Status
 
-Extracted from `README.md`, `docs/REFACTORING.md`, and repository state. If docs conflict with executable sources, trust the executable source.
+| Metric | Count |
+|--------|-------|
+| Unit test packages | 19 pass, 0 fail |
+| BDD feature files | 67 |
+| BDD scenarios pass/fail | ~201 / ~407 |
+| BDD undefined steps | ~52 |
+| Go files | 200+ throughout `internal/` |
+
+If docs conflict with executable source, trust the executable source.
