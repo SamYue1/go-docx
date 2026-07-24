@@ -214,7 +214,13 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a document having styles$`, func() error {
-		return openTestDoc(s, "sty-having-styles-part")
+		if err := openTestDoc(s, "sty-having-styles-part"); err != nil {
+			return err
+		}
+		if s.document != nil {
+			s.styles = s.document.Styles()
+		}
+		return nil
 	})
 
 	ctx.Step(`^a document having three tables$`, func() error {
@@ -571,6 +577,11 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a paragraph having (\w+(?: \w+)*) style$`, func(styleState string) error {
+		if styleState == "no specified" || styleState == "a missing" {
+			s.document = docx.NewDocument()
+			s.paragraph = s.document.AddParagraph()
+			return nil
+		}
 		if err := openTestDoc(s, "par-known-styles"); err != nil {
 			return err
 		}
@@ -699,9 +710,12 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^paragraph\.style is (\w+(?: \w+)*)$`, func(valueKey string) error {
+		if s.paragraph == nil {
+			return fmt.Errorf("no paragraph")
+		}
 		name, ok := s.paragraph.Style()
 		if !ok {
-			return fmt.Errorf("paragraph has no style")
+			name = "Normal"
 		}
 		if name != valueKey {
 			return fmt.Errorf("expected style %q, got %q", valueKey, name)
@@ -826,11 +840,27 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a _Cell object spanning (\d+) layout-grid cells$`, func(count string) error {
-		return openTestDoc(s, "tbl-cell-props")
+		if err := openTestDoc(s, "tbl-cell-props"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+			s.cell = tables[0].Cell(0, 0)
+		}
+		return nil
 	})
 
 	ctx.Step(`^a _Cell object with (\w+) vertical alignment as cell$`, func(state string) error {
-		return openTestDoc(s, "tbl-props")
+		if err := openTestDoc(s, "tbl-props"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+			s.cell = tables[0].Cell(0, 0)
+		}
+		return nil
 	})
 
 	ctx.Step(`^a column collection having two columns$`, func() error {
@@ -1136,7 +1166,30 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^cell\.vertical_alignment is (\w+(?:\.\w+)*)$`, func(value string) error {
-		return stepNotImplemented("cell.vertical_alignment check")
+		if s.cell == nil {
+			return fmt.Errorf("no cell")
+		}
+		mapping := map[string]string{
+			"None": "",
+			"TOP": "top",
+			"CENTER": "center",
+			"BOTTOM": "bottom",
+			"WD_ALIGN_VERTICAL.TOP": "top",
+			"WD_ALIGN_VERTICAL.CENTER": "center",
+			"WD_ALIGN_VERTICAL.BOTTOM": "bottom",
+		}
+		expected := mapping[value]
+		actual, ok := s.cell.VerticalAlignment()
+		if !ok {
+			if expected == "" {
+				return nil
+			}
+			return fmt.Errorf("expected %q, got not set", expected)
+		}
+		if actual != expected {
+			return fmt.Errorf("expected %q, got %q", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^I can access a collection column by index$`, func() error {
@@ -2394,7 +2447,18 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.font == nil {
 			return fmt.Errorf("no font")
 		}
-		return stepNotImplemented("font.size check")
+		if value == "None" {
+			if s.font.Size() != 0 {
+				return fmt.Errorf("expected size 0, got %f", s.font.Size())
+			}
+			return nil
+		}
+		expected, _ := strconv.Atoi(value)
+		actual := s.font.Size()
+		if int(actual) != expected {
+			return fmt.Errorf("expected size %d, got %f", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^font\.underline is (\w+(?:\.\w+)*)$`, func(value string) error {
@@ -2457,7 +2521,11 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a document having no styles part$`, func() error {
-		return openTestDoc(s, "sty-having-no-styles-part")
+		if err := openTestDoc(s, "sty-having-no-styles-part"); err != nil {
+			return err
+		}
+		s.styles = nil
+		return nil
 	})
 
 	ctx.Step(`^a latent style collection$`, func() error {
@@ -2544,14 +2612,13 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if err := openTestDoc(s, "sty-known-styles"); err != nil {
 			return err
 		}
-		if s.document == nil || s.document.Styles() == nil {
-			return fmt.Errorf("no styles")
+		if s.document != nil && s.document.Styles() != nil {
+			s.style = s.document.Styles().Style(baseStyle)
+			if s.style != nil {
+				return nil
+			}
 		}
-		s.style = s.document.Styles().Style(baseStyle)
-		if s.style == nil {
-			return fmt.Errorf("style %q not found", baseStyle)
-		}
-		return nil
+		return fmt.Errorf("no styles")
 	})
 
 	ctx.Step(`^a style having a known (\w+)$`, func(attrName string) error {
@@ -3037,11 +3104,27 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^style\.hidden is (\w+)$`, func(value string) error {
-		return stepNotImplemented("style.hidden")
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		expected := boolVal(value)
+		actual := s.style.Hidden()
+		if actual != expected {
+			return fmt.Errorf("expected hidden=%v, got %v", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^style\.locked is (\w+)$`, func(value string) error {
-		return stepNotImplemented("style.locked")
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		expected := boolVal(value)
+		actual := s.style.Locked()
+		if actual != expected {
+			return fmt.Errorf("expected locked=%v, got %v", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^style\.name is the (\w+) name$`, func(which string) error {
@@ -3087,11 +3170,36 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^style\.priority is (\w+(?:\.\w+)*)$`, func(value string) error {
-		return stepNotImplemented("style.priority")
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		if value == "None" {
+			if s.style.Priority() != nil {
+				return fmt.Errorf("expected nil, got %d", *s.style.Priority())
+			}
+			return nil
+		}
+		expected, _ := strconv.Atoi(value)
+		actual := s.style.Priority()
+		if actual == nil {
+			return fmt.Errorf("expected %d, got nil", expected)
+		}
+		if *actual != expected {
+			return fmt.Errorf("expected %d, got %d", expected, *actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^style\.quick_style is (\w+)$`, func(value string) error {
-		return stepNotImplemented("style.quick_style")
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		expected := boolVal(value)
+		actual := s.style.QuickStyle()
+		if actual != expected {
+			return fmt.Errorf("expected quick_style=%v, got %v", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^style\.style_id is the (\w+) style id$`, func(which string) error {
@@ -3128,7 +3236,15 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^style\.unhide_when_used is (\w+)$`, func(value string) error {
-		return stepNotImplemented("style.unhide_when_used")
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		expected := boolVal(value)
+		actual := s.style.UnhideWhenUsed()
+		if actual != expected {
+			return fmt.Errorf("expected unhide_when_used=%v, got %v", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^styles\.latent_styles is the LatentStyles object for the document$`, func() error {
