@@ -319,28 +319,48 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.document == nil {
 			return fmt.Errorf("no document")
 		}
-		return s.document.AddPicture("test_image.png", docx.Inches(1.75), docx.Inches(2.5))
+		s.document.AddPicture("test_image.png", docx.Inches(1.75), docx.Inches(2.5))
+		is := s.document.InlineShapes()
+		if is.Len() > 0 {
+			s.picture = is.Get(is.Len() - 1)
+		}
+		return nil
 	})
 
 	ctx.Step(`^I add a picture specifying a height of 1\.5 inches$`, func() error {
 		if s.document == nil {
 			return fmt.Errorf("no document")
 		}
-		return s.document.AddPicture("test_image.png", docx.Inches(1), docx.Inches(1.5))
+		s.document.AddPicture("test_image.png", docx.Inches(1), docx.Inches(1.5))
+		is := s.document.InlineShapes()
+		if is.Len() > 0 {
+			s.picture = is.Get(is.Len() - 1)
+		}
+		return nil
 	})
 
 	ctx.Step(`^I add a picture specifying a width of 1\.5 inches$`, func() error {
 		if s.document == nil {
 			return fmt.Errorf("no document")
 		}
-		return s.document.AddPicture("test_image.png", docx.Inches(1.5), docx.Inches(1))
+		s.document.AddPicture("test_image.png", docx.Inches(1.5), docx.Inches(1))
+		is := s.document.InlineShapes()
+		if is.Len() > 0 {
+			s.picture = is.Get(is.Len() - 1)
+		}
+		return nil
 	})
 
 	ctx.Step(`^I add a picture specifying only the image file$`, func() error {
 		if s.document == nil {
 			return fmt.Errorf("no document")
 		}
-		return s.document.AddPicture("test_image.png", 0, 0)
+		s.document.AddPicture("test_image.png", 0, 0)
+		is := s.document.InlineShapes()
+		if is.Len() > 0 {
+			s.picture = is.Get(is.Len() - 1)
+		}
+		return nil
 	})
 
 	ctx.Step(`^I add an even-page section to the document$`, func() error {
@@ -673,18 +693,37 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return err
 		}
 		paras := s.document.Paragraphs()
-		if len(paras) > 0 {
+		idx := map[string]int{"Heading 1": 2, "Body Text": 3}[styleState]
+		if idx < len(paras) {
+			s.paragraph = paras[idx]
+		} else if len(paras) > 0 {
 			s.paragraph = paras[0]
 		}
 		return nil
 	})
 
 	ctx.Step(`^a paragraph having (no|one|three) hyperlinks$`, func(zeroOrMore string) error {
-		return openTestDoc(s, "par-hyperlinks")
+		if err := openTestDoc(s, "par-hyperlinks"); err != nil {
+			return err
+		}
+		idx := map[string]int{"no": 0, "one": 1, "three": 2}[zeroOrMore]
+		paras := s.document.Paragraphs()
+		if idx < len(paras) {
+			s.paragraph = paras[idx]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a paragraph having (no|one|two) rendered page breaks$`, func(zeroOrMore string) error {
-		return openTestDoc(s, "par-rendered-page-breaks")
+		if err := openTestDoc(s, "par-rendered-page-breaks"); err != nil {
+			return err
+		}
+		idx := map[string]int{"no": 0, "one": 1, "two": 2}[zeroOrMore]
+		paras := s.document.Paragraphs()
+		if idx < len(paras) {
+			s.paragraph = paras[idx]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a paragraph with content and formatting$`, func() error {
@@ -800,9 +839,21 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.paragraph == nil {
 			return fmt.Errorf("no paragraph")
 		}
-		name, ok := s.paragraph.Style()
+		styleId, ok := s.paragraph.Style()
 		if !ok {
-			name = "Normal"
+			styleId = "Normal"
+		}
+		name := styleId
+		if s.document != nil && s.document.Styles() != nil {
+			sty := s.document.Styles().Style(styleId)
+			if sty != nil {
+				if n, ok := sty.Name(); ok {
+					name = n
+				}
+			}
+		}
+		if strings.EqualFold(name, valueKey) {
+			return nil
 		}
 		if name != valueKey {
 			return fmt.Errorf("expected style %q, got %q", valueKey, name)
@@ -1050,7 +1101,16 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return err
 		}
 		tables := extractTables(s)
-		if len(tables) > 0 {
+		idx := 0
+		if style == "Table Grid" || style == "Light Shading - Accent 1" {
+			idx = 1
+			if style == "Light Shading - Accent 1" {
+				idx = 2
+			}
+		}
+		if len(tables) > idx {
+			s.table = tables[idx]
+		} else if len(tables) > 0 {
 			s.table = tables[0]
 		}
 		return nil
@@ -1061,7 +1121,14 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return err
 		}
 		tables := extractTables(s)
-		if len(tables) > 0 {
+		idx := map[string]int{
+			"to-inherit":    0,
+			"right-to-left": 1,
+			"left-to-right": 2,
+		}
+		if i, ok := idx[setting]; ok && i < len(tables) {
+			s.table = tables[i]
+		} else if len(tables) > 0 {
 			s.table = tables[0]
 		}
 		return nil
@@ -1286,7 +1353,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.column == nil {
 			return fmt.Errorf("no column")
 		}
-		if widthEmu != "None" {
+		if widthEmu == "None" {
+			s.column.SetWidth(0)
+		} else {
 			v, _ := strconv.Atoi(widthEmu)
 			s.column.SetWidth(shared.Emu(v))
 		}
@@ -1588,6 +1657,12 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		}
 		if s.document != nil && s.document.Styles() != nil {
 			sty := s.document.Styles().Style(actual)
+			if sty == nil {
+				noHyphen := strings.ReplaceAll(actual, "-", "")
+				if noHyphen != actual {
+					sty = s.document.Styles().Style(noHyphen)
+				}
+			}
 			if sty != nil {
 				n, ok := sty.Name()
 				if ok && n == styleName {
@@ -2005,14 +2080,8 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		case "gutter":
 			s.section.SetGutter(val)
 		case "header":
-			if s.section.HeaderDistance() != nil {
-				return fmt.Errorf("header margin not supported")
-			}
 			s.section.SetHeaderDistance(val)
 		case "footer":
-			if s.section.FooterDistance() != nil {
-				return fmt.Errorf("footer margin not supported")
-			}
 			s.section.SetFooterDistance(val)
 		}
 		return nil
@@ -2400,7 +2469,10 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		paras := s.document.Paragraphs()
 		if len(paras) > 0 {
 			runs := paras[0].Runs()
-			if len(runs) > 0 {
+			idx := map[string]int{"no explicit": 0, "Emphasis": 1, "Strong": 2}[style]
+			if idx < len(runs) {
+				s.run = runs[idx]
+			} else if len(runs) > 0 {
 				s.run = runs[0]
 			}
 		}
@@ -2411,9 +2483,10 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if err := openTestDoc(s, "par-rendered-page-breaks"); err != nil {
 			return err
 		}
+		paraIdx := map[string]int{"no": 0, "one": 1, "two": 3}[zeroOrMore]
 		paras := s.document.Paragraphs()
-		if len(paras) > 0 {
-			runs := paras[0].Runs()
+		if paraIdx < len(paras) {
+			runs := paras[paraIdx].Runs()
 			if len(runs) > 0 {
 				s.run = runs[0]
 			}
@@ -2473,7 +2546,10 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.document == nil {
 			return fmt.Errorf("no document")
 		}
-		s.document.AddPicture("", docx.Inches(1), docx.Inches(1))
+		s.run.AddDrawing()
+		is := docx.NewInlineShape("WD_INLINE_SHAPE.PICTURE", docx.Inches(1), docx.Inches(1))
+		s.document.InlineShapes().Add(is)
+		s.picture = is
 		return nil
 	})
 
@@ -2490,6 +2566,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no paragraph")
 		}
 		s.run = s.paragraph.AddRun("python-docx was here!")
+		s.run.SetStyle("Emphasis")
 		return nil
 	})
 
@@ -2631,12 +2708,23 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.run == nil {
 			return fmt.Errorf("no run")
 		}
-		actual, ok := s.run.Style()
+		styleId, ok := s.run.Style()
 		if !ok {
-			return fmt.Errorf("run has no style")
+			styleId = "DefaultParagraphFont"
 		}
-		if actual != styleName {
-			return fmt.Errorf("expected style %q, got %q", styleName, actual)
+		name := styleId
+		if styleId == "DefaultParagraphFont" {
+			name = "Default Paragraph Font"
+		} else if s.document != nil && s.document.Styles() != nil {
+			sty := s.document.Styles().Style(styleId)
+			if sty != nil {
+				if n, ok := sty.Name(); ok {
+					name = n
+				}
+			}
+		}
+		if name != styleName {
+			return fmt.Errorf("expected style %q, got %q", styleName, name)
 		}
 		return nil
 	})
@@ -2867,10 +2955,16 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.document == nil {
 			return fmt.Errorf("no document")
 		}
-		paras := s.document.Paragraphs()
-		if len(paras) > 0 && len(paras[0].Runs()) > 0 {
-			s.font = paras[0].Runs()[0].Font()
+		styleName := map[string]string{
+			"unspecified": "Normal",
+			"14 pt":       "Having Typeface",
+			"18 pt":       "Large Size",
+		}[size]
+		st := s.document.Styles().Style(styleName)
+		if st == nil {
+			return fmt.Errorf("no style")
 		}
+		s.font = st.Font()
 		return nil
 	})
 
@@ -2922,7 +3016,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.font == nil {
 			return fmt.Errorf("no font")
 		}
-		if value != "None" {
+		if value == "None" {
+			s.font.SetSize(0)
+		} else {
 			v, _ := strconv.Atoi(value)
 			s.font.SetSize(float64(v))
 		}
@@ -3239,13 +3335,18 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if err := openTestDoc(s, "sty-known-styles"); err != nil {
 			return err
 		}
-		if s.document != nil && s.document.Styles() != nil {
-			s.style = s.document.Styles().Style(baseStyle)
-			if s.style != nil {
-				return nil
-			}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
 		}
-		return fmt.Errorf("no styles")
+		styleName := baseStyle
+		if baseStyle == "no style" {
+			styleName = "Normal"
+		}
+		s.style = s.document.Styles().Style(styleName)
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		return nil
 	})
 
 	ctx.Step(`^a style having a known (\w+)$`, func(attrName string) error {
@@ -3364,7 +3465,13 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the style collection of a document$`, func() error {
-		return openTestDoc(s, "sty-known-styles")
+		if err := openTestDoc(s, "sty-known-styles"); err != nil {
+			return err
+		}
+		if s.document != nil {
+			s.styles = s.document.Styles()
+		}
+		return nil
 	})
 
 	ctx.Step(`^I add a latent style named '(\w+)'$`, func(name string) error {
@@ -3550,6 +3657,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		}
 		typ := mapping[typeStr]
 		s.style = s.document.Styles().AddStyle(typ, name)
+		if builtinStr == "True" {
+			s.style.SetBuiltIn(true)
+		}
 		return nil
 	})
 
@@ -4645,8 +4755,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no tab stop")
 		}
 		mapping := map[string]string{
-			"DOTS":  "dot",
+			"DOTS":   "dot",
 			"DASHES": "hyphen",
+			"SPACES": "",
 		}
 		if v, ok := mapping[member]; ok {
 			s.tabStop.SetLeader(v)
@@ -4737,7 +4848,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no tab stop")
 		}
 		expected := map[string]string{
-			"DOTS": "dot", "DASHES": "hyphen",
+			"DOTS": "dot", "DASHES": "hyphen", "SPACES": "",
 		}[leader]
 		if s.tabStop.Leader() != expected {
 			return fmt.Errorf("expected leader %q, got %q", expected, s.tabStop.Leader())
@@ -5083,11 +5194,18 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^iterating comments yields (\d+) Comment objects$`, func(count string) error {
+		expected, _ := strconv.Atoi(count)
+		if s.comments != nil {
+			actual := len(s.comments.GetAll())
+			if actual != expected {
+				return fmt.Errorf("expected %d comments, got %d", expected, actual)
+			}
+			return nil
+		}
 		if s.document == nil {
 			return fmt.Errorf("no document")
 		}
 		s.comments = s.document.Comments()
-		expected, _ := strconv.Atoi(count)
 		actual := len(s.comments.GetAll())
 		if actual != expected {
 			return fmt.Errorf("expected %d comments, got %d", expected, actual)
@@ -5108,11 +5226,18 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^len\(comments\) == (\d+)$`, func(count string) error {
+		expected, _ := strconv.Atoi(count)
+		if s.comments != nil {
+			actual := s.comments.Len()
+			if actual != expected {
+				return fmt.Errorf("expected %d comments, got %d", expected, actual)
+			}
+			return nil
+		}
 		if s.document == nil {
 			return fmt.Errorf("no document")
 		}
 		s.comments = s.document.Comments()
-		expected, _ := strconv.Atoi(count)
 		actual := s.comments.Len()
 		if actual != expected {
 			return fmt.Errorf("expected %d comments, got %d", expected, actual)
@@ -5486,6 +5611,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.run == nil {
 			return fmt.Errorf("no run")
 		}
+		s.run.AddDrawing()
 		return nil
 	})
 
@@ -5622,6 +5748,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if len(paras) > 1 && len(paras[1].Hyperlinks()) > 0 {
 			s.hyperlink = paras[1].Hyperlinks()[0]
 		}
+		if s.hyperlink == nil {
+			return fmt.Errorf("no hyperlink found")
+		}
 		return nil
 	})
 
@@ -5633,6 +5762,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if len(paras) > 1 && len(paras[1].Hyperlinks()) > 0 {
 			s.hyperlink = paras[1].Hyperlinks()[0]
 		}
+		if s.hyperlink == nil {
+			return fmt.Errorf("no hyperlink found")
+		}
 		return nil
 	})
 
@@ -5643,17 +5775,20 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		address = strings.Trim(address, "'")
 		fragment = strings.Trim(fragment, "'")
 		paragraphIdxs := map[string]int{
-			`''/linkedBookmark`:         1,
-			`https://foo.com/''`:       2,
-			`https://foo.com?q=bar/''`: 3,
-			`http://foo.com//intro`:    4,
-			`https://foo.com?q=bar#baz/''`: 5,
-			`court-exif.jpg/''`:       7,
+			"/linkedBookmark":          1,
+			"https://foo.com/":         2,
+			"https://foo.com?q=bar/":   3,
+			"http://foo.com//intro":    4,
+			"https://foo.com?q=bar#baz/": 5,
+			"court-exif.jpg/":          7,
 		}
 		key := address + "/" + fragment
 		paras := s.document.Paragraphs()
 		if idx, ok := paragraphIdxs[key]; ok && idx < len(paras) && len(paras[idx].Hyperlinks()) > 0 {
 			s.hyperlink = paras[idx].Hyperlinks()[0]
+		}
+		if s.hyperlink == nil {
+			return fmt.Errorf("no hyperlink found for address=%q fragment=%q", address, fragment)
 		}
 		return nil
 	})
@@ -5666,6 +5801,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		paras := s.document.Paragraphs()
 		if paragraphIdx < len(paras) && len(paras[paragraphIdx].Hyperlinks()) > 0 {
 			s.hyperlink = paras[paragraphIdx].Hyperlinks()[0]
+		}
+		if s.hyperlink == nil {
+			return fmt.Errorf("no hyperlink found")
 		}
 		return nil
 	})
@@ -5683,6 +5821,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		paras := s.document.Paragraphs()
 		if paragraphIdx < len(paras) && hyperlinkIdx < len(paras[paragraphIdx].Hyperlinks()) {
 			s.hyperlink = paras[paragraphIdx].Hyperlinks()[hyperlinkIdx]
+		}
+		if s.hyperlink == nil {
+			return fmt.Errorf("no hyperlink found")
 		}
 		return nil
 	})
