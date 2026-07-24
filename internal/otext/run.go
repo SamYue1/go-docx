@@ -44,6 +44,13 @@ func (rn *Run) AddText(s string) {
 	rn.r.AddT(s)
 }
 
+func (rn *Run) AddTab() {
+	if rn == nil || rn.r == nil {
+		return
+	}
+	rn.r.AddTab()
+}
+
 func (rn *Run) AddBreak(breakType BreakType) {
 	if rn == nil || rn.r == nil {
 		return
@@ -119,6 +126,36 @@ func (rn *Run) Clear() {
 		return
 	}
 	rn.r.ClearContent()
+}
+
+func (rn *Run) IterInnerContent() []interface{} {
+	if rn == nil || rn.r == nil {
+		return nil
+	}
+	var items []interface{}
+	for _, c := range rn.r.Element.Children() {
+		tag := c.ClarkTag()
+		switch tag {
+		case ns.Qn("w:br"), ns.Qn("w:cr"), ns.Qn("w:t"), ns.Qn("w:tab"), ns.Qn("w:noBreakHyphen"), ns.Qn("w:ptab"):
+			items = append(items, c.Text())
+		case ns.Qn("w:lastRenderedPageBreak"):
+			items = append(items, NewRenderedPageBreak(c))
+		case ns.Qn("w:drawing"):
+			items = append(items, c)
+		}
+	}
+	return items
+}
+
+func (rn *Run) LastChildLocal() string {
+	if rn == nil || rn.r == nil {
+		return ""
+	}
+	children := rn.r.Element.Children()
+	if len(children) == 0 {
+		return ""
+	}
+	return children[len(children)-1].Local()
 }
 
 func (rn *Run) ContainsPageBreak() bool {

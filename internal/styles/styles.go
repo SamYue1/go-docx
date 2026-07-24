@@ -96,8 +96,27 @@ func (s *Style) Name() (string, bool) {
 	return n.Val()
 }
 
+func (s *Style) SetName(name string) {
+	n := s.style.Name()
+	if n == nil {
+		el := dom.NewElement(ns.NsMap["w"], "name")
+		el.SetAttr(ns.NsMap["w"], "val", name)
+		s.style.Element.AddChild(el)
+	} else {
+		n.SetVal(name)
+	}
+}
+
 func (s *Style) Type() (string, bool) {
 	return s.style.Type()
+}
+
+func (s *Style) StyleID() (string, bool) {
+	return s.style.StyleId()
+}
+
+func (s *Style) SetStyleID(id string) {
+	s.style.SetStyleId(id)
 }
 
 func (s *Style) Font() *otext.Font {
@@ -289,6 +308,29 @@ type LatentStyles struct {
 
 func NewLatentStyles(latent *oxml.CT_LatentStyles) *LatentStyles {
 	return &LatentStyles{latent: latent}
+}
+
+func (ls *LatentStyles) All() []*LatentStyle {
+	oxmlLsdExceptions := ls.latent.LsdException_lst()
+	result := make([]*LatentStyle, len(oxmlLsdExceptions))
+	for i, l := range oxmlLsdExceptions {
+		result[i] = &LatentStyle{lsd: l}
+	}
+	return result
+}
+
+func (ls *LatentStyles) Len() int {
+	return len(ls.latent.LsdException_lst())
+}
+
+func (ls *LatentStyles) Delete(name string) {
+	for _, l := range ls.latent.LsdException_lst() {
+		n, ok := l.Name()
+		if ok && n == name {
+			ls.latent.Element.RemoveChild(l.Element)
+			return
+		}
+	}
 }
 
 func (ls *LatentStyles) LatentStyle(name string) *LatentStyle {

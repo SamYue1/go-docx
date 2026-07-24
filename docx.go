@@ -26,6 +26,7 @@ type Column = otable.Column
 type Section = osect.Section
 type HeaderFooter = osect.HeaderFooter
 type HeaderFooterType = osect.HeaderFooterType
+type Settings = osect.Settings
 type Styles = styles.Styles
 type Style = styles.Style
 type LatentStyles = styles.LatentStyles
@@ -34,6 +35,12 @@ type TabStops = otext.TabStops
 type TabStop = otext.TabStop
 type Length = shared.Length
 type RGBColor = shared.RGBColor
+type Comments = odoc.Comments
+type Comment = odoc.Comment
+type InlineShapes = odoc.InlineShapes
+type InlineShape = odoc.InlineShape
+type Image = odoc.Image
+type NumberingPart = odoc.NumberingPart
 
 const (
 	BreakLine           = otext.BreakLine

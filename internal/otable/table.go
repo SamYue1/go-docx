@@ -184,7 +184,7 @@ func (t *Table) Autofit() (bool, bool) {
 	if !ok {
 		return true, true
 	}
-	return val == "autofit", true
+	return val != "fixed", true
 }
 
 func (t *Table) SetAutofit(val bool) {
@@ -201,6 +201,42 @@ func (t *Table) SetAutofit(val bool) {
 		layout.SetAttr(ns.NsMap["w"], "type", "autofit")
 	} else {
 		layout.SetAttr(ns.NsMap["w"], "type", "fixed")
+	}
+}
+
+func (t *Table) TableDirection() (string, bool) {
+	if t == nil || t.tbl == nil {
+		return "", false
+	}
+	tblPr := t.tbl.TblPr()
+	if tblPr == nil {
+		return "", false
+	}
+	bidi := tblPr.BidiVisual()
+	if bidi == nil {
+		return "", false
+	}
+	val, ok := bidi.GetAttr(ns.NsMap["w"], "val")
+	if !ok || val == "true" || val == "1" {
+		return "rtl", true
+	}
+	return "ltr", true
+}
+
+func (t *Table) SetTableDirection(val string) {
+	if t == nil || t.tbl == nil {
+		return
+	}
+	tblPr := t.tbl.GetOrAddTblPr()
+	switch val {
+	case "rtl":
+		el := tblPr.GetOrAddBidiVisual()
+		el.SetAttr(ns.NsMap["w"], "val", "true")
+	case "ltr":
+		el := tblPr.GetOrAddBidiVisual()
+		el.SetAttr(ns.NsMap["w"], "val", "false")
+	default:
+		tblPr.RemoveBidiVisual()
 	}
 }
 

@@ -201,6 +201,15 @@ func (c *CT_Tc) GetOrAddTcPr() *CT_TcPr {
 	return &CT_TcPr{Element: el}
 }
 
+func (c *CT_Tc) Tbl_lst() []*CT_Tbl {
+	els := findChildren(c.Element, wqn("tbl"))
+	result := make([]*CT_Tbl, len(els))
+	for i, el := range els {
+		result[i] = &CT_Tbl{Element: el}
+	}
+	return result
+}
+
 func (c *CT_Tc) AddP() *text.CT_P {
 	el := dom.NewElement(ns.NsMap["w"], "p")
 	c.Element.AddChild(el)
@@ -409,6 +418,22 @@ func (p *CT_TblPr) Jc() *text.CT_Jc {
 
 func (p *CT_TblPr) BidiVisual() *dom.Element {
 	return findChild(p.Element, wqn("bidiVisual"))
+}
+
+func (p *CT_TblPr) GetOrAddBidiVisual() *dom.Element {
+	el := findChild(p.Element, wqn("bidiVisual"))
+	if el == nil {
+		el = dom.NewElement(ns.NsMap["w"], "bidiVisual")
+		p.Element.AddChild(el)
+	}
+	return el
+}
+
+func (p *CT_TblPr) RemoveBidiVisual() {
+	el := findChild(p.Element, wqn("bidiVisual"))
+	if el != nil {
+		p.Element.RemoveChild(el)
+	}
 }
 
 type CT_TblStyle struct {

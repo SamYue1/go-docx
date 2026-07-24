@@ -13,7 +13,13 @@ import (
 	"github.com/SamYue1/go-docx/internal/parts"
 	"github.com/SamYue1/go-docx/internal/shared"
 	"github.com/SamYue1/go-docx/internal/styles"
+	text "github.com/SamYue1/go-docx/internal/oxml/text"
 )
+
+// document-level state for comments, numbering, inline shapes
+var commentsState *Comments
+var numberingState *NumberingPart
+var inlineShapesState *InlineShapes
 
 type Document struct {
 	part *parts.DocumentPart
@@ -134,7 +140,10 @@ func (d *Document) Sections() []*osect.Section {
 				if ppr.Local() == "pPr" {
 					for _, sp := range ppr.Children() {
 						if sp.Local() == "sectPr" {
-							result = append(result, osect.NewSection(&oxml.CT_SectPr{Element: sp}))
+							sec := osect.NewSection(&oxml.CT_SectPr{Element: sp})
+							sec.SetRels(d.part.Relationships())
+							sec.SetPackage(d.pkg)
+							result = append(result, sec)
 						}
 					}
 				}
@@ -144,13 +153,19 @@ func (d *Document) Sections() []*osect.Section {
 				if tpr.Local() == "tblPr" {
 					for _, sp := range tpr.Children() {
 						if sp.Local() == "sectPr" {
-							result = append(result, osect.NewSection(&oxml.CT_SectPr{Element: sp}))
+							sec := osect.NewSection(&oxml.CT_SectPr{Element: sp})
+							sec.SetRels(d.part.Relationships())
+							sec.SetPackage(d.pkg)
+							result = append(result, sec)
 						}
 					}
 				}
 			}
 		case "sectPr":
-			result = append(result, osect.NewSection(&oxml.CT_SectPr{Element: child}))
+			sec := osect.NewSection(&oxml.CT_SectPr{Element: child})
+			sec.SetRels(d.part.Relationships())
+			sec.SetPackage(d.pkg)
+			result = append(result, sec)
 		}
 	}
 	return result
@@ -163,6 +178,25 @@ func (d *Document) Styles() *styles.Styles {
 	}
 	stp := parts.NewStylesPart(sp)
 	return stp.Styles()
+}
+
+func (d *Document) Settings() *osect.Settings {
+	sp := d.part.SettingsPart()
+	if sp == nil {
+		return osect.NewSettings(oxml.NewCT_Settings())
+	}
+	blob := sp.Blob()
+	var ct *oxml.CT_Settings
+	if len(blob) > 0 {
+		el, err := dom.Parse(blob)
+		if err == nil && el != nil {
+			ct = &oxml.CT_Settings{Element: el}
+		}
+	}
+	if ct == nil {
+		return osect.NewSettings(oxml.NewCT_Settings())
+	}
+	return osect.NewSettings(ct)
 }
 
 func (d *Document) AddParagraph() *otext.Paragraph {
@@ -208,7 +242,10 @@ func (d *Document) AddSection() *osect.Section {
 	}
 	sp := dom.NewElement(ns.NsMap["w"], "sectPr")
 	body.Element.AddChild(sp)
-	return osect.NewSection(&oxml.CT_SectPr{Element: sp})
+	sec := osect.NewSection(&oxml.CT_SectPr{Element: sp})
+	sec.SetRels(d.part.Relationships())
+	sec.SetPackage(d.pkg)
+	return sec
 }
 
 func (d *Document) AddHeading(textStr string, level int) *otext.Paragraph {
@@ -265,6 +302,48 @@ func (d *Document) Save(path string) error {
 func (d *Document) SaveToWriter(w io.Writer) error {
 	d.part.Save()
 	return d.pkg.SaveToWriter(w)
+}
+
+func (d *Document) Comments() *Comments {
+	if commentsState == nil {
+		commentsState = NewComments()
+	}
+	return commentsState
+}
+
+func (d *Document) NumberingPart() *NumberingPart {
+	if numberingState == nil {
+		numberingState = NewNumberingPart()
+	}
+	return numberingState
+}
+
+func (d *Document) InlineShapes() *InlineShapes {
+	if inlineShapesState == nil {
+		inlineShapesState = NewInlineShapes()
+	}
+	return inlineShapesState
+}
+
+// IterInnerContent returns paragraphs and tables in document order.
+func (d *Document) IterInnerContent() []interface{} {
+	var items []interface{}
+	body := d.Body()
+	if body == nil {
+		return nil
+	}
+	rels := d.part.Relationships()
+	for _, child := range body.Element.Children() {
+		switch child.Local() {
+		case "p":
+			p := otext.NewParagraphWithParent(&text.CT_P{Element: child}, body.Element)
+			p.SetRels(rels)
+			items = append(items, p)
+		case "tbl":
+			items = append(items, otable.NewTable(&oxml.CT_Tbl{Element: child}))
+		}
+	}
+	return items
 }
 
 

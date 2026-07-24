@@ -2,6 +2,7 @@ package otable
 
 import (
 	"github.com/SamYue1/go-docx/internal/oxml"
+	"github.com/SamYue1/go-docx/internal/oxml/ns"
 	"github.com/SamYue1/go-docx/internal/shared"
 )
 
@@ -143,10 +144,52 @@ func (r *Row) SetHeight(length shared.Length) {
 	h.SetVal(length.Twips())
 }
 
+func (r *Row) HeightRule() (string, bool) {
+	if r == nil || r.tr == nil {
+		return "", false
+	}
+	trPr := r.tr.TrPr()
+	if trPr == nil {
+		return "", false
+	}
+	h := trPr.TrHeight()
+	if h == nil {
+		return "", false
+	}
+	return h.HRule()
+}
+
+func (r *Row) SetHeightRule(val string) {
+	if r == nil || r.tr == nil {
+		return
+	}
+	trPr := r.tr.GetOrAddTrPr()
+	h := trPr.GetOrAddTrHeight()
+	if val == "" {
+		h.Element.RemoveAttr(ns.NsMap["w"], "hRule")
+	} else {
+		h.SetHRule(val)
+	}
+}
+
 func (r *Row) MergeCells(startCell, endCell *Cell) *Cell {
-	_ = startCell
-	_ = endCell
-	return nil
+	if r == nil || r.tr == nil || startCell == nil || endCell == nil {
+		return nil
+	}
+	physCells := r.tr.Tc_lst()
+	startIdx, endIdx := -1, -1
+	for i, tc := range physCells {
+		if tc.Element == startCell.tc.Element {
+			startIdx = i
+		}
+		if tc.Element == endCell.tc.Element {
+			endIdx = i
+		}
+	}
+	if startIdx < 0 || endIdx < 0 || startIdx > endIdx {
+		return nil
+	}
+	return mergeCells(r, startIdx, endIdx)
 }
 
 func (r *Row) AddCell() *Cell {
@@ -164,17 +207,38 @@ func (r *Row) index() int {
 }
 
 func mergeCells(r *Row, start, end int) *Cell {
-	cells := r.Cells()
-	if start < 0 || end >= len(cells) || start > end {
+	physCells := r.tr.Tc_lst()
+	if start < 0 || end >= len(physCells) || start > end {
 		return nil
 	}
-	for i := start + 1; i <= end; i++ {
-		parent := cells[i].tc.Element.Parent()
-		if parent != nil {
-			parent.RemoveChild(cells[i].tc.Element)
+	first := physCells[start]
+	totalSpan := 1
+	tcPr := first.TcPr()
+	if tcPr != nil {
+		if gs, ok := tcPr.GridSpan(); ok {
+			totalSpan = gs
 		}
 	}
-	return cells[start]
+	for i := start + 1; i <= end; i++ {
+		tc := physCells[i]
+		tcPr := tc.TcPr()
+		if tcPr != nil {
+			if gs, ok := tcPr.GridSpan(); ok {
+				totalSpan += gs
+			} else {
+				totalSpan++
+			}
+		} else {
+			totalSpan++
+		}
+		parent := tc.Element.Parent()
+		if parent != nil {
+			parent.RemoveChild(tc.Element)
+		}
+	}
+	firstPr := first.GetOrAddTcPr()
+	firstPr.SetGridSpan(totalSpan)
+	return &Cell{tc: first, table: r.table}
 }
 
 func init() {

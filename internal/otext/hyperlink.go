@@ -2,6 +2,7 @@ package otext
 
 import (
 	"github.com/SamYue1/go-docx/internal/opc"
+	"github.com/SamYue1/go-docx/internal/oxml/ns"
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
 )
 
@@ -57,6 +58,26 @@ func (hl *Hyperlink) Runs() []*Run {
 		result[i] = NewRun(r)
 	}
 	return result
+}
+
+func (hl *Hyperlink) ContainsPageBreak() bool {
+	if hl == nil || hl.h == nil {
+		return false
+	}
+	for _, r := range hl.h.R_lst() {
+		for _, br := range r.Br_lst() {
+			typ, ok := br.Element.GetAttr(ns.NsMap["w"], "type")
+			if ok && typ == "page" {
+				return true
+			}
+		}
+		for _, c := range r.Element.Children() {
+			if c.Local() == "lastRenderedPageBreak" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (hl *Hyperlink) Fragment() string {

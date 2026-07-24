@@ -32,6 +32,20 @@ func (r *CT_R) T_lst() []*CT_Text {
 	return result
 }
 
+func (r *CT_R) Tab_lst() []*CT_Tab {
+	els := findChildren(r.Element, wqn("tab"))
+	result := make([]*CT_Tab, len(els))
+	for i, el := range els {
+		result[i] = &CT_Tab{Element: el}
+	}
+	return result
+}
+
+func (r *CT_R) AddTab() *CT_Tab {
+	el := xmodel.AddChild(r.Element, textRegistry, "w:r", "w:tab")
+	return &CT_Tab{Element: el}
+}
+
 func (r *CT_R) Br_lst() []*CT_Br {
 	els := findChildren(r.Element, wqn("br"))
 	result := make([]*CT_Br, len(els))
@@ -104,6 +118,15 @@ type CT_PTab struct {
 func NewCT_PTab() *CT_PTab {
 	e := dom.NewElement(ns.NsMap["w"], "ptab")
 	return &CT_PTab{Element: e}
+}
+
+type CT_Tab struct {
+	*dom.Element
+}
+
+func NewCT_Tab() *CT_Tab {
+	e := dom.NewElement(ns.NsMap["w"], "tab")
+	return &CT_Tab{Element: e}
 }
 
 type CT_Text struct {
