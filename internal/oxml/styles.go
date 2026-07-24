@@ -52,6 +52,14 @@ func NewCT_Style(typ, styleId string) *CT_Style {
 	return st
 }
 
+func (s *CT_Style) CustomStyle() (string, bool) {
+	return s.Element.GetAttr(ns.NsMap["w"], "customStyle")
+}
+
+func (s *CT_Style) SetCustomStyle(val string) {
+	s.Element.SetAttr(ns.NsMap["w"], "customStyle", val)
+}
+
 func (s *CT_Style) Type() (string, bool) {
 	return s.Element.GetAttr(ns.NsMap["w"], "type")
 }

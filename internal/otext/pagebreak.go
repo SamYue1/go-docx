@@ -23,49 +23,91 @@ func copyElement(el *dom.Element) *dom.Element {
 	return parsed
 }
 
+// findBreakInRun returns true if the run element contains a lastRenderedPageBreak child.
+func findBreakInRun(el *dom.Element) bool {
+	for _, c := range el.Children() {
+		if c.ClarkTag() == ns.Qn("w:lastRenderedPageBreak") {
+			return true
+		}
+	}
+	return false
+}
+
+// findBreakInHyperlink returns true if the hyperlink element contains a run with a lastRenderedPageBreak.
+func findBreakInHyperlink(el *dom.Element) bool {
+	for _, c := range el.Children() {
+		if c.ClarkTag() == ns.Qn("w:r") {
+			if findBreakInRun(c) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// stripFromBreak removes the lastRenderedPageBreak element and all subsequent siblings from a cloned run element.
+func stripFromBreak(el *dom.Element) {
+	var toRemove []*dom.Element
+	found := false
+	for _, c := range el.Children() {
+		if c.ClarkTag() == ns.Qn("w:lastRenderedPageBreak") {
+			found = true
+		}
+		if found {
+			toRemove = append(toRemove, c)
+		}
+	}
+	for _, c := range toRemove {
+		el.RemoveChild(c)
+	}
+}
+
+// stripBeforeBreak removes everything before and including the lastRenderedPageBreak from a cloned run element.
+func stripBeforeBreak(el *dom.Element) {
+	var toRemove []*dom.Element
+	for _, c := range el.Children() {
+		toRemove = append(toRemove, c)
+		if c.ClarkTag() == ns.Qn("w:lastRenderedPageBreak") {
+			break
+		}
+	}
+	for _, c := range toRemove {
+		el.RemoveChild(c)
+	}
+}
+
 func (rpb *RenderedPageBreak) PrecedingParagraphFragment() *Paragraph {
 	if rpb.parent == nil || rpb.parent.p == nil {
 		return nil
 	}
 	parent := rpb.parent.p
-	runs := parent.R_lst()
-	runIdx := -1
-	for i, r := range runs {
-		for _, c := range r.Element.Children() {
-			if c.ClarkTag() == ns.Qn("w:lastRenderedPageBreak") {
-				runIdx = i
-				break
-			}
-		}
-		if runIdx >= 0 {
+	children := parent.Element.Children()
+	breakIdx := -1
+	for i, c := range children {
+		tag := c.ClarkTag()
+		if tag == ns.Qn("w:r") && findBreakInRun(c) {
+			breakIdx = i
+			break
+		} else if tag == ns.Qn("w:hyperlink") && findBreakInHyperlink(c) {
+			breakIdx = i
 			break
 		}
 	}
-	if runIdx < 0 {
-		// Check hyperlinks
-		hyps := parent.Hyperlink_lst()
-		for i, h := range hyps {
-			for _, r := range h.R_lst() {
-				for _, c := range r.Element.Children() {
-					if c.ClarkTag() == ns.Qn("w:lastRenderedPageBreak") {
-						runIdx = i
-						break
-					}
-				}
-			}
-			if runIdx >= 0 {
-				break
-			}
-		}
-	}
-	if runIdx <= 0 {
+	if breakIdx < 0 {
 		return nil
 	}
 	newP := text.NewCT_P()
-	for i := 0; i < runIdx; i++ {
-		cp := copyElement(runs[i].Element)
+	for i := 0; i < breakIdx; i++ {
+		cp := copyElement(children[i])
 		if cp != nil {
 			newP.Element.AddChild(cp)
+		}
+	}
+	breakEl := copyElement(children[breakIdx])
+	if breakEl != nil {
+		stripFromBreak(breakEl)
+		if len(breakEl.Children()) > 0 {
+			newP.Element.AddChild(breakEl)
 		}
 	}
 	return NewParagraph(newP)
@@ -76,31 +118,37 @@ func (rpb *RenderedPageBreak) FollowingParagraphFragment() *Paragraph {
 		return nil
 	}
 	parent := rpb.parent.p
-	runs := parent.R_lst()
-	runIdx := -1
-	for i, r := range runs {
-		for _, c := range r.Element.Children() {
-			if c.ClarkTag() == ns.Qn("w:lastRenderedPageBreak") {
-				runIdx = i
-				break
-			}
-		}
-		if runIdx >= 0 {
+	children := parent.Element.Children()
+	breakIdx := -1
+	for i, c := range children {
+		tag := c.ClarkTag()
+		if tag == ns.Qn("w:r") && findBreakInRun(c) {
+			breakIdx = i
+			break
+		} else if tag == ns.Qn("w:hyperlink") && findBreakInHyperlink(c) {
+			breakIdx = i
 			break
 		}
 	}
-	if runIdx < 0 {
-		return nil
-	}
-	if runIdx >= len(runs)-1 {
+	if breakIdx < 0 {
 		return nil
 	}
 	newP := text.NewCT_P()
-	for i := runIdx + 1; i < len(runs); i++ {
-		cp := copyElement(runs[i].Element)
+	breakEl := copyElement(children[breakIdx])
+	if breakEl != nil {
+		stripBeforeBreak(breakEl)
+		if len(breakEl.Children()) > 0 {
+			newP.Element.AddChild(breakEl)
+		}
+	}
+	for i := breakIdx + 1; i < len(children); i++ {
+		cp := copyElement(children[i])
 		if cp != nil {
 			newP.Element.AddChild(cp)
 		}
+	}
+	if len(newP.Element.Children()) == 0 {
+		return nil
 	}
 	return NewParagraph(newP)
 }

@@ -19,8 +19,8 @@ func TestDescribeFont(t *testing.T) {
 	t.Run("it_sets_and_gets_size", func(t *testing.T) {
 		f := NewFont(text.NewCT_RPr())
 		assert.Equal(t, float64(0), f.Size())
-		f.SetSize(12)
-		assert.Equal(t, float64(12), f.Size())
+		f.SetSize(152400)
+		assert.Equal(t, float64(152400), f.Size())
 	})
 
 	t.Run("it_sets_and_gets_bold", func(t *testing.T) {

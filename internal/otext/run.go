@@ -3,6 +3,7 @@ package otext
 import (
 	"strings"
 
+	"github.com/SamYue1/go-docx/internal/oxml/dom"
 	"github.com/SamYue1/go-docx/internal/oxml/ns"
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
 )
@@ -110,7 +111,11 @@ func (rn *Run) Style() (string, bool) {
 	if rStyle == nil {
 		return "", false
 	}
-	return rStyle.GetAttr(ns.NsMap["w"], "val")
+	val, ok := rStyle.GetAttr(ns.NsMap["w"], "val")
+	if ok {
+		return val, true
+	}
+	return "", false
 }
 
 func (rn *Run) SetStyle(name string) {
@@ -158,6 +163,14 @@ func (rn *Run) LastChildLocal() string {
 	return children[len(children)-1].Local()
 }
 
+func (rn *Run) AddDrawing() {
+	if rn == nil || rn.r == nil {
+		return
+	}
+	drawing := dom.NewElement(ns.NsMap["w"], "drawing")
+	rn.r.Element.AddChild(drawing)
+}
+
 func (rn *Run) ContainsPageBreak() bool {
 	if rn == nil || rn.r == nil {
 		return false
@@ -165,6 +178,11 @@ func (rn *Run) ContainsPageBreak() bool {
 	for _, br := range rn.r.Br_lst() {
 		typ, ok := br.Element.GetAttr(ns.NsMap["w"], "type")
 		if ok && typ == "page" {
+			return true
+		}
+	}
+	for _, c := range rn.r.Element.Children() {
+		if c.Local() == "lastRenderedPageBreak" {
 			return true
 		}
 	}

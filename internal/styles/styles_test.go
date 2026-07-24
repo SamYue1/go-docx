@@ -163,23 +163,23 @@ func TestDescribeStyle(t *testing.T) {
 		assert.Equal(t, "numbering", typ)
 	})
 
-	t.Run("it_checks_builtin_when_qFormat_present", func(t *testing.T) {
+	t.Run("it_checks_builtin_based_on_customStyle", func(t *testing.T) {
 		st := &Style{style: oxml.NewCT_Style("paragraph", "Normal")}
-		assert.False(t, st.BuiltIn())
-
-		qfEl := dom.NewElement(ns.NsMap["w"], "qFormat")
-		st.style.Element.AddChild(qfEl)
 		assert.True(t, st.BuiltIn())
+
+		st.style.SetCustomStyle("true")
+		assert.False(t, st.BuiltIn())
 	})
 
-	t.Run("it_sets_builtin_does_not_create_qFormat_due_to_ctonoff_tag_mismatch", func(t *testing.T) {
+	t.Run("it_sets_builtin_correctly", func(t *testing.T) {
 		st := &Style{style: oxml.NewCT_Style("paragraph", "Heading1")}
+		assert.True(t, st.BuiltIn())
+
+		st.SetBuiltIn(false)
 		assert.False(t, st.BuiltIn())
 
 		st.SetBuiltIn(true)
-		// NOTE: SetBuiltIn uses NewCT_OnOff which creates element with tag "CT_OnOff",
-		// but BuiltIn checks for "qFormat" child, so they don't match.
-		assert.False(t, st.BuiltIn())
+		assert.True(t, st.BuiltIn())
 	})
 
 	t.Run("it_gets_base_style", func(t *testing.T) {

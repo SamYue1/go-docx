@@ -54,6 +54,14 @@ func (r *CT_RPr) Sz() *CT_HpsMeasure {
 	return &CT_HpsMeasure{Element: el}
 }
 
+func (r *CT_RPr) SzCs() *CT_HpsMeasure {
+	el := findChild(r.Element, wqn("szCs"))
+	if el == nil {
+		return nil
+	}
+	return &CT_HpsMeasure{Element: el}
+}
+
 func (r *CT_RPr) GetOrAddSz() *CT_HpsMeasure {
 	el := xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:sz")
 	return &CT_HpsMeasure{Element: el}

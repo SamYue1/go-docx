@@ -30,13 +30,23 @@ func (p *Paragraph) Text() string {
 		return ""
 	}
 	var result string
-	for _, r := range p.p.R_lst() {
-		for _, t := range r.T_lst() {
-			result += t.Text()
-		}
-		for _, br := range r.Br_lst() {
-			_ = br
-			result += "\n"
+	for _, c := range p.p.Element.Children() {
+		tag := c.ClarkTag()
+		if tag == ns.Qn("w:r") {
+			r := &text.CT_R{Element: c}
+			for _, t := range r.T_lst() {
+				result += t.Text()
+			}
+			for range r.Br_lst() {
+				result += "\n"
+			}
+		} else if tag == ns.Qn("w:hyperlink") {
+			h := &text.CT_Hyperlink{Element: c}
+			for _, r := range h.R_lst() {
+				for _, t := range r.T_lst() {
+					result += t.Text()
+				}
+			}
 		}
 	}
 	return result

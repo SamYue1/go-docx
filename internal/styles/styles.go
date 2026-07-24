@@ -2,6 +2,7 @@ package styles
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/SamYue1/go-docx/internal/oxml"
 	"github.com/SamYue1/go-docx/internal/oxml/dom"
@@ -24,6 +25,12 @@ func (s *Styles) CT_Styles() *oxml.CT_Styles {
 
 func (s *Styles) Style(name string) *Style {
 	for _, st := range s.styles.Style_lst() {
+		sid, ok := st.StyleId()
+		if ok && sid == name {
+			return &Style{style: st}
+		}
+	}
+	for _, st := range s.styles.Style_lst() {
 		n := st.Name()
 		if n != nil {
 			val, _ := n.Val()
@@ -31,9 +38,20 @@ func (s *Styles) Style(name string) *Style {
 				return &Style{style: st}
 			}
 		}
+	}
+	for _, st := range s.styles.Style_lst() {
 		sid, ok := st.StyleId()
-		if ok && sid == name {
+		if ok && strings.EqualFold(sid, name) {
 			return &Style{style: st}
+		}
+	}
+	for _, st := range s.styles.Style_lst() {
+		n := st.Name()
+		if n != nil {
+			val, _ := n.Val()
+			if strings.EqualFold(val, name) {
+				return &Style{style: st}
+			}
 		}
 	}
 	return nil
@@ -42,10 +60,14 @@ func (s *Styles) Style(name string) *Style {
 func (s *Styles) AddStyle(typ, name string) *Style {
 	st := s.styles.AddStyle()
 	st.SetType(typ)
+	st.SetStyleId(name)
+	st.SetCustomStyle("true")
 	if st.Name() == nil {
 		nameEl := dom.NewElement(ns.NsMap["w"], "name")
 		nameEl.SetAttr(ns.NsMap["w"], "val", name)
 		st.Element.AddChild(nameEl)
+	} else {
+		st.Name().SetVal(name)
 	}
 	return &Style{style: st}
 }
@@ -180,7 +202,16 @@ func (s *Style) SetNextStyle(name string) {
 }
 
 func (s *Style) BuiltIn() bool {
-	return s.style.QFormat() != nil
+	v, ok := s.style.CustomStyle()
+	if !ok {
+		return true
+	}
+	switch v {
+	case "true", "1", "on":
+		return false
+	default:
+		return true
+	}
 }
 
 func (s *Style) Hidden() bool {
@@ -299,10 +330,9 @@ func (s *Style) SetUnhideWhenUsed(val bool) {
 
 func (s *Style) SetBuiltIn(val bool) {
 	if val {
-		if s.style.QFormat() == nil {
-			el := oxml.NewCT_OnOff(true)
-			s.style.Element.AddChild(el.Element)
-		}
+		s.style.Element.RemoveAttr(ns.NsMap["w"], "customStyle")
+	} else {
+		s.style.SetCustomStyle("true")
 	}
 }
 

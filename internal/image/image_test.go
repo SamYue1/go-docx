@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
-	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -460,35 +459,30 @@ func TestDescribeKnownImagesFromStream(t *testing.T) {
 	}
 }
 
-func TestDescribeImageFailsForUnsupportedFormats(t *testing.T) {
-	cases := []struct {
-		name string
-		path string
-		fail string
-	}{
-		{
-			name: "lena.bmp",
-			path: "../../test/features/steps/test_files/lena.bmp",
-			fail: "unknown format",
-		},
-		{
-			name: "sample.tif",
-			path: "../../test/features/steps/test_files/sample.tif",
-			fail: "unknown format",
-		},
-	}
+func TestDescribeBmpAndTiffImages(t *testing.T) {
+	t.Run("lena_bmp", func(t *testing.T) {
+		data, err := os.ReadFile("../../test/features/steps/test_files/lena.bmp")
+		if err != nil {
+			t.Skipf("test image not found: %v", err)
+		}
+		img, err := FromBytes(data)
+		assert.NoError(t, err)
+		assert.Equal(t, "bmp", img.Ext)
+		assert.Equal(t, 512, img.Width)
+		assert.Equal(t, 512, img.Height)
+	})
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			data, err := os.ReadFile(c.path)
-			if err != nil {
-				t.Skipf("test image not found: %v", err)
-			}
-			_, err = FromBytes(data)
-			assert.Error(t, err)
-			assert.Contains(t, fmt.Sprint(err), c.fail)
-		})
-	}
+	t.Run("sample_tif", func(t *testing.T) {
+		data, err := os.ReadFile("../../test/features/steps/test_files/sample.tif")
+		if err != nil {
+			t.Skipf("test image not found: %v", err)
+		}
+		img, err := FromBytes(data)
+		assert.NoError(t, err)
+		assert.Equal(t, "tiff", img.Ext)
+		assert.Equal(t, 1600, img.Width)
+		assert.Equal(t, 2100, img.Height)
+	})
 
 	t.Run("detectFormat_still_works_for_bmp", func(t *testing.T) {
 		data, err := os.ReadFile("../../test/features/steps/test_files/lena.bmp")
@@ -506,14 +500,14 @@ func TestDescribeImageFailsForUnsupportedFormats(t *testing.T) {
 		assert.Equal(t, FormatTIFF, detectFormat(data))
 	})
 
-	t.Run("bmp_dpi_defaults_to_72", func(t *testing.T) {
+	t.Run("bmp_dpi_defaults_to_96", func(t *testing.T) {
 		data, err := os.ReadFile("../../test/features/steps/test_files/lena.bmp")
 		if err != nil {
 			t.Skipf("test image not found: %v", err)
 		}
 		dpi := readDPI(data, FormatBMP)
-		assert.Equal(t, DefaultDPI, dpi.Horizontal)
-		assert.Equal(t, DefaultDPI, dpi.Vertical)
+		assert.Equal(t, 96, dpi.Horizontal)
+		assert.Equal(t, 96, dpi.Vertical)
 	})
 
 	t.Run("gif_dpi_defaults_to_72", func(t *testing.T) {
@@ -526,14 +520,24 @@ func TestDescribeImageFailsForUnsupportedFormats(t *testing.T) {
 		assert.Equal(t, DefaultDPI, dpi.Vertical)
 	})
 
-	t.Run("tiff_dpi_defaults_to_72", func(t *testing.T) {
+	t.Run("tiff_dpi_reads_actual", func(t *testing.T) {
 		data, err := os.ReadFile("../../test/features/steps/test_files/sample.tif")
 		if err != nil {
 			t.Skipf("test image not found: %v", err)
 		}
 		dpi := readDPI(data, FormatTIFF)
-		assert.Equal(t, DefaultDPI, dpi.Horizontal)
-		assert.Equal(t, DefaultDPI, dpi.Vertical)
+		assert.Equal(t, 200, dpi.Horizontal)
+		assert.Equal(t, 200, dpi.Vertical)
+	})
+
+	t.Run("bmp_dpi_reads_actual", func(t *testing.T) {
+		data, err := os.ReadFile("../../test/features/steps/test_files/lena.bmp")
+		if err != nil {
+			t.Skipf("test image not found: %v", err)
+		}
+		dpi := readDPI(data, FormatBMP)
+		assert.Equal(t, 96, dpi.Horizontal)
+		assert.Equal(t, 96, dpi.Vertical)
 	})
 }
 

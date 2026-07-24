@@ -1,6 +1,8 @@
 package otext
 
 import (
+	"strconv"
+
 	"github.com/SamYue1/go-docx/internal/oxml/dom"
 	"github.com/SamYue1/go-docx/internal/oxml/text"
 	"github.com/SamYue1/go-docx/internal/shared"
@@ -17,14 +19,35 @@ func NewTabStops(tabs *text.CT_TabStops, pPr *text.CT_PPr) *TabStops {
 
 func (ts *TabStops) AddTabStop(position shared.Length, alignment, leader string) *TabStop {
 	tab := text.NewCT_TabStop()
-	tab.SetPos(position.Twips())
+	pos := position.Twips()
+	tab.SetPos(pos)
 	if alignment != "" {
 		tab.SetVal(alignment)
 	}
 	if leader != "" {
 		tab.SetLeader(leader)
 	}
-	ts.tabs.Element.AddChild(tab.Element)
+	children := ts.tabs.Element.Children()
+	insertIdx := len(children)
+	for i, c := range children {
+		if c.Local() != "tab" {
+			continue
+		}
+		v, _ := c.GetAttr("http://schemas.openxmlformats.org/wordprocessingml/2006/main", "pos")
+		if v == "" {
+			continue
+		}
+		existingPos, _ := strconv.Atoi(v)
+		if pos < existingPos {
+			insertIdx = i
+			break
+		}
+	}
+	if insertIdx < len(children) {
+		ts.tabs.Element.InsertBefore(tab.Element, children[insertIdx])
+	} else {
+		ts.tabs.Element.AddChild(tab.Element)
+	}
 	return &TabStop{tab: tab}
 }
 
@@ -99,7 +122,7 @@ func (t *TabStop) Position() *shared.Length {
 }
 
 func (t *TabStop) SetPosition(val int) {
-	t.tab.SetPos(val)
+	t.tab.SetPos(val / 635)
 }
 
 func tabStopPosition(t *TabStop) int {

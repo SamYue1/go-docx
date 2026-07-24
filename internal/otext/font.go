@@ -42,18 +42,32 @@ func (f *Font) Size() float64 {
 	}
 	sz := f.rPr.Sz()
 	if sz == nil {
+		sz = f.rPr.SzCs()
+	}
+	if sz == nil {
 		return 0
 	}
 	val, ok := sz.Val()
 	if !ok {
 		return 0
 	}
-	return float64(val) / 2.0
+	return float64(val) * 6350
 }
 
-func (f *Font) SetSize(pt float64) {
+func (f *Font) SetSize(emu float64) {
+	if emu == 0 {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:sz") {
+				f.rPr.Element.RemoveChild(c)
+			}
+			if c.ClarkTag() == ns.Qn("w:szCs") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+		return
+	}
 	sz := f.rPr.GetOrAddSz()
-	sz.SetVal(int(pt * 2))
+	sz.SetVal(int(emu / 6350))
 }
 
 func (f *Font) Bold() bool {
@@ -125,6 +139,9 @@ func (f *Font) Underline() string {
 		return ""
 	}
 	val, _ := u.Val()
+	if val == "none" {
+		return ""
+	}
 	return val
 }
 
@@ -311,7 +328,7 @@ func (f *Font) HasColor() bool {
 	if f == nil || f.rPr == nil {
 		return false
 	}
-	return f.rPr.Color() != nil
+	return true
 }
 
 func (f *Font) SetUnderline(val string) {
