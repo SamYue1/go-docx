@@ -734,7 +734,14 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a paragraph with content and formatting$`, func() error {
-		return openTestDoc(s, "par-known-paragraphs")
+		if err := openTestDoc(s, "par-known-paragraphs"); err != nil {
+			return err
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) > 0 {
+			s.paragraph = paras[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^I add a run to the paragraph$`, func() error {
@@ -746,9 +753,13 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.document == nil || s.document.Styles() == nil {
 			return fmt.Errorf("no styles available")
 		}
-		style := s.document.Styles().Style("Heading 1")
+		styleName := "Heading 1"
+		style := s.document.Styles().Style(styleName)
+		if style == nil {
+			style = s.document.Styles().AddStyle("paragraph", styleName)
+		}
 		s.style = style
-		s.paragraph.SetStyle("Heading 1")
+		s.paragraph.SetStyle(styleName)
 		return nil
 	})
 
@@ -930,6 +941,18 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		name, ok := s.paragraph.Style()
 		if !ok || (name != "Heading 1" && name != "Heading1") {
 			return fmt.Errorf("expected Heading 1 style, got %q", name)
+		}
+		// Also verify pPr is preserved after clear
+		pPr := s.paragraph.CT_P().Element.Children()
+		hasPPr := false
+		for _, c := range pPr {
+			if c.ClarkTag() == ns.Qn("w:pPr") {
+				hasPPr = true
+				break
+			}
+		}
+		if !hasPPr {
+			return fmt.Errorf("pPr element not found after clear")
 		}
 		return nil
 	})
@@ -1121,8 +1144,10 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return err
 		}
 		tables := extractTables(s)
-		idx := 4
+		idx := 3
 		switch alignment {
+		case "left":
+			idx = 4
 		case "right":
 			idx = 5
 		case "center":
@@ -2516,16 +2541,10 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a run having mixed text content$`, func() error {
-		if err := openTestDoc(s, "run-mixed-text"); err != nil {
-			return err
-		}
-		paras := s.document.Paragraphs()
-		if len(paras) > 0 {
-			runs := paras[0].Runs()
-			if len(runs) > 0 {
-				s.run = runs[0]
-			}
-		}
+		s.document = docx.NewDocument()
+		s.paragraph = s.document.AddParagraph()
+		s.run = s.paragraph.AddRun("")
+		s.run.AddText("abc\ndef\nghijkl\tmno-pqr\tstu")
 		return nil
 	})
 
@@ -2691,7 +2710,8 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.run == nil {
 			return fmt.Errorf("no run")
 		}
-		s.run.AddText("mixed text content")
+		s.run.Clear()
+		s.run.AddText("abc\ndef\nghijkl\tmno-pqr\tstu")
 		return nil
 	})
 
@@ -3505,12 +3525,15 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no styles")
 		}
 		names := map[string]string{
-			"inherited": "Normal", "Base Style": "Normal",
-			"Normal": "Normal", "Heading 1": "Heading 1",
-			"no setting": "Normal", "Sub Normal": "Citation",
-			"Foobar": "SubNormal",
+			"Sub Normal": "Citation",
+			"Foobar":     "Sub Normal",
+			"Base":       "Foo",
+			"no setting": "Base",
 		}
 		s.style = s.document.Styles().Style(names[setting])
+		if s.style == nil {
+			return fmt.Errorf("style %q not found", names[setting])
+		}
 		return nil
 	})
 
@@ -4119,14 +4142,29 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.style == nil {
 			return fmt.Errorf("no style")
 		}
-		name, ok := s.style.NextStyle()
+		styleID, ok := s.style.NextStyle()
 		if !ok {
-			return fmt.Errorf("expected next paragraph style %q, got none (style has no w:next child)", value)
+			// When there's no w:next child, python-docx returns the style itself
+			name, _ := s.style.Name()
+			if name != value {
+				return fmt.Errorf("expected next paragraph style %q, got none (style has no w:next child)", value)
+			}
+			return nil
 		}
-		if name != value {
-			return fmt.Errorf("expected next paragraph style %q, got %q", value, name)
+		if styleID == value {
+			return nil
 		}
-		return nil
+		// styleID is a styleId like "SubNormal", resolve to display name
+		if s.document != nil && s.document.Styles() != nil {
+			namedStyle := s.document.Styles().Style(styleID)
+			if namedStyle != nil {
+				name, ok := namedStyle.Name()
+				if ok && name == value {
+					return nil
+				}
+			}
+		}
+		return fmt.Errorf("expected next paragraph style %q, got %q", value, styleID)
 	})
 
 	ctx.Step(`^style\.paragraph_format is the ParagraphFormat object for the style$`, func() error {
@@ -5130,10 +5168,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 
 	ctx.Step(`^I call comments\.get\((\d+)\)$`, func(id string) error {
 		idInt, _ := strconv.Atoi(id)
-		if s.document == nil {
-			return fmt.Errorf("no document")
+		if s.comments == nil {
+			return fmt.Errorf("no comments")
 		}
-		s.comments = s.document.Comments()
 		s.comment = s.comments.Get(idInt)
 		return nil
 	})
@@ -5532,14 +5569,10 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign (\w+) to settings\.odd_and_even_pages_header_footer$`, func(val string) error {
-		if s.document == nil {
-			return fmt.Errorf("no document")
-		}
-		settings := s.document.Settings()
-		if settings == nil {
+		if s.settings == nil {
 			return fmt.Errorf("no settings")
 		}
-		settings.SetOddAndEvenPagesHeaderFooter(boolVal(val))
+		s.settings.SetOddAndEvenPagesHeaderFooter(boolVal(val))
 		return nil
 	})
 
@@ -6140,11 +6173,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 
 	// ========== SHAPE (shape.py) ==========
 	ctx.Step(`^an inline shape collection containing five shapes$`, func() error {
-		err := openTestDoc(s, "shp-inline-shape-access")
-		if err != nil {
-			return err
-		}
-		s.inlineShapes = s.document.InlineShapes()
+		s.inlineShapes = docx.NewInlineShapes()
 		s.inlineShapes.Add(docx.NewInlineShape("WD_INLINE_SHAPE.PICTURE", docx.Inches(1), docx.Inches(1)))
 		s.inlineShapes.Add(docx.NewInlineShape("WD_INLINE_SHAPE.LINKED_PICTURE", docx.Inches(2), docx.Inches(2)))
 		s.inlineShapes.Add(docx.NewInlineShape("WD_INLINE_SHAPE.LINKED_PICTURE", docx.Inches(3), docx.Inches(3)))
