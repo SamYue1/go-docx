@@ -106,7 +106,7 @@ func (pkg *OpcPackage) NextPartname(template string) PackURI {
 
 func (pkg *OpcPackage) PartRelatedBy(relType string) *Part {
 	rel := pkg.rels.getRelOfType(relType)
-	if rel.isExternal {
+	if rel == nil || rel.isExternal {
 		return nil
 	}
 	return rel.targetPart

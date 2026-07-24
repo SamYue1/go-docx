@@ -76,8 +76,11 @@ func (rs *Relationships) GetOrAddExtRel(relType string, targetRef string) string
 
 func (rs *Relationships) PartWithReltype(relType string) *Part {
 	rel := rs.getRelOfType(relType)
+	if rel == nil {
+		return nil
+	}
 	if rel.isExternal {
-		panic(fmt.Sprintf("opc: relationship of type '%s' is external, cannot get target part", relType))
+		return nil
 	}
 	return rel.targetPart
 }
@@ -157,10 +160,10 @@ func (rs *Relationships) getRelOfType(relType string) *Relationship {
 		}
 	}
 	if len(matching) == 0 {
-		panic(fmt.Sprintf("opc: no relationship of type '%s' in collection", relType))
+		return nil
 	}
 	if len(matching) > 1 {
-		panic(fmt.Sprintf("opc: multiple relationships of type '%s' in collection", relType))
+		return matching[0]
 	}
 	return matching[0]
 }
