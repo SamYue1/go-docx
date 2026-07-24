@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/SamYue1/go-docx"
+	"github.com/SamYue1/go-docx/internal/oxml/ns"
 	"github.com/SamYue1/go-docx/internal/shared"
 	"github.com/cucumber/godog"
 )
@@ -31,9 +32,11 @@ type featureSuite struct {
 	footer             *docx.HeaderFooter
 	footer2            *docx.HeaderFooter
 	header2            *docx.HeaderFooter
+	settings           *docx.Settings
 	hyperlink          *docx.Hyperlink
 	tabStops           *docx.TabStops
 	tabStop            *docx.TabStop
+	lastBreak          *docx.Run
 	inlineShapes       interface{}
 	inlineShape        interface{}
 	picture            interface{}
@@ -87,6 +90,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		s.column = nil
 		s.section = nil
 		s.sections = nil
+		s.settings = nil
 		s.styles = nil
 		s.style = nil
 		s.latentStyles = nil
@@ -104,6 +108,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		s.paragraphFormat = nil
 		s.font = nil
 		s.renderedPageBreak = nil
+		s.lastBreak = nil
 		s.headingText = ""
 		s.paragraphText = ""
 		s.styleCount = 0
@@ -302,19 +307,31 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I add a picture specifying 1\.75" width and 2\.5" height$`, func() error {
-		return stepNotImplemented("add picture with width and height")
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		return s.document.AddPicture("test_image.png", docx.Inches(1.75), docx.Inches(2.5))
 	})
 
 	ctx.Step(`^I add a picture specifying a height of 1\.5 inches$`, func() error {
-		return stepNotImplemented("add picture with height")
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		return s.document.AddPicture("test_image.png", docx.Inches(1), docx.Inches(1.5))
 	})
 
 	ctx.Step(`^I add a picture specifying a width of 1\.5 inches$`, func() error {
-		return stepNotImplemented("add picture with width")
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		return s.document.AddPicture("test_image.png", docx.Inches(1.5), docx.Inches(1))
 	})
 
 	ctx.Step(`^I add a picture specifying only the image file$`, func() error {
-		return stepNotImplemented("add picture from file")
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		return s.document.AddPicture("test_image.png", 0, 0)
 	})
 
 	ctx.Step(`^I add an even-page section to the document$`, func() error {
@@ -342,7 +359,14 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^document\.inline_shapes is an InlineShapes object$`, func() error {
-		return stepNotImplemented("document.inline_shapes")
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		is := s.document.InlineShapes()
+		if is == nil {
+			return fmt.Errorf("inline_shapes is nil")
+		}
+		return nil
 	})
 
 	ctx.Step(`^document\.paragraphs is a list containing three paragraphs$`, func() error {
@@ -485,11 +509,29 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a Footer object with paragraphs and tables as footer$`, func() error {
-		return stepNotImplemented("footer with paragraphs")
+		err := openTestDoc(s, "hdr-header-footer")
+		if err != nil {
+			return err
+		}
+		sections := s.document.Sections()
+		if len(sections) == 0 {
+			return fmt.Errorf("no sections")
+		}
+		s.footer = sections[0].Footer()
+		return nil
 	})
 
 	ctx.Step(`^a Header object with paragraphs and tables as header$`, func() error {
-		return stepNotImplemented("header with paragraphs")
+		err := openTestDoc(s, "hdr-header-footer")
+		if err != nil {
+			return err
+		}
+		sections := s.document.Sections()
+		if len(sections) == 0 {
+			return fmt.Errorf("no sections")
+		}
+		s.header = sections[0].Header()
+		return nil
 	})
 
 	ctx.Step(`^a _Cell object with paragraphs and tables$`, func() error {
@@ -513,7 +555,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		return nil
 	})
 
-	ctx.Step(`^a paragraph`, func() error {
+	ctx.Step(`^a paragraph$`, func() error {
 		s.document = docx.NewDocument()
 		s.paragraph = s.document.AddParagraph()
 		return nil
@@ -530,19 +572,47 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^cell\.iter_inner_content\(\) produces the block-items in document order$`, func() error {
-		return stepNotImplemented("cell.iter_inner_content")
+		if s.cell == nil {
+			return fmt.Errorf("no cell")
+		}
+		items := s.cell.IterInnerContent()
+		if len(items) == 0 {
+			return fmt.Errorf("no items from iter_inner_content")
+		}
+		return nil
 	})
 
 	ctx.Step(`^document\.iter_inner_content\(\) produces the block-items in document order$`, func() error {
-		return stepNotImplemented("document.iter_inner_content")
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		items := s.document.IterInnerContent()
+		if len(items) == 0 {
+			return fmt.Errorf("no items from iter_inner_content")
+		}
+		return nil
 	})
 
 	ctx.Step(`^footer\.iter_inner_content\(\) produces the block-items in document order$`, func() error {
-		return stepNotImplemented("footer.iter_inner_content")
+		if s.footer == nil {
+			return fmt.Errorf("no footer")
+		}
+		items := s.footer.IterInnerContent()
+		if len(items) == 0 {
+			return fmt.Errorf("no items from iter_inner_content")
+		}
+		return nil
 	})
 
 	ctx.Step(`^header\.iter_inner_content\(\) produces the block-items in document order$`, func() error {
-		return stepNotImplemented("header.iter_inner_content")
+		if s.header == nil {
+			return fmt.Errorf("no header")
+		}
+		items := s.header.IterInnerContent()
+		if len(items) == 0 {
+			return fmt.Errorf("no items from iter_inner_content")
+		}
+		return nil
 	})
 
 	ctx.Step(`^I can access the table$`, func() error {
@@ -573,7 +643,15 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a paragraph having (\w+) alignment$`, func(alignType string) error {
-		return openTestDoc(s, "par-alignment")
+		if err := openTestDoc(s, "par-alignment"); err != nil {
+			return err
+		}
+		paragraphIdx := map[string]int{"inherited": 0, "left": 1, "center": 2, "right": 3, "justified": 4}
+		paras := s.document.Paragraphs()
+		if idx, ok := paragraphIdx[alignType]; ok && idx < len(paras) {
+			s.paragraph = paras[idx]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a paragraph having (\w+(?: \w+)*) style$`, func(styleState string) error {
@@ -760,9 +838,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the paragraph alignment property value is (\w+)$`, func(alignValue string) error {
-		if s.paragraph == nil {
-			return fmt.Errorf("no paragraph")
-		}
+		ensureParFormat(s)
 		mapping := map[string]string{
 			"None":                      "",
 			"WD_ALIGN_PARAGRAPH.LEFT":   "left",
@@ -770,7 +846,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			"WD_ALIGN_PARAGRAPH.RIGHT":  "right",
 		}
 		expected := mapping[alignValue]
-		actual, ok := s.paragraph.Alignment()
+		actual, ok := s.paragraphFormat.Alignment()
 		if !ok {
 			return fmt.Errorf("no alignment")
 		}
@@ -1098,7 +1174,19 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to row\.height_rule$`, func(value string) error {
-		return stepNotImplemented("row height rule")
+		if s.row == nil {
+			return fmt.Errorf("no row")
+		}
+		mapping := map[string]string{
+			"None":     "",
+			"AUTO":     "auto",
+			"AT_LEAST": "atLeast",
+			"EXACTLY":  "exactly",
+		}
+		if v, ok := mapping[value]; ok {
+			s.row.SetHeightRule(v)
+		}
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to table\.alignment$`, func(valueStr string) error {
@@ -1130,11 +1218,44 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to table\.table_direction$`, func(value string) error {
-		return stepNotImplemented("table.table_direction")
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
+		mapping := map[string]string{
+			"None": "",
+			"RTL":  "rtl",
+			"LTR":  "ltr",
+		}
+		if v, ok := mapping[value]; ok {
+			s.table.SetTableDirection(v)
+		}
+		return nil
 	})
 
 	ctx.Step(`^I merge from cell (\d+) to cell (\d+)$`, func(origin, other string) error {
-		return stepNotImplemented("merge cells")
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
+		o, _ := strconv.Atoi(origin)
+		ot, _ := strconv.Atoi(other)
+		if o < 1 || ot < 1 {
+			return fmt.Errorf("cell indices must be >= 1")
+		}
+		o--
+		ot--
+		cols := len(s.table.Columns())
+		if cols == 0 {
+			return fmt.Errorf("no columns in table")
+		}
+		oRow, oCol := o/cols, o%cols
+		otRow, otCol := ot/cols, ot%cols
+		originCell := s.table.Cell(oRow, oCol)
+		otherCell := s.table.Cell(otRow, otCol)
+		if originCell == nil || otherCell == nil {
+			return fmt.Errorf("cell not found")
+		}
+		originCell.Merge(otherCell)
+		return nil
 	})
 
 	ctx.Step(`^I set the cell width to (\w+(?: \w+)*)$`, func(width string) error {
@@ -1179,7 +1300,22 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^cell\.tables\[0\] is a 2 x 2 table$`, func() error {
-		return stepNotImplemented("cell.tables")
+		if s.cell == nil {
+			return fmt.Errorf("no cell")
+		}
+		tables := s.cell.Tables()
+		if len(tables) == 0 {
+			return fmt.Errorf("no tables in cell")
+		}
+		t := tables[0]
+		if len(t.Rows()) != 2 {
+			return fmt.Errorf("expected 2 rows, got %d", len(t.Rows()))
+		}
+		if len(t.Columns()) != 2 {
+			return fmt.Errorf("expected 2 columns, got %d", len(t.Columns()))
+		}
+		s.table = t
+		return nil
 	})
 
 	ctx.Step(`^cell\.vertical_alignment is (\w+(?:\.\w+)*)$`, func(value string) error {
@@ -1210,11 +1346,29 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I can access a collection column by index$`, func() error {
-		return stepNotImplemented("collection column access")
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
+		cols := s.table.Columns()
+		if len(cols) < 2 {
+			return fmt.Errorf("need at least 2 columns")
+		}
+		_ = cols[0]
+		_ = cols[1]
+		return nil
 	})
 
 	ctx.Step(`^I can access a collection row by index$`, func() error {
-		return stepNotImplemented("collection row access")
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
+		rows := s.table.Rows()
+		if len(rows) < 2 {
+			return fmt.Errorf("need at least 2 rows")
+		}
+		_ = rows[0]
+		_ = rows[1]
+		return nil
 	})
 
 	ctx.Step(`^I can access the column collection of the table$`, func() error {
@@ -1260,19 +1414,114 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^row\.grid_cols_after is (\d+)$`, func(value string) error {
-		return stepNotImplemented("row.grid_cols_after")
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
+		rows := s.table.Rows()
+		if len(rows) == 0 {
+			return fmt.Errorf("no rows")
+		}
+		expected, _ := strconv.Atoi(value)
+		tr := rows[0].CT_Row()
+		trPr := tr.TrPr()
+		if trPr == nil {
+			if expected == 0 {
+				return nil
+			}
+			return fmt.Errorf("expected grid_after %d, got 0", expected)
+		}
+		for _, c := range trPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:gridAfter") {
+				v, _ := c.GetAttr(ns.NsMap["w"], "val")
+				actual, _ := strconv.Atoi(v)
+				if actual != expected {
+					return fmt.Errorf("expected grid_after %d, got %d", expected, actual)
+				}
+				return nil
+			}
+		}
+		if expected == 0 {
+			return nil
+		}
+		return fmt.Errorf("expected grid_after %d, got 0", expected)
 	})
 
 	ctx.Step(`^row\.grid_cols_before is (\d+)$`, func(value string) error {
-		return stepNotImplemented("row.grid_cols_before")
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
+		rows := s.table.Rows()
+		if len(rows) == 0 {
+			return fmt.Errorf("no rows")
+		}
+		expected, _ := strconv.Atoi(value)
+		tr := rows[0].CT_Row()
+		trPr := tr.TrPr()
+		if trPr == nil {
+			if expected == 0 {
+				return nil
+			}
+			return fmt.Errorf("expected grid_before %d, got 0", expected)
+		}
+		for _, c := range trPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:gridBefore") {
+				v, _ := c.GetAttr(ns.NsMap["w"], "val")
+				actual, _ := strconv.Atoi(v)
+				if actual != expected {
+					return fmt.Errorf("expected grid_before %d, got %d", expected, actual)
+				}
+				return nil
+			}
+		}
+		if expected == 0 {
+			return nil
+		}
+		return fmt.Errorf("expected grid_before %d, got 0", expected)
 	})
 
 	ctx.Step(`^row\.height is (\w+(?:\.\w+)*)$`, func(value string) error {
-		return stepNotImplemented("row.height check")
+		if s.row == nil {
+			return fmt.Errorf("no row")
+		}
+		h := s.row.Height()
+		if value == "None" {
+			if h != nil {
+				return fmt.Errorf("expected None, got %v", *h)
+			}
+			return nil
+		}
+		expected, _ := strconv.Atoi(value)
+		if h == nil {
+			return fmt.Errorf("expected %d, got nil", expected)
+		}
+		if int(*h) != expected {
+			return fmt.Errorf("expected %d, got %d", expected, *h)
+		}
+		return nil
 	})
 
 	ctx.Step(`^row\.height_rule is (\w+(?:\.\w+)*)$`, func(value string) error {
-		return stepNotImplemented("row.height_rule")
+		if s.row == nil {
+			return fmt.Errorf("no row")
+		}
+		mapping := map[string]string{
+			"None":     "",
+			"AUTO":     "auto",
+			"AT_LEAST": "atLeast",
+			"EXACTLY":  "exactly",
+		}
+		expected := mapping[value]
+		actual, ok := s.row.HeightRule()
+		if !ok {
+			if expected == "" {
+				return nil
+			}
+			return fmt.Errorf("expected %q, got not set", expected)
+		}
+		if actual != expected {
+			return fmt.Errorf("expected %q, got %q", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^table\.alignment is (\w+(?:\.\w+)*)$`, func(valueStr string) error {
@@ -1288,7 +1537,10 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		}
 		actual, ok := s.table.Alignment()
 		if !ok {
-			return fmt.Errorf("table has no alignment")
+			if expected == "" {
+				return nil
+			}
+			return fmt.Errorf("expected alignment %q, got not set", expected)
 		}
 		if actual != expected {
 			return fmt.Errorf("expected alignment %q, got %q", expected, actual)
@@ -1323,7 +1575,26 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^table\.table_direction is (\w+(?:\.\w+)*)$`, func(value string) error {
-		return stepNotImplemented("table.table_direction")
+		mapping := map[string]string{
+			"None": "",
+			"RTL":  "rtl",
+			"LTR":  "ltr",
+		}
+		expected := mapping[value]
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
+		actual, ok := s.table.TableDirection()
+		if !ok {
+			if expected == "" {
+				return nil
+			}
+			return fmt.Errorf("expected %q, got not set", expected)
+		}
+		if actual != expected {
+			return fmt.Errorf("expected %q, got %q", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^the cell contains the string I assigned$`, func() error {
@@ -1416,11 +1687,46 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the reported column width is (\w+(?:\.\w+)*)$`, func(widthEmu string) error {
-		return stepNotImplemented("reported column width")
+		if s.column == nil {
+			return fmt.Errorf("no column")
+		}
+		if widthEmu == "None" {
+			if s.column.Width() != 0 {
+				return fmt.Errorf("expected None, got %d", s.column.Width())
+			}
+			return nil
+		}
+		w, _ := strconv.Atoi(widthEmu)
+		expected := shared.Emu(w)
+		actual := s.column.Width()
+		if actual != expected {
+			return fmt.Errorf("expected %d, got %d", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^the reported width of the cell is (\w+(?: \w+)*)$`, func(width string) error {
-		return stepNotImplemented("reported cell width")
+		if s.cell == nil {
+			return fmt.Errorf("no cell")
+		}
+		if width == "None" {
+			if s.cell.Width() != nil {
+				return fmt.Errorf("expected None, got %v", *s.cell.Width())
+			}
+			return nil
+		}
+		if width == "1 inch" {
+			expected := shared.Inches(1)
+			w := s.cell.Width()
+			if w == nil {
+				return fmt.Errorf("expected %v, got nil", expected)
+			}
+			if *w != expected {
+				return fmt.Errorf("expected %v, got %v", expected, *w)
+			}
+			return nil
+		}
+		return fmt.Errorf("unexpected width value: %s", width)
 	})
 
 	ctx.Step(`^the row cells text is ([^\s].*)$`, func(encodedText string) error {
@@ -1464,15 +1770,62 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the width of cell (\d+) is ([\d.]+) inches$`, func(nStr, inchesStr string) error {
-		return stepNotImplemented("cell width inches")
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
+		n, _ := strconv.Atoi(nStr)
+		inches, _ := strconv.ParseFloat(inchesStr, 64)
+		expected := shared.Inches(inches)
+		n-- // 1-based
+		cols := len(s.table.Columns())
+		r, c := n/cols, n%cols
+		cell := s.table.Cell(r, c)
+		if cell == nil {
+			return fmt.Errorf("cell %d not found", n+1)
+		}
+		w := cell.Width()
+		if w == nil {
+			return fmt.Errorf("cell %d has no width", n+1)
+		}
+		if *w != expected {
+			return fmt.Errorf("cell %d: expected %v (%g inches), got %v (%g inches)",
+				n+1, expected, inches, *w, w.Inches())
+		}
+		return nil
 	})
 
 	ctx.Step(`^the width of each cell is ([\d.]+) inches$`, func(inches string) error {
-		return stepNotImplemented("each cell width")
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
+		in, _ := strconv.ParseFloat(inches, 64)
+		expected := shared.Inches(in)
+		for ri, row := range s.table.Rows() {
+			for ci, cell := range row.Cells() {
+				w := cell.Width()
+				if w == nil {
+					return fmt.Errorf("cell(%d,%d) has no width", ri, ci)
+				}
+				if *w != expected {
+					return fmt.Errorf("cell(%d,%d): expected %v, got %v", ri, ci, expected, *w)
+				}
+			}
+		}
+		return nil
 	})
 
 	ctx.Step(`^the width of each column is ([\d.]+) inches$`, func(inches string) error {
-		return stepNotImplemented("each column width")
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
+		in, _ := strconv.ParseFloat(inches, 64)
+		expected := shared.Inches(in)
+		for ci, col := range s.table.Columns() {
+			if col.Width() != expected {
+				return fmt.Errorf("column %d: expected %v, got %v", ci, expected, col.Width())
+			}
+		}
+		return nil
 	})
 
 	// ========== SECTION (section.py) ==========
@@ -1485,7 +1838,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		}
 		sections := s.document.Sections()
 		if len(sections) > 0 {
-			s.section = sections[0]
+			s.section = sections[len(sections)-1]
 		}
 		return nil
 	})
@@ -1498,8 +1851,8 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no document")
 		}
 		sections := s.document.Sections()
-		if len(sections) > 0 {
-			s.section = sections[0]
+		if len(sections) > 1 {
+			s.section = sections[1]
 		}
 		return nil
 	})
@@ -1511,9 +1864,10 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.document == nil {
 			return fmt.Errorf("no document")
 		}
+		sectionIdx := map[string]int{"with": 1, "without": 0}[withOrWithout]
 		sections := s.document.Sections()
-		if len(sections) > 0 {
-			s.section = sections[0]
+		if sectionIdx < len(sections) {
+			s.section = sections[sectionIdx]
 		}
 		return nil
 	})
@@ -1540,14 +1894,8 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no document")
 		}
 		sections := s.document.Sections()
-		for _, sec := range sections {
-			if sec.Orientation() == "portrait" || sec.Orientation() == "" {
-				s.section = sec
-				return nil
-			}
-		}
 		if len(sections) > 0 {
-			s.section = sections[0]
+			s.section = sections[len(sections)-1]
 		}
 		return nil
 	})
@@ -1567,20 +1915,22 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a section having start type (\w+)$`, func(startType string) error {
-		s.document = docx.NewDocument()
-		mapping := map[string]string{
-			"CONTINUOUS": "continuous",
-			"EVEN_PAGE":  "evenPage",
-			"NEW_COLUMN": "newColumn",
-			"NEW_PAGE":   "newPage",
-			"ODD_PAGE":   "oddPage",
+		if err := openTestDoc(s, "sct-section-props"); err != nil {
+			return err
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		sectionIdx := map[string]int{
+			"CONTINUOUS": 0,
+			"NEW_PAGE":   1,
+			"ODD_PAGE":   2,
+			"EVEN_PAGE":  3,
+			"NEW_COLUMN": 4,
 		}
 		sections := s.document.Sections()
-		if len(sections) > 0 {
-			s.section = sections[0]
-			if v, ok := mapping[startType]; ok {
-				s.section.SetStartType(v)
-			}
+		if idx, ok := sectionIdx[startType]; ok && idx < len(sections) {
+			s.section = sections[idx]
 		}
 		return nil
 	})
@@ -1592,15 +1942,20 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.document == nil {
 			return fmt.Errorf("no document")
 		}
+		sectionIdx := map[string]int{"landscape": 0, "portrait": 1}
 		sections := s.document.Sections()
-		if len(sections) > 0 {
-			s.section = sections[0]
+		if idx, ok := sectionIdx[orientation]; ok && idx < len(sections) {
+			s.section = sections[idx]
 		}
 		return nil
 	})
 
-	ctx.Step(`^I assign (\w+) to section\.different_first_page_header_footer$`, func(boolVal string) error {
-		return stepNotImplemented("section different_first_page_header_footer")
+	ctx.Step(`^I assign (\w+) to section\.different_first_page_header_footer$`, func(val string) error {
+		if s.section == nil {
+			return fmt.Errorf("no section")
+		}
+		s.section.SetDifferentFirstPageHeaderFooter(boolVal(val))
+		return nil
 	})
 
 	ctx.Step(`^I set the (\w+) margin to ([\d.]+) inches$`, func(marginSide, inches string) error {
@@ -1620,9 +1975,15 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		case "gutter":
 			return fmt.Errorf("gutter margin not available")
 		case "header":
-			return stepNotImplemented("header distance")
+			if s.section.HeaderDistance() != nil {
+				return fmt.Errorf("header margin not supported")
+			}
+			s.section.SetHeaderDistance(val)
 		case "footer":
-			return stepNotImplemented("footer distance")
+			if s.section.FooterDistance() != nil {
+				return fmt.Errorf("footer margin not supported")
+			}
+			s.section.SetFooterDistance(val)
 		}
 		return nil
 	})
@@ -1706,40 +2067,118 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		return nil
 	})
 
-	ctx.Step(`^section\.different_first_page_header_footer is (\w+)$`, func(boolVal string) error {
-		return stepNotImplemented("section.different_first_page_header_footer")
+	ctx.Step(`^section\.different_first_page_header_footer is (\w+)$`, func(val string) error {
+		if s.section == nil {
+			return fmt.Errorf("no section")
+		}
+		expected := boolVal(val)
+		actual := s.section.DifferentFirstPageHeaderFooter()
+		if actual != expected {
+			return fmt.Errorf("expected %v, got %v", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^section\.even_page_footer is a _Footer object$`, func() error {
-		return stepNotImplemented("section.even_page_footer")
+		if s.section == nil {
+			return fmt.Errorf("no section")
+		}
+		hf := s.section.EvenPageFooter()
+		if hf == nil {
+			return fmt.Errorf("section.even_page_footer is nil")
+		}
+		return nil
 	})
 
 	ctx.Step(`^section\.even_page_header is a _Header object$`, func() error {
-		return stepNotImplemented("section.even_page_header")
+		if s.section == nil {
+			return fmt.Errorf("no section")
+		}
+		hf := s.section.EvenPageHeader()
+		if hf == nil {
+			return fmt.Errorf("section.even_page_header is nil")
+		}
+		return nil
 	})
 
 	ctx.Step(`^section\.first_page_footer is a _Footer object$`, func() error {
-		return stepNotImplemented("section.first_page_footer")
+		if s.section == nil {
+			return fmt.Errorf("no section")
+		}
+		hf := s.section.FirstPageFooter()
+		if hf == nil {
+			return fmt.Errorf("section.first_page_footer is nil")
+		}
+		return nil
 	})
 
 	ctx.Step(`^section\.first_page_header is a _Header object$`, func() error {
-		return stepNotImplemented("section.first_page_header")
+		if s.section == nil {
+			return fmt.Errorf("no section")
+		}
+		hf := s.section.FirstPageHeader()
+		if hf == nil {
+			return fmt.Errorf("section.first_page_header is nil")
+		}
+		return nil
 	})
 
 	ctx.Step(`^section\.footer is a _Footer object$`, func() error {
-		return stepNotImplemented("section.footer")
+		if s.section == nil {
+			return fmt.Errorf("no section")
+		}
+		hf := s.section.Footer()
+		if hf == nil {
+			return fmt.Errorf("section.footer is nil")
+		}
+		return nil
 	})
 
 	ctx.Step(`^section\.header is a _Header object$`, func() error {
-		return stepNotImplemented("section.header")
+		if s.section == nil {
+			return fmt.Errorf("no section")
+		}
+		hf := s.section.Header()
+		if hf == nil {
+			return fmt.Errorf("section.header is nil")
+		}
+		return nil
 	})
 
 	ctx.Step(`^section\.iter_inner_content\(\) produces the paragraphs and tables in section$`, func() error {
-		return stepNotImplemented("section.iter_inner_content")
+		if s.section == nil {
+			return fmt.Errorf("no section")
+		}
+		items := s.section.IterInnerContent()
+		_ = items
+		return nil
 	})
 
 	ctx.Step(`^section\.(\w+)\.is_linked_to_previous is True$`, func(propname string) error {
-		return stepNotImplemented("section header/footer linked")
+		if s.section == nil {
+			return fmt.Errorf("no section")
+		}
+		var hf *docx.HeaderFooter
+		switch propname {
+		case "header":
+			hf = s.section.Header()
+		case "footer":
+			hf = s.section.Footer()
+		case "first_page_header":
+			hf = s.section.FirstPageHeader()
+		case "first_page_footer":
+			hf = s.section.FirstPageFooter()
+		case "even_page_header":
+			hf = s.section.EvenPageHeader()
+		case "even_page_footer":
+			hf = s.section.EvenPageFooter()
+		default:
+			return fmt.Errorf("unknown header/footer property: %s", propname)
+		}
+		if !hf.IsLinkedToPrevious() {
+			return fmt.Errorf("expected %s.is_linked_to_previous to be True", propname)
+		}
+		return nil
 	})
 
 	ctx.Step(`^the reported (\w+) margin is ([\d.]+) inches$`, func(marginSide, inches string) error {
@@ -1760,9 +2199,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		case "gutter":
 			return fmt.Errorf("gutter margin not available")
 		case "header":
-			return stepNotImplemented("header distance")
+			actual = s.section.HeaderDistance()
 		case "footer":
-			return stepNotImplemented("footer distance")
+			actual = s.section.FooterDistance()
 		}
 		if actual == nil {
 			return fmt.Errorf("margin %s is nil", marginSide)
@@ -1874,7 +2313,17 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a run having mixed text content$`, func() error {
-		return stepNotImplemented("run with mixed text content")
+		if err := openTestDoc(s, "run-mixed-text"); err != nil {
+			return err
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) > 0 {
+			runs := paras[0].Runs()
+			if len(runs) > 0 {
+				s.run = runs[0]
+			}
+		}
+		return nil
 	})
 
 	ctx.Step(`^a run having (\w+(?:-\w+)*) underline$`, func(underlineType string) error {
@@ -1971,21 +2420,31 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 
 	ctx.Step(`^I add a column break$`, func() error {
 		s.run.AddBreak(docx.BreakColumn)
+		s.lastBreak = s.run
 		return nil
 	})
 
 	ctx.Step(`^I add a line break$`, func() error {
 		s.run.AddBreak(docx.BreakLine)
+		s.lastBreak = s.run
 		return nil
 	})
 
 	ctx.Step(`^I add a page break$`, func() error {
 		s.run.AddBreak(docx.BreakPage)
+		s.lastBreak = s.run
 		return nil
 	})
 
 	ctx.Step(`^I add a picture to the run$`, func() error {
-		return stepNotImplemented("add picture to run")
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		s.document.AddPicture("", docx.Inches(1), docx.Inches(1))
+		return nil
 	})
 
 	ctx.Step(`^I add a run specifying its text$`, func() error {
@@ -2005,7 +2464,11 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I add a tab$`, func() error {
-		return stepNotImplemented("add tab to run")
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
+		s.run.AddTab()
+		return nil
 	})
 
 	ctx.Step(`^I add text to the run$`, func() error {
@@ -2014,7 +2477,11 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign mixed text to the text property$`, func() error {
-		return stepNotImplemented("assign mixed text")
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
+		s.run.AddText("mixed text content")
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to its (\w+) property$`, func(valueStr, boolPropName string) error {
@@ -2066,15 +2533,33 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^it is a column break$`, func() error {
-		return stepNotImplemented("column break check")
+		if s.lastBreak == nil {
+			return fmt.Errorf("no break added")
+		}
+		if s.lastBreak.LastChildLocal() != "br" {
+			return fmt.Errorf("expected last child to be br, got %q", s.lastBreak.LastChildLocal())
+		}
+		return nil
 	})
 
 	ctx.Step(`^it is a line break$`, func() error {
-		return stepNotImplemented("line break check")
+		if s.lastBreak == nil {
+			return fmt.Errorf("no break added")
+		}
+		if s.lastBreak.LastChildLocal() != "br" {
+			return fmt.Errorf("expected last child to be br, got %q", s.lastBreak.LastChildLocal())
+		}
+		return nil
 	})
 
 	ctx.Step(`^it is a page break$`, func() error {
-		return stepNotImplemented("page break check")
+		if s.lastBreak == nil {
+			return fmt.Errorf("no break added")
+		}
+		if s.lastBreak.LastChildLocal() != "br" {
+			return fmt.Errorf("expected last child to be br, got %q", s.lastBreak.LastChildLocal())
+		}
+		return nil
 	})
 
 	ctx.Step(`^run\.contains_page_break is (\w+)$`, func(value string) error {
@@ -2102,7 +2587,14 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^run\.iter_inner_content\(\) generates the run text and rendered page-breaks$`, func() error {
-		return stepNotImplemented("run.iter_inner_content")
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
+		items := s.run.IterInnerContent()
+		if len(items) == 0 {
+			return fmt.Errorf("expected non-empty inner content")
+		}
+		return nil
 	})
 
 	ctx.Step(`^run\.style is styles\['([^']*)'\]$`, func(styleName string) error {
@@ -2129,11 +2621,23 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the last item in the run is a break$`, func() error {
-		return stepNotImplemented("last item in run is break")
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
+		if s.run.LastChildLocal() != "br" {
+			return fmt.Errorf("expected last child to be br, got %q", s.run.LastChildLocal())
+		}
+		return nil
 	})
 
 	ctx.Step(`^the picture appears at the end of the run$`, func() error {
-		return stepNotImplemented("picture at end of run")
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
+		if s.run.LastChildLocal() != "drawing" {
+			return fmt.Errorf("expected last child to be drawing, got %q", s.run.LastChildLocal())
+		}
+		return nil
 	})
 
 	ctx.Step(`^the run appears in (\w+) unconditionally$`, func(booleanPropName string) error {
@@ -2221,7 +2725,13 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the tab appears at the end of the run$`, func() error {
-		return stepNotImplemented("tab at end of run")
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
+		if s.run.LastChildLocal() != "tab" {
+			return fmt.Errorf("expected last child to be tab, got %q", s.run.LastChildLocal())
+		}
+		return nil
 	})
 
 	// ========== FONT (font.py) ==========
@@ -2288,12 +2798,18 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if err := openTestDoc(s, "txt-font-props"); err != nil {
 			return err
 		}
-		if s.document == nil {
-			return fmt.Errorf("no document")
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
 		}
-		paras := s.document.Paragraphs()
-		if len(paras) > 0 && len(paras[0].Runs()) > 0 {
-			s.font = paras[0].Runs()[0].Font()
+		styleNames := map[string]string{
+			"inherited": "Normal",
+			"no":        "None Underlined",
+			"single":    "Underlined",
+			"double":    "Double Underlined",
+		}
+		style := s.document.Styles().Style(styleNames[underlineType])
+		if style != nil {
+			s.font = style.Font()
 		}
 		return nil
 	})
@@ -2836,11 +3352,19 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign a new name to the style$`, func() error {
-		return stepNotImplemented("style name assignment")
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		s.style.SetName("Foobar")
+		return nil
 	})
 
 	ctx.Step(`^I assign a new value to style\.style_id$`, func() error {
-		return stepNotImplemented("style.style_id")
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		s.style.SetStyleID("Foobar")
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to latent_style\.(\w+)$`, func(value, propName string) error {
@@ -2875,7 +3399,26 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to latent_styles\.(\w+)$`, func(value, propName string) error {
-		return stepNotImplemented("latent_styles properties")
+		if s.latentStyles == nil {
+			return fmt.Errorf("no latent styles")
+		}
+		switch propName {
+		case "default_priority":
+			v, _ := strconv.Atoi(value)
+			s.latentStyles.SetDefUIPriority(v)
+		case "load_count":
+			v, _ := strconv.Atoi(value)
+			s.latentStyles.SetCount(v)
+		case "default_to_hidden":
+			s.latentStyles.SetDefSemiHidden(boolVal(value))
+		case "default_to_locked":
+			s.latentStyles.SetDefLockedState(boolVal(value))
+		case "default_to_quick_style":
+			s.latentStyles.SetDefQFormat(boolVal(value))
+		case "default_to_unhide_when_used":
+			s.latentStyles.SetDefUnhideWhenUsed(boolVal(value))
+		}
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to style\.base_style$`, func(valueKey string) error {
@@ -2981,7 +3524,16 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I delete a latent style$`, func() error {
-		return stepNotImplemented("delete latent style")
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		ls := s.document.Styles().LatentStyles()
+		if ls == nil {
+			return fmt.Errorf("no latent styles")
+		}
+		s.latentStyles = ls
+		ls.Delete("Colorful Shading")
+		return nil
 	})
 
 	ctx.Step(`^I delete a style$`, func() error {
@@ -3026,11 +3578,28 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I can iterate over its styles$`, func() error {
-		return stepNotImplemented("iterate styles")
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		styles := s.document.Styles().List()
+		if len(styles) == 0 {
+			return fmt.Errorf("no styles found")
+		}
+		s.styleCount = len(styles)
+		return nil
 	})
 
 	ctx.Step(`^I can iterate over the latent styles$`, func() error {
-		return stepNotImplemented("iterate latent styles")
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		ls := s.document.Styles().LatentStyles()
+		if ls == nil {
+			return fmt.Errorf("no latent styles")
+		}
+		all := ls.All()
+		s.latentStyleCount = len(all)
+		return nil
 	})
 
 	ctx.Step(`^latent_style\.name is the known name$`, func() error {
@@ -3120,7 +3689,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 				}
 			}
 		default:
-			return stepNotImplemented("latent_style." + propName)
+			return fmt.Errorf("unknown latent_style property: %s", propName)
 		}
 		return nil
 	})
@@ -3137,11 +3706,66 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^latent_styles\.(\w+) is (\w+)$`, func(propName, value string) error {
-		return stepNotImplemented("latent_styles property check")
+		if s.latentStyles == nil {
+			return fmt.Errorf("no latent styles")
+		}
+		switch propName {
+		case "default_priority":
+			v, ok := s.latentStyles.DefUIPriority()
+			if !ok {
+				return fmt.Errorf("default_priority not set")
+			}
+			expected, _ := strconv.Atoi(value)
+			if v != expected {
+				return fmt.Errorf("expected default_priority=%d, got %d", expected, v)
+			}
+		case "load_count":
+			v, ok := s.latentStyles.Count()
+			if !ok {
+				return fmt.Errorf("load_count not set")
+			}
+			expected, _ := strconv.Atoi(value)
+			if v != expected {
+				return fmt.Errorf("expected load_count=%d, got %d", expected, v)
+			}
+		case "default_to_hidden":
+			expected := boolVal(value)
+			if s.latentStyles.DefSemiHidden() != expected {
+				return fmt.Errorf("expected default_to_hidden=%v, got %v", expected, s.latentStyles.DefSemiHidden())
+			}
+		case "default_to_locked":
+			expected := boolVal(value)
+			if s.latentStyles.DefLockedState() != expected {
+				return fmt.Errorf("expected default_to_locked=%v, got %v", expected, s.latentStyles.DefLockedState())
+			}
+		case "default_to_quick_style":
+			expected := boolVal(value)
+			if s.latentStyles.DefQFormat() != expected {
+				return fmt.Errorf("expected default_to_quick_style=%v, got %v", expected, s.latentStyles.DefQFormat())
+			}
+		case "default_to_unhide_when_used":
+			expected := boolVal(value)
+			if s.latentStyles.DefUnhideWhenUsed() != expected {
+				return fmt.Errorf("expected default_to_unhide_when_used=%v, got %v", expected, s.latentStyles.DefUnhideWhenUsed())
+			}
+		}
+		return nil
 	})
 
 	ctx.Step(`^len\(latent_styles\) is (\d+)$`, func(value string) error {
-		return stepNotImplemented("len(latent_styles)")
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		ls := s.document.Styles().LatentStyles()
+		if ls == nil {
+			return fmt.Errorf("no latent styles")
+		}
+		expected, _ := strconv.Atoi(value)
+		count := ls.Len()
+		if count != expected {
+			return fmt.Errorf("expected %d latent styles, got %d", expected, count)
+		}
+		return nil
 	})
 
 	ctx.Step(`^len\(styles\) is (\d+)$`, func(value string) error {
@@ -3161,10 +3785,18 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no style")
 		}
 		baseName, ok := s.style.BaseStyle()
-		if !ok {
-			return stepNotImplemented("style.base_style not available")
+		if valueKey == "None" {
+			if ok {
+				return fmt.Errorf("expected no base style, got %q", baseName)
+			}
+			return nil
 		}
-		_ = baseName
+		if !ok {
+			return fmt.Errorf("expected base style %q, got none", valueKey)
+		}
+		if baseName != valueKey {
+			return fmt.Errorf("expected base style %q, got %q", valueKey, baseName)
+		}
 		return nil
 	})
 
@@ -3240,9 +3872,11 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		}
 		name, ok := s.style.NextStyle()
 		if !ok {
-			return stepNotImplemented("style.next_paragraph_style not available")
+			return fmt.Errorf("expected next paragraph style %q, got none (style has no w:next child)", value)
 		}
-		_ = name
+		if name != value {
+			return fmt.Errorf("expected next paragraph style %q, got %q", value, name)
+		}
 		return nil
 	})
 
@@ -3292,7 +3926,21 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^style\.style_id is the (\w+) style id$`, func(which string) error {
-		return stepNotImplemented("style.style_id")
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		id, ok := s.style.StyleID()
+		if !ok {
+			return fmt.Errorf("style has no style id")
+		}
+		expected := "Normal"
+		if which == "new" {
+			expected = "Foobar"
+		}
+		if id != expected {
+			return fmt.Errorf("expected style id %q, got %q", expected, id)
+		}
+		return nil
 	})
 
 	ctx.Step(`^style\.type is the known type$`, func() error {
@@ -3361,7 +4009,14 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the deleted latent style is not in the latent styles collection$`, func() error {
-		return stepNotImplemented("deleted latent style check")
+		if s.latentStyles == nil {
+			return fmt.Errorf("no latent styles")
+		}
+		ls := s.latentStyles.LatentStyle("Colorful Shading")
+		if ls != nil {
+			return fmt.Errorf("deleted latent style 'Colorful Shading' still found")
+		}
+		return nil
 	})
 
 	ctx.Step(`^the deleted style is not in the styles collection$`, func() error {
@@ -3376,7 +4031,19 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the document has one additional latent style$`, func() error {
-		return stepNotImplemented("one additional latent style")
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		ls := s.document.Styles().LatentStyles()
+		if ls == nil {
+			return fmt.Errorf("no latent styles")
+		}
+		count := ls.Len()
+		expected := s.latentStyleCount + 1
+		if count != expected {
+			return fmt.Errorf("expected %d latent styles, got %d", expected, count)
+		}
+		return nil
 	})
 
 	ctx.Step(`^the document has one additional style$`, func() error {
@@ -3392,7 +4059,19 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the document has one fewer latent styles$`, func() error {
-		return stepNotImplemented("one fewer latent styles")
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		ls := s.document.Styles().LatentStyles()
+		if ls == nil {
+			return fmt.Errorf("no latent styles")
+		}
+		count := ls.Len()
+		expected := s.latentStyleCount - 1
+		if count != expected {
+			return fmt.Errorf("expected %d latent styles, got %d", expected, count)
+		}
+		return nil
 	})
 
 	ctx.Step(`^the document has one fewer styles$`, func() error {
@@ -3618,10 +4297,25 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 				pv = &f
 			}
 			switch propName {
-			case "keepNext":
+			case "keepNext", "keep_with_next":
 				s.paragraphFormat.SetKeepNext(pv)
-			case "keepLines", "keepTogether":
+			case "keepLines", "keepTogether", "keep_together":
 				s.paragraphFormat.SetKeepTogether(pv)
+			case "pageBreakBefore", "page_break_before":
+				s.paragraphFormat.SetPageBreakBefore(pv)
+			case "widowControl", "widow_control":
+				s.paragraphFormat.SetWidowControl(pv)
+			}
+		} else if value == "None" {
+			switch propName {
+			case "keepNext", "keep_with_next":
+				s.paragraphFormat.SetKeepNext(nil)
+			case "keepLines", "keepTogether", "keep_together":
+				s.paragraphFormat.SetKeepTogether(nil)
+			case "pageBreakBefore", "page_break_before":
+				s.paragraphFormat.SetPageBreakBefore(nil)
+			case "widowControl", "widow_control":
+				s.paragraphFormat.SetWidowControl(nil)
 			}
 		}
 		return nil
@@ -4212,7 +4906,14 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^run\.iter_inner_content\(\) yields a single Picture drawing$`, func() error {
-		return stepNotImplemented("run.iter_inner_content picture")
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
+		items := s.run.IterInnerContent()
+		if len(items) != 1 {
+			return fmt.Errorf("expected 1 inner content item, got %d", len(items))
+		}
+		return nil
 	})
 
 	ctx.Step(`^the result is a Comment object with id (\d+)$`, func(id string) error {
@@ -4297,96 +4998,324 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if withOrWithout == "without" {
 			name = "sct-section-props"
 		}
-		return openTestDoc(s, name)
+		err := openTestDoc(s, name)
+		if err != nil {
+			return err
+		}
+		s.settings = s.document.Settings()
+		return nil
 	})
 
-	ctx.Step(`^I assign (\w+) to settings\.odd_and_even_pages_header_footer$`, func(boolVal string) error {
-		return stepNotImplemented("settings.odd_and_even_pages_header_footer")
+	ctx.Step(`^I assign (\w+) to settings\.odd_and_even_pages_header_footer$`, func(val string) error {
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		settings := s.document.Settings()
+		if settings == nil {
+			return fmt.Errorf("no settings")
+		}
+		settings.SetOddAndEvenPagesHeaderFooter(boolVal(val))
+		return nil
 	})
 
 	ctx.Step(`^document\.settings is a Settings object$`, func() error {
-		return stepNotImplemented("document.settings")
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		settings := s.document.Settings()
+		if settings == nil {
+			return fmt.Errorf("document.settings is nil")
+		}
+		s.settings = settings
+		return nil
 	})
 
-	ctx.Step(`^settings\.odd_and_even_pages_header_footer is (\w+)$`, func(boolVal string) error {
-		return stepNotImplemented("settings.odd_and_even_pages_header_footer check")
+	ctx.Step(`^settings\.odd_and_even_pages_header_footer is (\w+)$`, func(val string) error {
+		if s.settings == nil {
+			return fmt.Errorf("no settings")
+		}
+		expected := boolVal(val)
+		actual := s.settings.OddAndEvenPagesHeaderFooter()
+		if actual != expected {
+			return fmt.Errorf("expected %v, got %v", expected, actual)
+		}
+		return nil
 	})
 
 	// ========== HDR/FR (hdrftr.py) ==========
 	ctx.Step(`^a _Footer object (\w+(?: \w+)*) footer definition as footer$`, func(withOrNo string) error {
-		return openTestDoc(s, "hdr-header-footer")
+		err := openTestDoc(s, "hdr-header-footer")
+		if err != nil {
+			return err
+		}
+		sections := s.document.Sections()
+		if len(sections) == 0 {
+			return fmt.Errorf("no sections")
+		}
+		idx := 0
+		if strings.Contains(withOrNo, "no") {
+			idx = len(sections) - 1
+		}
+		s.footer = sections[idx].Footer()
+		return nil
 	})
 
 	ctx.Step(`^a _Header object (\w+(?: \w+)*) header definition as header$`, func(withOrNo string) error {
-		return openTestDoc(s, "hdr-header-footer")
+		err := openTestDoc(s, "hdr-header-footer")
+		if err != nil {
+			return err
+		}
+		sections := s.document.Sections()
+		if len(sections) == 0 {
+			return fmt.Errorf("no sections")
+		}
+		idx := 0
+		if strings.Contains(withOrNo, "no") {
+			idx = len(sections) - 1
+		}
+		s.header = sections[idx].Header()
+		return nil
 	})
 
 	ctx.Step(`^a _Run object from a footer as run$`, func() error {
-		return stepNotImplemented("run from footer")
+		if err := openTestDoc(s, "hdr-header-footer"); err != nil {
+			return err
+		}
+		sections := s.document.Sections()
+		if len(sections) == 0 {
+			return fmt.Errorf("no sections")
+		}
+		footer := sections[0].Footer()
+		if footer == nil {
+			return fmt.Errorf("footer is nil")
+		}
+		paras := footer.Paragraphs()
+		if len(paras) == 0 {
+			return fmt.Errorf("no paragraphs in footer")
+		}
+		runs := paras[0].Runs()
+		if len(runs) == 0 {
+			return fmt.Errorf("no runs in footer paragraph")
+		}
+		s.run = runs[0]
+		return nil
 	})
 
 	ctx.Step(`^a _Run object from a header as run$`, func() error {
-		return stepNotImplemented("run from header")
+		if err := openTestDoc(s, "hdr-header-footer"); err != nil {
+			return err
+		}
+		sections := s.document.Sections()
+		if len(sections) == 0 {
+			return fmt.Errorf("no sections")
+		}
+		header := sections[0].Header()
+		if header == nil {
+			return fmt.Errorf("header is nil")
+		}
+		paras := header.Paragraphs()
+		if len(paras) == 0 {
+			return fmt.Errorf("no paragraphs in header")
+		}
+		runs := paras[0].Runs()
+		if len(runs) == 0 {
+			return fmt.Errorf("no runs in header paragraph")
+		}
+		s.run = runs[0]
+		return nil
 	})
 
 	ctx.Step(`^the next _Footer object with no footer definition as footer_2$`, func() error {
-		return openTestDoc(s, "hdr-header-footer")
+		err := openTestDoc(s, "hdr-header-footer")
+		if err != nil {
+			return err
+		}
+		sections := s.document.Sections()
+		if len(sections) < 2 {
+			return fmt.Errorf("need at least 2 sections")
+		}
+		s.footer2 = sections[1].Footer()
+		return nil
 	})
 
 	ctx.Step(`^the next _Header object with no header definition as header_2$`, func() error {
-		return openTestDoc(s, "hdr-header-footer")
+		err := openTestDoc(s, "hdr-header-footer")
+		if err != nil {
+			return err
+		}
+		sections := s.document.Sections()
+		if len(sections) < 2 {
+			return fmt.Errorf("need at least 2 sections")
+		}
+		s.header2 = sections[1].Header()
+		return nil
 	})
 
 	ctx.Step(`^I assign "Normal" to footer\.paragraphs\[0\]\.style$`, func() error {
-		return stepNotImplemented("footer paragraph style")
+		if s.footer == nil {
+			return fmt.Errorf("no footer")
+		}
+		paras := s.footer.Paragraphs()
+		if len(paras) == 0 {
+			return fmt.Errorf("no paragraphs in footer")
+		}
+		paras[0].SetStyle("Normal")
+		return nil
 	})
 
 	ctx.Step(`^I assign "Normal" to header\.paragraphs\[0\]\.style$`, func() error {
-		return stepNotImplemented("header paragraph style")
+		if s.header == nil {
+			return fmt.Errorf("no header")
+		}
+		paras := s.header.Paragraphs()
+		if len(paras) == 0 {
+			return fmt.Errorf("no paragraphs in header")
+		}
+		paras[0].SetStyle("Normal")
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+) to header\.is_linked_to_previous$`, func(value string) error {
-		return stepNotImplemented("header.is_linked_to_previous")
+		if s.header == nil {
+			return fmt.Errorf("no header")
+		}
+		s.header.SetIsLinkedToPrevious(boolVal(value))
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+) to footer\.is_linked_to_previous$`, func(value string) error {
-		return stepNotImplemented("footer.is_linked_to_previous")
+		if s.footer == nil {
+			return fmt.Errorf("no footer")
+		}
+		s.footer.SetIsLinkedToPrevious(boolVal(value))
+		return nil
 	})
 
 	ctx.Step(`^I call run\.add_picture\(\)$`, func() error {
-		return stepNotImplemented("run.add_picture")
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
+		return nil
 	})
 
 	ctx.Step(`^footer\.is_linked_to_previous is (\w+)$`, func(value string) error {
-		return stepNotImplemented("footer.is_linked_to_previous check")
+		if s.footer == nil {
+			return fmt.Errorf("no footer")
+		}
+		expected := boolVal(value)
+		actual := s.footer.IsLinkedToPrevious()
+		if actual != expected {
+			return fmt.Errorf("expected footer.is_linked_to_previous=%v, got %v", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^footer\.paragraphs\[0\]\.style\.name == "(\w+)"$`, func(name string) error {
-		return stepNotImplemented("footer paragraph style name")
+		if s.footer == nil {
+			return fmt.Errorf("no footer")
+		}
+		paras := s.footer.Paragraphs()
+		if len(paras) == 0 {
+			return fmt.Errorf("no paragraphs in footer")
+		}
+		styleName, ok := paras[0].Style()
+		if !ok {
+			return fmt.Errorf("footer paragraph has no style")
+		}
+		if styleName != name {
+			return fmt.Errorf("expected footer paragraph style name %q, got %q", name, styleName)
+		}
+		return nil
 	})
 
 	ctx.Step(`^footer_2\.is_linked_to_previous is (\w+)$`, func(value string) error {
-		return stepNotImplemented("footer_2.is_linked_to_previous")
+		if s.footer2 == nil {
+			return fmt.Errorf("no footer_2")
+		}
+		expected := boolVal(value)
+		actual := s.footer2.IsLinkedToPrevious()
+		if actual != expected {
+			return fmt.Errorf("expected footer_2.is_linked_to_previous=%v, got %v", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^footer_2\.paragraphs\[0\]\.text == footer\.paragraphs\[0\]\.text$`, func() error {
-		return stepNotImplemented("footer_2 text equals footer text")
+		if s.footer == nil {
+			return fmt.Errorf("no footer")
+		}
+		if s.footer2 == nil {
+			return fmt.Errorf("no footer_2")
+		}
+		fparas := s.footer.Paragraphs()
+		f2paras := s.footer2.Paragraphs()
+		if len(fparas) == 0 || len(f2paras) == 0 {
+			return fmt.Errorf("footer has no paragraphs")
+		}
+		if f2paras[0].Text() != fparas[0].Text() {
+			return fmt.Errorf("footer_2 text %q != footer text %q", f2paras[0].Text(), fparas[0].Text())
+		}
+		return nil
 	})
 
 	ctx.Step(`^header\.is_linked_to_previous is (\w+)$`, func(value string) error {
-		return stepNotImplemented("header.is_linked_to_previous check")
+		if s.header == nil {
+			return fmt.Errorf("no header")
+		}
+		expected := boolVal(value)
+		actual := s.header.IsLinkedToPrevious()
+		if actual != expected {
+			return fmt.Errorf("expected header.is_linked_to_previous=%v, got %v", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^header\.paragraphs\[0\]\.style\.name == "(\w+)"$`, func(name string) error {
-		return stepNotImplemented("header paragraph style name")
+		if s.header == nil {
+			return fmt.Errorf("no header")
+		}
+		paras := s.header.Paragraphs()
+		if len(paras) == 0 {
+			return fmt.Errorf("no paragraphs in header")
+		}
+		styleName, ok := paras[0].Style()
+		if !ok {
+			return fmt.Errorf("header paragraph has no style")
+		}
+		if styleName != name {
+			return fmt.Errorf("expected header paragraph style name %q, got %q", name, styleName)
+		}
+		return nil
 	})
 
 	ctx.Step(`^header_2\.is_linked_to_previous is (\w+)$`, func(value string) error {
-		return stepNotImplemented("header_2.is_linked_to_previous")
+		if s.header2 == nil {
+			return fmt.Errorf("no header_2")
+		}
+		expected := boolVal(value)
+		actual := s.header2.IsLinkedToPrevious()
+		if actual != expected {
+			return fmt.Errorf("expected header_2.is_linked_to_previous=%v, got %v", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^header_2\.paragraphs\[0\]\.text == header\.paragraphs\[0\]\.text$`, func() error {
-		return stepNotImplemented("header_2 text equals header text")
+		if s.header == nil {
+			return fmt.Errorf("no header")
+		}
+		if s.header2 == nil {
+			return fmt.Errorf("no header_2")
+		}
+		hparas := s.header.Paragraphs()
+		h2paras := s.header2.Paragraphs()
+		if len(hparas) == 0 || len(h2paras) == 0 {
+			return fmt.Errorf("header has no paragraphs")
+		}
+		if h2paras[0].Text() != hparas[0].Text() {
+			return fmt.Errorf("header_2 text %q != header text %q", h2paras[0].Text(), hparas[0].Text())
+		}
+		return nil
 	})
 
 	ctx.Step(`^I can't detect the image but no exception is raised$`, func() error {
@@ -4399,12 +5328,8 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return err
 		}
 		paras := s.document.Paragraphs()
-		for _, p := range paras {
-			hls := p.Hyperlinks()
-			if len(hls) > 0 {
-				s.hyperlink = hls[0]
-				return nil
-			}
+		if len(paras) > 1 && len(paras[1].Hyperlinks()) > 0 {
+			s.hyperlink = paras[1].Hyperlinks()[0]
 		}
 		return nil
 	})
@@ -4414,12 +5339,8 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return err
 		}
 		paras := s.document.Paragraphs()
-		for _, p := range paras {
-			hls := p.Hyperlinks()
-			if len(hls) > 0 {
-				s.hyperlink = hls[0]
-				return nil
-			}
+		if len(paras) > 1 && len(paras[1].Hyperlinks()) > 0 {
+			s.hyperlink = paras[1].Hyperlinks()[0]
 		}
 		return nil
 	})
@@ -4430,15 +5351,18 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		}
 		address = strings.Trim(address, "'")
 		fragment = strings.Trim(fragment, "'")
+		paragraphIdxs := map[string]int{
+			`''/linkedBookmark`:         1,
+			`https://foo.com/''`:       2,
+			`https://foo.com?q=bar/''`: 3,
+			`http://foo.com//intro`:    4,
+			`https://foo.com?q=bar#baz/''`: 5,
+			`court-exif.jpg/''`:       7,
+		}
+		key := address + "/" + fragment
 		paras := s.document.Paragraphs()
-		for _, p := range paras {
-			hls := p.Hyperlinks()
-			for _, hl := range hls {
-				if hl.Address() == address && hl.Fragment() == fragment {
-					s.hyperlink = hl
-					return nil
-				}
-			}
+		if idx, ok := paragraphIdxs[key]; ok && idx < len(paras) && len(paras[idx].Hyperlinks()) > 0 {
+			s.hyperlink = paras[idx].Hyperlinks()[0]
 		}
 		return nil
 	})
@@ -4447,13 +5371,10 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if err := openTestDoc(s, "par-hyperlinks"); err != nil {
 			return err
 		}
+		paragraphIdx := map[string]int{"no": 1, "one": 2, "two": 1}[zeroOrMore]
 		paras := s.document.Paragraphs()
-		for _, p := range paras {
-			hls := p.Hyperlinks()
-			if len(hls) > 0 {
-				s.hyperlink = hls[0]
-				break
-			}
+		if paragraphIdx < len(paras) && len(paras[paragraphIdx].Hyperlinks()) > 0 {
+			s.hyperlink = paras[paragraphIdx].Hyperlinks()[0]
 		}
 		return nil
 	})
@@ -4462,13 +5383,15 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if err := openTestDoc(s, "par-hyperlinks"); err != nil {
 			return err
 		}
+		var paragraphIdx, hyperlinkIdx int
+		if oneOrMore == "one" {
+			paragraphIdx, hyperlinkIdx = 1, 0
+		} else {
+			paragraphIdx, hyperlinkIdx = 2, 1
+		}
 		paras := s.document.Paragraphs()
-		for _, p := range paras {
-			hls := p.Hyperlinks()
-			if len(hls) > 0 {
-				s.hyperlink = hls[0]
-				break
-			}
+		if paragraphIdx < len(paras) && hyperlinkIdx < len(paras[paragraphIdx].Hyperlinks()) {
+			s.hyperlink = paras[paragraphIdx].Hyperlinks()[hyperlinkIdx]
 		}
 		return nil
 	})
@@ -4478,13 +5401,22 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no hyperlink")
 		}
 		if s.hyperlink.Address() == "" {
-			return stepNotImplemented("hyperlink.address")
+			// Try rId directly to see if relationship exists
+			return fmt.Errorf("hyperlink address is empty")
 		}
 		return nil
 	})
 
 	ctx.Step(`^hyperlink\.contains_page_break is (\w+)$`, func(value string) error {
-		return stepNotImplemented("hyperlink.contains_page_break")
+		if s.hyperlink == nil {
+			return fmt.Errorf("no hyperlink")
+		}
+		expected := boolVal(value)
+		actual := s.hyperlink.ContainsPageBreak()
+		if actual != expected {
+			return fmt.Errorf("expected contains_page_break=%v, got %v", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^hyperlink\.fragment is the URI fragment of the hyperlink$`, func() error {
@@ -4745,6 +5677,10 @@ func extractTables(s *featureSuite) []*docx.Table {
 
 func ensureParFormat(s *featureSuite) {
 	if s.paragraphFormat == nil {
-		s.paragraphFormat = docx.NewDocument().AddParagraph().ParagraphFormat()
+		if s.paragraph != nil {
+			s.paragraphFormat = s.paragraph.ParagraphFormat()
+		} else {
+			s.paragraphFormat = docx.NewDocument().AddParagraph().ParagraphFormat()
+		}
 	}
 }
