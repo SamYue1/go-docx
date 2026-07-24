@@ -145,7 +145,15 @@ func (pf *ParagraphFormat) LineSpacing() (int, bool) {
 	if spacing == nil {
 		return 0, false
 	}
-	return spacing.Line()
+	line, ok := spacing.Line()
+	if !ok {
+		return 0, false
+	}
+	rule, _ := spacing.LineRule()
+	if rule == "" || rule == "auto" {
+		return line, true
+	}
+	return line * 635, true
 }
 
 func (pf *ParagraphFormat) KeepNext() *bool {

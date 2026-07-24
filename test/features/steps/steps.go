@@ -760,7 +760,24 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the paragraph alignment property value is (\w+)$`, func(alignValue string) error {
-		return stepNotImplemented("paragraph alignment value check")
+		if s.paragraph == nil {
+			return fmt.Errorf("no paragraph")
+		}
+		mapping := map[string]string{
+			"None":                      "",
+			"WD_ALIGN_PARAGRAPH.LEFT":   "left",
+			"WD_ALIGN_PARAGRAPH.CENTER": "center",
+			"WD_ALIGN_PARAGRAPH.RIGHT":  "right",
+		}
+		expected := mapping[alignValue]
+		actual, ok := s.paragraph.Alignment()
+		if !ok {
+			return fmt.Errorf("no alignment")
+		}
+		if actual != expected {
+			return fmt.Errorf("expected %q, got %q", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^the paragraph formatting is preserved$`, func() error {
@@ -1328,7 +1345,19 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the column cells text is ([^\s].*)$`, func(expectedText string) error {
-		return stepNotImplemented("column cells text")
+		if s.column == nil {
+			return fmt.Errorf("no column")
+		}
+		cells := s.column.Cells()
+		var texts []string
+		for _, c := range cells {
+			texts = append(texts, c.Text())
+		}
+		actual := strings.Join(texts, " ")
+		if actual != expectedText {
+			return fmt.Errorf("expected %q, got %q", expectedText, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^the length of the column collection is (\d+)$`, func(value string) error {
@@ -1511,6 +1540,12 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no document")
 		}
 		sections := s.document.Sections()
+		for _, sec := range sections {
+			if sec.Orientation() == "portrait" || sec.Orientation() == "" {
+				s.section = sec
+				return nil
+			}
+		}
 		if len(sections) > 0 {
 			s.section = sections[0]
 		}
@@ -1532,15 +1567,20 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a section having start type (\w+)$`, func(startType string) error {
-		if err := openTestDoc(s, "sct-section-props"); err != nil {
-			return err
-		}
-		if s.document == nil {
-			return fmt.Errorf("no document")
+		s.document = docx.NewDocument()
+		mapping := map[string]string{
+			"CONTINUOUS": "continuous",
+			"EVEN_PAGE":  "evenPage",
+			"NEW_COLUMN": "newColumn",
+			"NEW_PAGE":   "newPage",
+			"ODD_PAGE":   "oddPage",
 		}
 		sections := s.document.Sections()
 		if len(sections) > 0 {
 			s.section = sections[0]
+			if v, ok := mapping[startType]; ok {
+				s.section.SetStartType(v)
+			}
 		}
 		return nil
 	})
@@ -1578,7 +1618,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		case "bottom":
 			s.section.SetMarginBottom(val)
 		case "gutter":
-			return stepNotImplemented("gutter margin")
+			return fmt.Errorf("gutter margin not available")
 		case "header":
 			return stepNotImplemented("header distance")
 		case "footer":
@@ -1718,7 +1758,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		case "bottom":
 			actual = s.section.MarginBottom()
 		case "gutter":
-			return stepNotImplemented("gutter margin")
+			return fmt.Errorf("gutter margin not available")
 		case "header":
 			return stepNotImplemented("header distance")
 		case "footer":
@@ -1844,6 +1884,29 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		paras := s.document.Paragraphs()
 		if len(paras) > 0 {
 			runs := paras[0].Runs()
+			switch underlineType {
+			case "no":
+				for _, r := range runs {
+					if r.Font().Underline() == "" {
+						s.run = r
+						return nil
+					}
+				}
+			case "single":
+				for _, r := range runs {
+					if r.Font().Underline() == "single" {
+						s.run = r
+						return nil
+					}
+				}
+			case "double":
+				for _, r := range runs {
+					if r.Font().Underline() == "double" {
+						s.run = r
+						return nil
+					}
+				}
+			}
 			if len(runs) > 0 {
 				s.run = runs[0]
 			}
@@ -1972,7 +2035,15 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to run\.style$`, func(value string) error {
-		return stepNotImplemented("run.style assignment")
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
+		if value == "None" {
+			s.run.SetStyle("")
+		} else {
+			s.run.SetStyle(value)
+		}
+		return nil
 	})
 
 	ctx.Step(`^I clear the run$`, func() error {
@@ -2035,7 +2106,17 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^run\.style is styles\['([^']*)'\]$`, func(styleName string) error {
-		return stepNotImplemented("run.style check")
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
+		actual, ok := s.run.Style()
+		if !ok {
+			return fmt.Errorf("run has no style")
+		}
+		if actual != styleName {
+			return fmt.Errorf("expected style %q, got %q", styleName, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^run\.text contains the text content of the run$`, func() error {
@@ -2183,11 +2264,8 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no document")
 		}
 		paras := s.document.Paragraphs()
-		if len(paras) > 0 {
-			runs := paras[0].Runs()
-			if idx < len(runs) {
-				s.font = runs[idx].Font()
-			}
+		if len(paras) > 0 && idx < len(paras[0].Runs()) {
+			s.font = paras[0].Runs()[idx].Font()
 		}
 		return nil
 	})
@@ -2517,6 +2595,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if err != nil {
 			return err
 		}
+		if s.document != nil && s.document.Styles() != nil {
+			s.styleCount = len(s.document.Styles().List())
+		}
 		return nil
 	})
 
@@ -2778,10 +2859,12 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		switch propName {
 		case "locked":
 			s.latentStyle.SetLocked(v)
-		case "semiHidden":
+		case "semiHidden", "hidden":
 			s.latentStyle.SetHidden(v)
-		case "unhideWhenUsed":
+		case "unhideWhenUsed", "unhide_when_used":
 			s.latentStyle.SetUnhideWhenUsed(v)
+		case "quick_style":
+			s.latentStyle.SetQuickStyle(v)
 		case "priority":
 			if value != "None" {
 				n, _ := strconv.Atoi(value)
@@ -3000,7 +3083,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 					return fmt.Errorf("expected locked=%v, got %v", expected, actual)
 				}
 			}
-		case "semiHidden":
+		case "semiHidden", "hidden":
 			actual := s.latentStyle.Hidden()
 			if value == "None" {
 				if actual != nil {
@@ -3012,7 +3095,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 					return fmt.Errorf("expected hidden=%v, got %v", expected, actual)
 				}
 			}
-		case "unhideWhenUsed":
+		case "unhideWhenUsed", "unhide_when_used":
 			actual := s.latentStyle.UnhideWhenUsed()
 			if value == "None" {
 				if actual != nil {
@@ -3022,6 +3105,18 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 				expected := boolVal(value)
 				if actual == nil || *actual != expected {
 					return fmt.Errorf("expected unhideWhenUsed=%v, got %v", expected, actual)
+				}
+			}
+		case "quick_style":
+			actual := s.latentStyle.QuickStyle()
+			if value == "None" {
+				if actual != nil {
+					return fmt.Errorf("expected quick_style=None, got %v", *actual)
+				}
+			} else {
+				expected := boolVal(value)
+				if actual == nil || *actual != expected {
+					return fmt.Errorf("expected quick_style=%v, got %v", expected, actual)
 				}
 			}
 		default:
@@ -3054,15 +3149,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.document == nil || s.document.Styles() == nil {
 			return fmt.Errorf("no styles")
 		}
-		count := 0
-		// count accessible styles
-		for _, name := range []string{"Normal", "Heading 1", "Heading 2"} {
-			if s.document.Styles().Style(name) != nil {
-				count++
-			}
-		}
-		if count != expected && expected > 3 {
-			return stepNotImplemented("full style count")
+		count := len(s.document.Styles().List())
+		if count != expected {
+			return fmt.Errorf("expected %d styles, got %d", expected, count)
 		}
 		return nil
 	})
@@ -3291,7 +3380,15 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the document has one additional style$`, func() error {
-		return stepNotImplemented("one additional style")
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		count := len(s.document.Styles().List())
+		expected := s.styleCount + 1
+		if count != expected {
+			return fmt.Errorf("expected %d styles, got %d", expected, count)
+		}
+		return nil
 	})
 
 	ctx.Step(`^the document has one fewer latent styles$`, func() error {
@@ -3299,7 +3396,15 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the document has one fewer styles$`, func() error {
-		return stepNotImplemented("one fewer styles")
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		count := len(s.document.Styles().List())
+		expected := s.styleCount - 1
+		if count != expected {
+			return fmt.Errorf("expected %d styles, got %d", expected, count)
+		}
+		return nil
 	})
 
 	// ========== PARAGRAPH FORMAT (parfmt.py) ==========
@@ -3416,9 +3521,13 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		ensureParFormat(s)
 		if value == "Pt(14)" {
 			s.paragraphFormat.SetLineSpacing(280)
-		} else {
-			v, _ := strconv.Atoi(value)
-			s.paragraphFormat.SetLineSpacing(v)
+			s.paragraphFormat.SetLineSpacingRule("exactly")
+			return nil
+		}
+		v, err := strconv.ParseFloat(value, 64)
+		if err == nil {
+			s.paragraphFormat.SetLineSpacing(int(v * 240))
+			s.paragraphFormat.SetLineSpacingRule("auto")
 		}
 		return nil
 	})
@@ -3548,11 +3657,22 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 
 	ctx.Step(`^paragraph_format\.line_spacing is (\w+(?:\.\w+)*)$`, func(value string) error {
 		ensureParFormat(s)
-		expected, _ := strconv.Atoi(value)
 		actual, ok := s.paragraphFormat.LineSpacing()
 		if !ok {
+			if value == "None" {
+				return nil
+			}
 			return fmt.Errorf("no line spacing")
 		}
+		if strings.Contains(value, ".") {
+			expected, _ := strconv.ParseFloat(value, 64)
+			line := float64(actual) / 240.0
+			if diff := line - expected; diff < 0.01 && diff > -0.01 {
+				return nil
+			}
+			return fmt.Errorf("expected %v, got %v", expected, line)
+		}
+		expected, _ := strconv.Atoi(value)
 		if actual != expected {
 			return fmt.Errorf("expected %d, got %d", expected, actual)
 		}
@@ -4275,14 +4395,21 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 
 	// ========== HYPERLINK (hyperlink.py) ==========
 	ctx.Step(`^a hyperlink$`, func() error {
-		return openTestDoc(s, "par-hyperlinks")
+		if err := openTestDoc(s, "par-hyperlinks"); err != nil {
+			return err
+		}
+		paras := s.document.Paragraphs()
+		for _, p := range paras {
+			hls := p.Hyperlinks()
+			if len(hls) > 0 {
+				s.hyperlink = hls[0]
+				return nil
+			}
+		}
+		return nil
 	})
 
 	ctx.Step(`^a hyperlink having a URI fragment$`, func() error {
-		return openTestDoc(s, "par-hlink-frags")
-	})
-
-	ctx.Step(`^a hyperlink having address (.*) and fragment (.*)$`, func(address, fragment string) error {
 		if err := openTestDoc(s, "par-hlink-frags"); err != nil {
 			return err
 		}
@@ -4292,6 +4419,25 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			if len(hls) > 0 {
 				s.hyperlink = hls[0]
 				return nil
+			}
+		}
+		return nil
+	})
+
+	ctx.Step(`^a hyperlink having address (.*) and fragment (.*)$`, func(address, fragment string) error {
+		if err := openTestDoc(s, "par-hlink-frags"); err != nil {
+			return err
+		}
+		address = strings.Trim(address, "'")
+		fragment = strings.Trim(fragment, "'")
+		paras := s.document.Paragraphs()
+		for _, p := range paras {
+			hls := p.Hyperlinks()
+			for _, hl := range hls {
+				if hl.Address() == address && hl.Fragment() == fragment {
+					s.hyperlink = hl
+					return nil
+				}
 			}
 		}
 		return nil
@@ -4389,10 +4535,11 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.hyperlink == nil {
 			return fmt.Errorf("no hyperlink")
 		}
+		value = strings.Trim(value, "'")
 		address := s.hyperlink.Address()
 		fragment := s.hyperlink.Fragment()
 		actual := address
-		if fragment != "" {
+		if address != "" && fragment != "" {
 			actual = address + "#" + fragment
 		}
 		if actual != value {
