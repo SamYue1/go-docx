@@ -172,9 +172,11 @@ func (pf *ParagraphFormat) SetKeepNext(val *bool) {
 	if val == nil {
 		pf.pPr.RemoveKeepNext()
 	} else if *val {
-		pf.pPr.GetOrAddKeepNext()
+		el := pf.pPr.GetOrAddKeepNext()
+		el.RemoveAttr(ns.NsMap["w"], "val")
 	} else {
-		pf.pPr.RemoveKeepNext()
+		el := pf.pPr.GetOrAddKeepNext()
+		el.SetAttr(ns.NsMap["w"], "val", "false")
 	}
 }
 
@@ -202,9 +204,11 @@ func (pf *ParagraphFormat) SetKeepTogether(val *bool) {
 	if val == nil {
 		pf.pPr.RemoveKeepLines()
 	} else if *val {
-		pf.pPr.GetOrAddKeepLines()
+		el := pf.pPr.GetOrAddKeepLines()
+		el.RemoveAttr(ns.NsMap["w"], "val")
 	} else {
-		pf.pPr.RemoveKeepLines()
+		el := pf.pPr.GetOrAddKeepLines()
+		el.SetAttr(ns.NsMap["w"], "val", "false")
 	}
 }
 
@@ -232,9 +236,11 @@ func (pf *ParagraphFormat) SetPageBreakBefore(val *bool) {
 	if val == nil {
 		pf.pPr.RemovePageBreakBefore()
 	} else if *val {
-		pf.pPr.GetOrAddPageBreakBefore()
+		el := pf.pPr.GetOrAddPageBreakBefore()
+		el.RemoveAttr(ns.NsMap["w"], "val")
 	} else {
-		pf.pPr.RemovePageBreakBefore()
+		el := pf.pPr.GetOrAddPageBreakBefore()
+		el.SetAttr(ns.NsMap["w"], "val", "false")
 	}
 }
 
@@ -262,9 +268,11 @@ func (pf *ParagraphFormat) SetWidowControl(val *bool) {
 	if val == nil {
 		pf.pPr.RemoveWidowControl()
 	} else if *val {
-		pf.pPr.GetOrAddWidowControl()
+		el := pf.pPr.GetOrAddWidowControl()
+		el.RemoveAttr(ns.NsMap["w"], "val")
 	} else {
-		pf.pPr.RemoveWidowControl()
+		el := pf.pPr.GetOrAddWidowControl()
+		el.SetAttr(ns.NsMap["w"], "val", "false")
 	}
 }
 

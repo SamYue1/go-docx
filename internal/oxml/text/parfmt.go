@@ -365,7 +365,11 @@ func (t *CT_TabStop) Leader() (string, bool) {
 }
 
 func (t *CT_TabStop) SetLeader(val string) {
-	t.Element.SetAttr(ns.NsMap["w"], "leader", val)
+	if val == "" {
+		t.Element.RemoveAttr(ns.NsMap["w"], "leader")
+	} else {
+		t.Element.SetAttr(ns.NsMap["w"], "leader", val)
+	}
 }
 
 func (t *CT_TabStop) Pos() (int, bool) {

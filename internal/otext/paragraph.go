@@ -108,11 +108,18 @@ func (p *Paragraph) ParagraphFormat() *ParagraphFormat {
 }
 
 func (p *Paragraph) Clear() {
+	if p == nil || p.p == nil {
+		return
+	}
+	var toRemove []*dom.Element
 	for _, c := range p.p.Element.Children() {
 		tag := c.ClarkTag()
 		if tag != ns.Qn("w:pPr") {
-			p.p.Element.RemoveChild(c)
+			toRemove = append(toRemove, c)
 		}
+	}
+	for _, c := range toRemove {
+		p.p.Element.RemoveChild(c)
 	}
 }
 
@@ -130,11 +137,13 @@ func (p *Paragraph) IterInnerContent() []interface{} {
 		return nil
 	}
 	var items []interface{}
-	for _, r := range p.p.R_lst() {
-		items = append(items, NewRun(r))
-	}
-	for _, h := range p.p.Hyperlink_lst() {
-		items = append(items, &Hyperlink{h: h, parent: p, rels: p.rels})
+	for _, c := range p.p.Element.Children() {
+		tag := c.ClarkTag()
+		if tag == ns.Qn("w:r") {
+			items = append(items, NewRun(&text.CT_R{Element: c}))
+		} else if tag == ns.Qn("w:hyperlink") {
+			items = append(items, &Hyperlink{h: &text.CT_Hyperlink{Element: c}, parent: p, rels: p.rels})
+		}
 	}
 	return items
 }
@@ -172,6 +181,20 @@ func (p *Paragraph) ContainsPageBreak() bool {
 			for _, br := range r.Br_lst() {
 				typ, ok := br.Element.GetAttr(ns.NsMap["w"], "type")
 				if ok && typ == "page" {
+					return true
+				}
+			}
+		}
+		for _, c := range r.Element.Children() {
+			if c.Local() == "lastRenderedPageBreak" {
+				return true
+			}
+		}
+	}
+	for _, h := range p.p.Hyperlink_lst() {
+		for _, r := range h.R_lst() {
+			for _, c := range r.Element.Children() {
+				if c.Local() == "lastRenderedPageBreak" {
 					return true
 				}
 			}

@@ -28,5 +28,5 @@ func DefaultCoreProperties(pkg *opc.OpcPackage) *CorePropertiesPart {
 }
 
 func (cp *CorePropertiesPart) CoreProperties() *opc.CoreProperties {
-	return opc.NewCoreProperties(cp.Element())
+	return opc.NewCorePropertiesWithPart(cp.Element(), cp.Part)
 }

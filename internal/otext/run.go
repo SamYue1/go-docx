@@ -1,6 +1,8 @@
 package otext
 
 import (
+	"strings"
+
 	"github.com/SamYue1/go-docx/internal/oxml/ns"
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
 )
@@ -38,6 +40,7 @@ func (rn *Run) AddText(s string) {
 	if rn == nil || rn.r == nil {
 		return
 	}
+	s = strings.ReplaceAll(s, "\r", "\n")
 	rn.r.AddT(s)
 }
 

@@ -1,7 +1,7 @@
 package otext
 
 import (
-	"github.com/SamYue1/go-docx/internal/oxml/ns"
+	"github.com/SamYue1/go-docx/internal/oxml/dom"
 	"github.com/SamYue1/go-docx/internal/oxml/text"
 	"github.com/SamYue1/go-docx/internal/shared"
 )
@@ -29,10 +29,14 @@ func (ts *TabStops) AddTabStop(position shared.Length, alignment, leader string)
 }
 
 func (ts *TabStops) ClearAll() {
+	var toRemove []*dom.Element
 	for _, c := range ts.tabs.Element.Children() {
-		if c.ClarkTag() == ns.Qn("w:tab") {
-			ts.tabs.Element.RemoveChild(c)
+		if c.Local() == "tab" {
+			toRemove = append(toRemove, c)
 		}
+	}
+	for _, c := range toRemove {
+		ts.tabs.Element.RemoveChild(c)
 	}
 }
 

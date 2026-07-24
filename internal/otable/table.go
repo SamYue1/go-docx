@@ -244,7 +244,7 @@ func (c *Column) Cells() []*Cell {
 
 func (c *Column) index() int {
 	for i, col := range c.table.Columns() {
-		if col.gridCol == c.gridCol {
+		if col.gridCol.Element == c.gridCol.Element {
 			return i
 		}
 	}

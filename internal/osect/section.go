@@ -2,6 +2,7 @@ package osect
 
 import (
 	"github.com/SamYue1/go-docx/internal/oxml"
+	"github.com/SamYue1/go-docx/internal/oxml/ns"
 	"github.com/SamYue1/go-docx/internal/shared"
 )
 
@@ -74,9 +75,12 @@ func (s *Section) Orientation() string {
 	}
 	pgSz := s.sectPr.PgSz()
 	if pgSz == nil {
-		return ""
+		return "portrait"
 	}
-	o, _ := pgSz.Orient()
+	o, ok := pgSz.Orient()
+	if !ok || o == "" {
+		return "portrait"
+	}
 	return o
 }
 
@@ -85,7 +89,11 @@ func (s *Section) SetOrientation(o string) {
 		return
 	}
 	pgSz := s.sectPr.GetOrAddPgSz()
-	pgSz.SetOrient(o)
+	if o == "" {
+		pgSz.Element.RemoveAttr(ns.NsMap["w"], "orient")
+	} else {
+		pgSz.SetOrient(o)
+	}
 }
 
 func (s *Section) MarginTop() *shared.Length {
@@ -190,13 +198,24 @@ func (s *Section) StartType() (string, bool) {
 	}
 	typ := s.sectPr.Type()
 	if typ == nil {
-		return "", false
+		return "newPage", true
 	}
-	return typ.Val()
+	v, ok := typ.Val()
+	if !ok || v == "" {
+		return "newPage", true
+	}
+	return v, true
 }
 
 func (s *Section) SetStartType(val string) {
 	if s == nil || s.sectPr == nil {
+		return
+	}
+	if val == "" {
+		el := s.sectPr.Type()
+		if el != nil {
+			s.sectPr.Element.RemoveChild(el.Element)
+		}
 		return
 	}
 	typ := s.sectPr.GetOrAddType()

@@ -8,6 +8,8 @@ import (
 	"github.com/SamYue1/go-docx/internal/otable"
 	"github.com/SamYue1/go-docx/internal/otext"
 	"github.com/SamYue1/go-docx/internal/oxml"
+	"github.com/SamYue1/go-docx/internal/oxml/dom"
+	"github.com/SamYue1/go-docx/internal/oxml/ns"
 	"github.com/SamYue1/go-docx/internal/parts"
 	"github.com/SamYue1/go-docx/internal/shared"
 	"github.com/SamYue1/go-docx/internal/styles"
@@ -204,8 +206,9 @@ func (d *Document) AddSection() *osect.Section {
 	if body == nil {
 		return nil
 	}
-	sp := body.GetOrAddSectPr()
-	return osect.NewSection(sp)
+	sp := dom.NewElement(ns.NsMap["w"], "sectPr")
+	body.Element.AddChild(sp)
+	return osect.NewSection(&oxml.CT_SectPr{Element: sp})
 }
 
 func (d *Document) AddHeading(textStr string, level int) *otext.Paragraph {

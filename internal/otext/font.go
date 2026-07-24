@@ -196,7 +196,12 @@ func (f *Font) HighlightColor() string {
 	if f == nil || f.rPr == nil {
 		return ""
 	}
-	return f.rPr.HighlightVal()
+	val := f.rPr.HighlightVal()
+	switch val {
+	case "green":
+		return "brightGreen"
+	}
+	return val
 }
 
 func (f *Font) SetHighlightColor(val string) {
@@ -206,6 +211,10 @@ func (f *Font) SetHighlightColor(val string) {
 	if val == "" {
 		f.rPr.RemoveHighlight()
 		return
+	}
+	switch val {
+	case "brightGreen":
+		val = "green"
 	}
 	f.rPr.SetHighlightVal(val)
 }
@@ -219,7 +228,7 @@ func (f *Font) ColorHex() string {
 		return ""
 	}
 	val, ok := c.Val()
-	if !ok {
+	if !ok || val == "auto" {
 		return ""
 	}
 	return val

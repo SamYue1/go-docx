@@ -6,8 +6,9 @@ import (
 )
 
 type OpcPackage struct {
-	rels *Relationships
-	partFactory func(PackURI, string, string, []byte) *Part
+	rels             *Relationships
+	partFactory      func(PackURI, string, string, []byte) *Part
+	cachedCoreProps  *CoreProperties
 }
 
 func NewOpcPackage() *OpcPackage {
@@ -22,17 +23,23 @@ func NewOpcPackage() *OpcPackage {
 func (pkg *OpcPackage) AfterUnmarshal() {}
 
 func (pkg *OpcPackage) CoreProperties() *CoreProperties {
+	if pkg.cachedCoreProps != nil {
+		return pkg.cachedCoreProps
+	}
 	cpPart := pkg.CorePropertiesPart()
 	if cpPart == nil {
 		element := NewDefaultCorePropertiesElement()
-		return NewCoreProperties(element)
+		pkg.cachedCoreProps = NewCorePropertiesWithPart(element, nil)
+		return pkg.cachedCoreProps
 	}
 	blob := cpPart.Blob()
 	element, err := parseXML(blob)
 	if err != nil || element == nil {
-		return NewCoreProperties(NewDefaultCorePropertiesElement())
+		pkg.cachedCoreProps = NewCorePropertiesWithPart(NewDefaultCorePropertiesElement(), cpPart)
+		return pkg.cachedCoreProps
 	}
-	return NewCoreProperties(element)
+	pkg.cachedCoreProps = NewCorePropertiesWithPart(element, cpPart)
+	return pkg.cachedCoreProps
 }
 
 func (pkg *OpcPackage) CorePropertiesPart() *Part {

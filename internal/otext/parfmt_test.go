@@ -82,28 +82,42 @@ func TestDescribeParagraphFormat(t *testing.T) {
 
 	t.Run("it_sets_keep_next", func(t *testing.T) {
 		pf := NewParagraphFormat(text.NewCT_PPr())
-		pf.SetKeepNext(true)
+		tv := true
+		pf.SetKeepNext(&tv)
 		assert.NotNil(t, pf.pPr.KeepNext())
 	})
 
-	t.Run("it_removes_keep_next", func(t *testing.T) {
+	t.Run("it_disables_keep_next", func(t *testing.T) {
 		pf := NewParagraphFormat(text.NewCT_PPr())
-		pf.SetKeepNext(true)
-		pf.SetKeepNext(false)
-		assert.Nil(t, pf.pPr.KeepNext())
+		tv := true
+		pf.SetKeepNext(&tv)
+		fv := false
+		pf.SetKeepNext(&fv)
+		el := pf.pPr.KeepNext()
+		assert.NotNil(t, el)
+		v, ok := el.GetAttr("http://schemas.openxmlformats.org/wordprocessingml/2006/main", "val")
+		assert.True(t, ok)
+		assert.Equal(t, "false", v)
 	})
 
 	t.Run("it_sets_keep_lines", func(t *testing.T) {
 		pf := NewParagraphFormat(text.NewCT_PPr())
-		pf.SetKeepLines(true)
+		tv := true
+		pf.SetKeepTogether(&tv)
 		assert.NotNil(t, pf.pPr.KeepLines())
 	})
 
-	t.Run("it_removes_keep_lines", func(t *testing.T) {
+	t.Run("it_disables_keep_lines", func(t *testing.T) {
 		pf := NewParagraphFormat(text.NewCT_PPr())
-		pf.SetKeepLines(true)
-		pf.SetKeepLines(false)
-		assert.Nil(t, pf.pPr.KeepLines())
+		tv := true
+		pf.SetKeepTogether(&tv)
+		fv := false
+		pf.SetKeepTogether(&fv)
+		el := pf.pPr.KeepLines()
+		assert.NotNil(t, el)
+		v, ok := el.GetAttr("http://schemas.openxmlformats.org/wordprocessingml/2006/main", "val")
+		assert.True(t, ok)
+		assert.Equal(t, "false", v)
 	})
 
 	t.Run("it_knows_page_break_before", func(t *testing.T) {

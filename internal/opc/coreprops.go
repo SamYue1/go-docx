@@ -16,10 +16,15 @@ const (
 
 type CoreProperties struct {
 	element *dom.Element
+	part    *Part
 }
 
 func NewCoreProperties(element *dom.Element) *CoreProperties {
 	return &CoreProperties{element: element}
+}
+
+func NewCorePropertiesWithPart(element *dom.Element, part *Part) *CoreProperties {
+	return &CoreProperties{element: element, part: part}
 }
 
 func (cp *CoreProperties) Author() string {
@@ -157,6 +162,13 @@ func (cp *CoreProperties) setElementText(ns, local, value string) {
 		cp.element.AddChild(child)
 	}
 	child.SetText(value)
+	cp.syncBlob()
+}
+
+func (cp *CoreProperties) syncBlob() {
+	if cp.part != nil {
+		cp.part.SetBlob(serializePartXML(cp.element))
+	}
 }
 
 func (cp *CoreProperties) elementDateTime(ns, local string) time.Time {

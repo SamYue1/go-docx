@@ -229,7 +229,15 @@ func (s *Style) SetPriority(val *int) {
 }
 
 func (s *Style) QuickStyle() bool {
-	return s.style.QFormat() != nil
+	qf := s.style.QFormat()
+	if qf == nil {
+		return false
+	}
+	v, ok := qf.GetAttr(ns.NsMap["w"], "val")
+	if !ok {
+		return true
+	}
+	return v != "0" && v != "false" && v != "off"
 }
 
 func (s *Style) SetQuickStyle(val bool) {
@@ -400,6 +408,9 @@ func (ls *LatentStyle) Priority() (int, bool) {
 	if !ok {
 		return 0, false
 	}
+	if v == "" || v == "0" {
+		return 0, false
+	}
 	n, err := strconv.Atoi(v)
 	if err != nil {
 		return 0, false
@@ -408,7 +419,11 @@ func (ls *LatentStyle) Priority() (int, bool) {
 }
 
 func (ls *LatentStyle) SetPriority(val int) {
-	ls.lsd.SetUiPriority(strconv.Itoa(val))
+	if val == 0 {
+		ls.lsd.SetUiPriority("0")
+	} else {
+		ls.lsd.SetUiPriority(strconv.Itoa(val))
+	}
 }
 
 func (ls *LatentStyle) Hidden() *bool {
