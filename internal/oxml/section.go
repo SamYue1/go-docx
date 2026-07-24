@@ -289,8 +289,8 @@ type CT_HdrFtrRef struct {
 	*dom.Element
 }
 
-func NewCT_HdrFtrRef(typ, rId string) *CT_HdrFtrRef {
-	e := dom.NewElement(ns.NsMap["w"], "CT_HdrFtrRef")
+func NewCT_HdrFtrRef(local, typ, rId string) *CT_HdrFtrRef {
+	e := dom.NewElement(ns.NsMap["w"], local)
 	r := &CT_HdrFtrRef{Element: e}
 	r.SetType(typ)
 	r.SetRId(rId)

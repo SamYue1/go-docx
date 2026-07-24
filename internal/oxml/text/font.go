@@ -241,7 +241,7 @@ type CT_HpsMeasure struct {
 }
 
 func NewCT_HpsMeasure(val int) *CT_HpsMeasure {
-	e := dom.NewElement(ns.NsMap["w"], "CT_HpsMeasure")
+    e := dom.NewElement(ns.NsMap["w"], "sz")
 	h := &CT_HpsMeasure{Element: e}
 	h.SetVal(val)
 	return h

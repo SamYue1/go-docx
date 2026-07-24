@@ -16,16 +16,14 @@ import (
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
 )
 
-// document-level state for numbering, inline shapes
-var numberingState *NumberingPart
-var inlineShapesState *InlineShapes
-
 type Document struct {
-	part          *parts.DocumentPart
-	pkg           *opc.OpcPackage
-	stylesPart    *parts.StylesPart
-	comments      *Comments
-	commentsPart  *opc.Part
+	part              *parts.DocumentPart
+	pkg               *opc.OpcPackage
+	stylesPart        *parts.StylesPart
+	comments          *Comments
+	commentsPart      *opc.Part
+	numberingState    *NumberingPart
+	inlineShapesState *InlineShapes
 }
 
 func NewDocument() *Document {
@@ -298,7 +296,7 @@ func (d *Document) AddPicture(imagePath string, width, height shared.Length) err
 	drawing := dom.NewElement(ns.NsMap["w"], "drawing")
 	run.CT_R().Element.AddChild(drawing)
 	is := NewInlineShape("WD_INLINE_SHAPE.PICTURE", width, height)
-	inlineShapesState.Add(is)
+	d.InlineShapes().Add(is)
 	return nil
 }
 
@@ -412,7 +410,7 @@ func (d *Document) AddComment(text, author, initials string) *Comment {
 }
 
 func (d *Document) NumberingPart() *NumberingPart {
-	if numberingState == nil {
+	if d.numberingState == nil {
 		relType := "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering"
 		numPart := d.part.Part().PartRelatedBy(relType)
 		if numPart != nil {
@@ -420,21 +418,21 @@ func (d *Document) NumberingPart() *NumberingPart {
 			if len(blob) > 0 {
 				el, err := dom.Parse(blob)
 				if err == nil && el != nil {
-					numberingState = NewNumberingPartFromElement(el)
-					return numberingState
+					d.numberingState = NewNumberingPartFromElement(el)
+					return d.numberingState
 				}
 			}
 		}
-		numberingState = NewNumberingPart()
+		d.numberingState = NewNumberingPart()
 	}
-	return numberingState
+	return d.numberingState
 }
 
 func (d *Document) InlineShapes() *InlineShapes {
-	if inlineShapesState == nil {
-		inlineShapesState = NewInlineShapes()
+	if d.inlineShapesState == nil {
+		d.inlineShapesState = NewInlineShapes()
 	}
-	return inlineShapesState
+	return d.inlineShapesState
 }
 
 // IterInnerContent returns paragraphs and tables in document order.

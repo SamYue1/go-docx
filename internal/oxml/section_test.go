@@ -227,7 +227,7 @@ func TestDescribeCT_SectType(t *testing.T) {
 
 func TestDescribeCT_HdrFtrRef(t *testing.T) {
 	t.Run("it_sets_and_gets_reference", func(t *testing.T) {
-		ref := NewCT_HdrFtrRef("default", "rId5")
+		ref := NewCT_HdrFtrRef("headerReference", "default", "rId5")
 		typ, ok := ref.Type()
 		assert.True(t, ok)
 		assert.Equal(t, "default", typ)
@@ -237,7 +237,7 @@ func TestDescribeCT_HdrFtrRef(t *testing.T) {
 	})
 
 	t.Run("it_sets_first_and_even_types", func(t *testing.T) {
-		ref := NewCT_HdrFtrRef("first", "rId10")
+		ref := NewCT_HdrFtrRef("footerReference", "first", "rId10")
 		typ, _ := ref.Type()
 		assert.Equal(t, "first", typ)
 		rId, _ := ref.RId()
