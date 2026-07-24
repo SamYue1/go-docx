@@ -106,6 +106,20 @@ func (c *Cell) Width() *shared.Length {
 	if !ok {
 		return nil
 	}
+	span := c.GridSpan()
+	if span > 1 && c.table != nil {
+		total := 0
+		cols := c.table.Columns()
+		for i := 0; i < span && i < len(cols); i++ {
+			if w, ok := cols[i].gridCol.W(); ok {
+				total += w
+			}
+		}
+		if total > 0 {
+			l := shared.Twips(float64(total))
+			return &l
+		}
+	}
 	l := shared.Twips(float64(w))
 	return &l
 }

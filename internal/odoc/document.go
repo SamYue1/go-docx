@@ -22,8 +22,9 @@ var numberingState *NumberingPart
 var inlineShapesState *InlineShapes
 
 type Document struct {
-	part *parts.DocumentPart
-	pkg  *opc.OpcPackage
+	part       *parts.DocumentPart
+	pkg        *opc.OpcPackage
+	stylesPart *parts.StylesPart
 }
 
 func NewDocument() *Document {
@@ -172,12 +173,14 @@ func (d *Document) Sections() []*osect.Section {
 }
 
 func (d *Document) Styles() *styles.Styles {
-	sp := d.part.StylesPart()
-	if sp == nil {
-		return nil
+	if d.stylesPart == nil {
+		sp := d.part.StylesPart()
+		if sp == nil {
+			return nil
+		}
+		d.stylesPart = parts.NewStylesPart(sp)
 	}
-	stp := parts.NewStylesPart(sp)
-	return stp.Styles()
+	return d.stylesPart.Styles()
 }
 
 func (d *Document) Settings() *osect.Settings {
@@ -225,7 +228,9 @@ func (d *Document) AddTable(rows, cols int) *otable.Table {
 		}
 	}
 	_ = grid
-	return otable.NewTable(tbl)
+	t := otable.NewTable(tbl)
+	t.SetStyle("Normal Table")
+	return t
 }
 
 func (d *Document) AddPicture(imagePath string, width, height shared.Length) error {
@@ -309,6 +314,15 @@ func (d *Document) Comments() *Comments {
 		commentsState = NewComments()
 	}
 	return commentsState
+}
+
+func (d *Document) AddComment(text, author, initials string) *Comment {
+	c := d.Comments()
+	cm := c.AddWithParams(author, initials)
+	if text != "" {
+		cm.paragraphs[0].AddRun(text)
+	}
+	return cm
 }
 
 func (d *Document) NumberingPart() *NumberingPart {

@@ -153,6 +153,9 @@ func (pf *ParagraphFormat) LineSpacing() (int, bool) {
 	if rule == "" || rule == "auto" {
 		return line, true
 	}
+	if rule == "exact" || rule == "exactly" {
+		return line * 635, true
+	}
 	return line * 635, true
 }
 
@@ -292,7 +295,29 @@ func (pf *ParagraphFormat) LineSpacingRule() (string, bool) {
 	if spacing == nil {
 		return "", false
 	}
-	return spacing.LineRule()
+	rule, ok := spacing.LineRule()
+	if !ok {
+		return "", false
+	}
+	line, lineOk := spacing.Line()
+	if rule == "auto" && !lineOk {
+		return "", false
+	}
+	if rule == "auto" && lineOk {
+		switch line {
+		case 240:
+			return "single", true
+		case 360:
+			return "onePtFive", true
+		case 480:
+			return "double", true
+		}
+		return "auto", true
+	}
+	if rule == "exact" {
+		return "exactly", true
+	}
+	return rule, true
 }
 
 func (pf *ParagraphFormat) SetLineSpacingRule(val string) {
@@ -300,6 +325,9 @@ func (pf *ParagraphFormat) SetLineSpacingRule(val string) {
 		return
 	}
 	spacing := pf.pPr.GetOrAddSpacing()
+	if val == "exactly" {
+		val = "exact"
+	}
 	spacing.SetLineRule(val)
 }
 

@@ -573,3 +573,27 @@ func (s *Section) SetFooterDistance(length shared.Length) {
 	pgMar := s.sectPr.GetOrAddPgMar()
 	pgMar.SetFooter(length.Twips())
 }
+
+func (s *Section) Gutter() *shared.Length {
+	if s == nil || s.sectPr == nil {
+		return nil
+	}
+	pgMar := s.sectPr.PgMar()
+	if pgMar == nil {
+		return nil
+	}
+	v, ok := pgMar.Gutter()
+	if !ok {
+		return nil
+	}
+	l := shared.Twips(float64(v))
+	return &l
+}
+
+func (s *Section) SetGutter(length shared.Length) {
+	if s == nil || s.sectPr == nil {
+		return
+	}
+	pgMar := s.sectPr.GetOrAddPgMar()
+	pgMar.SetGutter(length.Twips())
+}

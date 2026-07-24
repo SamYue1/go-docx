@@ -31,6 +31,10 @@ func (s *Styles) Style(name string) *Style {
 				return &Style{style: st}
 			}
 		}
+		sid, ok := st.StyleId()
+		if ok && sid == name {
+			return &Style{style: st}
+		}
 	}
 	return nil
 }

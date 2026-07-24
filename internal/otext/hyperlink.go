@@ -90,3 +90,21 @@ func (hl *Hyperlink) Fragment() string {
 	}
 	return anchor
 }
+
+func (hl *Hyperlink) RenderedPageBreaks() []*RenderedPageBreak {
+	if hl == nil || hl.h == nil {
+		return nil
+	}
+	var result []*RenderedPageBreak
+	for _, r := range hl.h.R_lst() {
+		for _, c := range r.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:lastRenderedPageBreak") {
+				result = append(result, &RenderedPageBreak{
+					el:     c,
+					parent: hl.parent,
+				})
+			}
+		}
+	}
+	return result
+}

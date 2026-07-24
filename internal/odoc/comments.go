@@ -1,6 +1,9 @@
 package odoc
 
-import "github.com/SamYue1/go-docx/internal/otext"
+import (
+	"github.com/SamYue1/go-docx/internal/otext"
+	text "github.com/SamYue1/go-docx/internal/oxml/text"
+)
 
 type Comments struct {
 	items []*Comment
@@ -22,6 +25,8 @@ func (c *Comments) Add() *Comment {
 	cm := &Comment{
 		commentID: len(c.items),
 	}
+	p := cm.AddParagraph()
+	p.SetStyle("CommentText")
 	c.items = append(c.items, cm)
 	return cm
 }
@@ -32,6 +37,8 @@ func (c *Comments) AddWithParams(author, initials string) *Comment {
 		initials:  initials,
 		commentID: len(c.items),
 	}
+	p := cm.AddParagraph()
+	p.SetStyle("CommentText")
 	c.items = append(c.items, cm)
 	return cm
 }
@@ -81,19 +88,36 @@ func (cm *Comment) Timestamp() string {
 	return cm.timestamp
 }
 
+func (cm *Comment) SetTimestamp(ts string) {
+	cm.timestamp = ts
+}
+
 func (cm *Comment) Paragraphs() []*otext.Paragraph {
 	return cm.paragraphs
 }
 
 func (cm *Comment) AddParagraph() *otext.Paragraph {
-	p := otext.NewParagraph(nil)
+	p := otext.NewParagraph(text.NewCT_P())
 	cm.paragraphs = append(cm.paragraphs, p)
 	return p
 }
 
-func (cm *Comment) AddParagraphWithText(text string) *otext.Paragraph {
-	p := otext.NewParagraph(nil)
-	p.AddRun(text)
+func (cm *Comment) AddParagraphWithText(txt string) *otext.Paragraph {
+	p := otext.NewParagraph(text.NewCT_P())
+	p.AddRun(txt)
+	cm.paragraphs = append(cm.paragraphs, p)
+	return p
+}
+
+func (cm *Comment) AddParagraphWithTextAndStyle(txt, style string) *otext.Paragraph {
+	p := otext.NewParagraph(text.NewCT_P())
+	if txt != "" {
+		p.AddRun(txt)
+	}
+	if style == "" {
+		style = "CommentText"
+	}
+	p.SetStyle(style)
 	cm.paragraphs = append(cm.paragraphs, p)
 	return p
 }

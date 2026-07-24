@@ -106,13 +106,16 @@ func (t *Table) Style() string {
 	}
 	tblPr := t.tbl.TblPr()
 	if tblPr == nil {
-		return ""
+		return "Normal Table"
 	}
 	tblStyle := tblPr.TblStyle()
 	if tblStyle == nil {
-		return ""
+		return "Normal Table"
 	}
 	val, _ := tblStyle.Val()
+	if val == "" {
+		return "Normal Table"
+	}
 	return val
 }
 

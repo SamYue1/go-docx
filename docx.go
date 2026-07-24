@@ -42,6 +42,14 @@ type InlineShape = odoc.InlineShape
 type Image = odoc.Image
 type NumberingPart = odoc.NumberingPart
 
+func NewInlineShape(typ string, width, height shared.Length) *InlineShape {
+	return odoc.NewInlineShape(typ, width, height)
+}
+
+func NewComments() *Comments {
+	return odoc.NewComments()
+}
+
 const (
 	BreakLine           = otext.BreakLine
 	BreakPage           = otext.BreakPage
