@@ -330,35 +330,47 @@ func TestDescribeLatentStyle(t *testing.T) {
 
 	t.Run("it_manages_locked", func(t *testing.T) {
 		l := NewLatentStyle(oxml.NewCT_LsdException("test"))
-		assert.False(t, l.Locked())
+		assert.Nil(t, l.Locked())
 
-		l.SetLocked(true)
-		assert.True(t, l.Locked())
+		tv := true
+		l.SetLocked(&tv)
+		assert.NotNil(t, l.Locked())
+		assert.True(t, *l.Locked())
 
-		l.SetLocked(false)
-		assert.False(t, l.Locked())
+		fv := false
+		l.SetLocked(&fv)
+		assert.NotNil(t, l.Locked())
+		assert.False(t, *l.Locked())
 	})
 
 	t.Run("it_manages_semiHidden", func(t *testing.T) {
 		l := NewLatentStyle(oxml.NewCT_LsdException("test"))
-		assert.False(t, l.SemiHidden())
+		assert.Nil(t, l.Hidden())
 
-		l.SetSemiHidden(true)
-		assert.True(t, l.SemiHidden())
+		tv := true
+		l.SetHidden(&tv)
+		assert.NotNil(t, l.Hidden())
+		assert.True(t, *l.Hidden())
 
-		l.SetSemiHidden(false)
-		assert.False(t, l.SemiHidden())
+		fv := false
+		l.SetHidden(&fv)
+		assert.NotNil(t, l.Hidden())
+		assert.False(t, *l.Hidden())
 	})
 
 	t.Run("it_manages_unhideWhenUsed", func(t *testing.T) {
 		l := NewLatentStyle(oxml.NewCT_LsdException("test"))
-		assert.False(t, l.UnhideWhenUsed())
+		assert.Nil(t, l.UnhideWhenUsed())
 
-		l.SetUnhideWhenUsed(true)
-		assert.True(t, l.UnhideWhenUsed())
+		tv := true
+		l.SetUnhideWhenUsed(&tv)
+		assert.NotNil(t, l.UnhideWhenUsed())
+		assert.True(t, *l.UnhideWhenUsed())
 
-		l.SetUnhideWhenUsed(false)
-		assert.False(t, l.UnhideWhenUsed())
+		fv := false
+		l.SetUnhideWhenUsed(&fv)
+		assert.NotNil(t, l.UnhideWhenUsed())
+		assert.False(t, *l.UnhideWhenUsed())
 	})
 
 	t.Run("it_handles_name_case_sensitivity", func(t *testing.T) {
@@ -370,11 +382,16 @@ func TestDescribeLatentStyle(t *testing.T) {
 
 	t.Run("it_toggles_locked_multiple_times", func(t *testing.T) {
 		l := NewLatentStyle(oxml.NewCT_LsdException("test"))
-		l.SetLocked(true)
-		assert.True(t, l.Locked())
-		l.SetLocked(false)
-		assert.False(t, l.Locked())
-		l.SetLocked(true)
-		assert.True(t, l.Locked())
+		tv := true
+		l.SetLocked(&tv)
+		assert.NotNil(t, l.Locked())
+		assert.True(t, *l.Locked())
+		fv := false
+		l.SetLocked(&fv)
+		assert.NotNil(t, l.Locked())
+		assert.False(t, *l.Locked())
+		l.SetLocked(&tv)
+		assert.NotNil(t, l.Locked())
+		assert.True(t, *l.Locked())
 	})
 }

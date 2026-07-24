@@ -1,6 +1,8 @@
 package styles
 
 import (
+	"strconv"
+
 	"github.com/SamYue1/go-docx/internal/oxml"
 	"github.com/SamYue1/go-docx/internal/oxml/dom"
 	"github.com/SamYue1/go-docx/internal/oxml/ns"
@@ -63,6 +65,15 @@ func (s *Styles) LatentStyles() *LatentStyles {
 		return nil
 	}
 	return &LatentStyles{latent: ls}
+}
+
+func (s *Styles) List() []*Style {
+	oxmlStyles := s.styles.Style_lst()
+	result := make([]*Style, len(oxmlStyles))
+	for i, st := range oxmlStyles {
+		result[i] = &Style{style: st}
+	}
+	return result
 }
 
 type Style struct {
@@ -149,6 +160,112 @@ func (s *Style) BuiltIn() bool {
 	return s.style.QFormat() != nil
 }
 
+func (s *Style) Hidden() bool {
+	el := s.style.SemiHidden()
+	if el == nil {
+		return false
+	}
+	v, ok := el.GetAttr(ns.NsMap["w"], "val")
+	if !ok {
+		return true
+	}
+	switch v {
+	case "true", "1", "on":
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *Style) SetHidden(val bool) {
+	if val {
+		el := s.style.GetOrAddHidden()
+		el.RemoveAttr(ns.NsMap["w"], "val")
+	} else {
+		s.style.RemoveHidden()
+	}
+}
+
+func (s *Style) Locked() bool {
+	el := s.style.Locked()
+	if el == nil {
+		return false
+	}
+	v, ok := el.GetAttr(ns.NsMap["w"], "val")
+	if !ok {
+		return true
+	}
+	switch v {
+	case "true", "1", "on":
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *Style) SetLocked(val bool) {
+	if val {
+		el := s.style.GetOrAddLocked()
+		el.RemoveAttr(ns.NsMap["w"], "val")
+	} else {
+		s.style.RemoveLocked()
+	}
+}
+
+func (s *Style) Priority() *int {
+	val, ok := s.style.UiPriorityVal()
+	if !ok {
+		return nil
+	}
+	return &val
+}
+
+func (s *Style) SetPriority(val *int) {
+	if val == nil {
+		s.style.RemoveUiPriority()
+	} else {
+		s.style.SetUiPriorityVal(*val)
+	}
+}
+
+func (s *Style) QuickStyle() bool {
+	return s.style.QFormat() != nil
+}
+
+func (s *Style) SetQuickStyle(val bool) {
+	if val {
+		s.style.GetOrAddQFormat()
+	} else {
+		s.style.RemoveQFormat()
+	}
+}
+
+func (s *Style) UnhideWhenUsed() bool {
+	el := s.style.UnhideWhenUsed()
+	if el == nil {
+		return false
+	}
+	v, ok := el.GetAttr(ns.NsMap["w"], "val")
+	if !ok {
+		return true
+	}
+	switch v {
+	case "true", "1", "on":
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *Style) SetUnhideWhenUsed(val bool) {
+	if val {
+		el := s.style.GetOrAddUnhideWhenUsed()
+		el.RemoveAttr(ns.NsMap["w"], "val")
+	} else {
+		s.style.RemoveUnhideWhenUsed()
+	}
+}
+
 func (s *Style) SetBuiltIn(val bool) {
 	if val {
 		if s.style.QFormat() == nil {
@@ -182,6 +299,90 @@ func (ls *LatentStyles) AddLatentStyle(name string) *LatentStyle {
 	return &LatentStyle{lsd: l}
 }
 
+func (ls *LatentStyles) DefLockedState() bool {
+	v, ok := ls.latent.GetAttr(ns.NsMap["w"], "defLockedState")
+	return ok && (v == "true" || v == "1" || v == "on")
+}
+
+func (ls *LatentStyles) SetDefLockedState(val bool) {
+	if val {
+		ls.latent.SetAttr(ns.NsMap["w"], "defLockedState", "1")
+	} else {
+		ls.latent.SetAttr(ns.NsMap["w"], "defLockedState", "0")
+	}
+}
+
+func (ls *LatentStyles) DefUIPriority() (int, bool) {
+	v, ok := ls.latent.GetAttr(ns.NsMap["w"], "defUIPriority")
+	if !ok {
+		return 0, false
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, false
+	}
+	return n, true
+}
+
+func (ls *LatentStyles) SetDefUIPriority(val int) {
+	ls.latent.SetAttr(ns.NsMap["w"], "defUIPriority", strconv.Itoa(val))
+}
+
+func (ls *LatentStyles) DefSemiHidden() bool {
+	v, ok := ls.latent.GetAttr(ns.NsMap["w"], "defSemiHidden")
+	return ok && (v == "true" || v == "1" || v == "on")
+}
+
+func (ls *LatentStyles) SetDefSemiHidden(val bool) {
+	if val {
+		ls.latent.SetAttr(ns.NsMap["w"], "defSemiHidden", "1")
+	} else {
+		ls.latent.SetAttr(ns.NsMap["w"], "defSemiHidden", "0")
+	}
+}
+
+func (ls *LatentStyles) DefUnhideWhenUsed() bool {
+	v, ok := ls.latent.GetAttr(ns.NsMap["w"], "defUnhideWhenUsed")
+	return ok && (v == "true" || v == "1" || v == "on")
+}
+
+func (ls *LatentStyles) SetDefUnhideWhenUsed(val bool) {
+	if val {
+		ls.latent.SetAttr(ns.NsMap["w"], "defUnhideWhenUsed", "1")
+	} else {
+		ls.latent.SetAttr(ns.NsMap["w"], "defUnhideWhenUsed", "0")
+	}
+}
+
+func (ls *LatentStyles) DefQFormat() bool {
+	v, ok := ls.latent.GetAttr(ns.NsMap["w"], "defQFormat")
+	return ok && (v == "true" || v == "1" || v == "on")
+}
+
+func (ls *LatentStyles) SetDefQFormat(val bool) {
+	if val {
+		ls.latent.SetAttr(ns.NsMap["w"], "defQFormat", "1")
+	} else {
+		ls.latent.SetAttr(ns.NsMap["w"], "defQFormat", "0")
+	}
+}
+
+func (ls *LatentStyles) Count() (int, bool) {
+	v, ok := ls.latent.GetAttr(ns.NsMap["w"], "count")
+	if !ok {
+		return 0, false
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, false
+	}
+	return n, true
+}
+
+func (ls *LatentStyles) SetCount(val int) {
+	ls.latent.SetAttr(ns.NsMap["w"], "count", strconv.Itoa(val))
+}
+
 type LatentStyle struct {
 	lsd *oxml.CT_LsdException
 }
@@ -194,39 +395,92 @@ func (ls *LatentStyle) Name() (string, bool) {
 	return ls.lsd.Name()
 }
 
-func (ls *LatentStyle) Locked() bool {
-	v, ok := ls.lsd.Locked()
-	return ok && v == "true"
-}
-
-func (ls *LatentStyle) SetLocked(val bool) {
-	if val {
-		ls.lsd.SetLocked("true")
-	} else {
-		ls.lsd.SetLocked("false")
+func (ls *LatentStyle) Priority() (int, bool) {
+	v, ok := ls.lsd.UiPriority()
+	if !ok {
+		return 0, false
 	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, false
+	}
+	return n, true
 }
 
-func (ls *LatentStyle) SemiHidden() bool {
+func (ls *LatentStyle) SetPriority(val int) {
+	ls.lsd.SetUiPriority(strconv.Itoa(val))
+}
+
+func (ls *LatentStyle) Hidden() *bool {
 	v, ok := ls.lsd.SemiHidden()
-	return ok && v == "true"
+	if !ok {
+		return nil
+	}
+	b := v == "true" || v == "1" || v == "on"
+	return &b
 }
 
-func (ls *LatentStyle) SetSemiHidden(val bool) {
-	if val {
+func (ls *LatentStyle) SetHidden(val *bool) {
+	if val == nil {
+		ls.lsd.Element.RemoveAttr(ns.NsMap["w"], "semiHidden")
+	} else if *val {
 		ls.lsd.SetSemiHidden("true")
 	} else {
 		ls.lsd.SetSemiHidden("false")
 	}
 }
 
-func (ls *LatentStyle) UnhideWhenUsed() bool {
-	v, ok := ls.lsd.UnhideWhenUsed()
-	return ok && v == "true"
+func (ls *LatentStyle) Locked() *bool {
+	v, ok := ls.lsd.Locked()
+	if !ok {
+		return nil
+	}
+	b := v == "true" || v == "1" || v == "on"
+	return &b
 }
 
-func (ls *LatentStyle) SetUnhideWhenUsed(val bool) {
-	if val {
+func (ls *LatentStyle) SetLocked(val *bool) {
+	if val == nil {
+		ls.lsd.Element.RemoveAttr(ns.NsMap["w"], "locked")
+	} else if *val {
+		ls.lsd.SetLocked("true")
+	} else {
+		ls.lsd.SetLocked("false")
+	}
+}
+
+func (ls *LatentStyle) QuickStyle() *bool {
+	v, ok := ls.lsd.QFormat()
+	if !ok {
+		return nil
+	}
+	b := v == "true" || v == "1" || v == "on"
+	return &b
+}
+
+func (ls *LatentStyle) SetQuickStyle(val *bool) {
+	if val == nil {
+		ls.lsd.Element.RemoveAttr(ns.NsMap["w"], "qFormat")
+	} else if *val {
+		ls.lsd.SetQFormat("true")
+	} else {
+		ls.lsd.SetQFormat("false")
+	}
+}
+
+func (ls *LatentStyle) UnhideWhenUsed() *bool {
+	v, ok := ls.lsd.UnhideWhenUsed()
+	if !ok {
+		return nil
+	}
+	b := v == "true" || v == "1" || v == "on"
+	return &b
+}
+
+func (ls *LatentStyle) SetUnhideWhenUsed(val *bool) {
+	if val == nil {
+		ls.lsd.Element.RemoveAttr(ns.NsMap["w"], "unhideWhenUsed")
+	} else if *val {
 		ls.lsd.SetUnhideWhenUsed("true")
 	} else {
 		ls.lsd.SetUnhideWhenUsed("false")

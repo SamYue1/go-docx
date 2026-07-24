@@ -1,7 +1,6 @@
 package otext
 
 import (
-	"github.com/SamYue1/go-docx/internal/oxml/dom"
 	"github.com/SamYue1/go-docx/internal/oxml/ns"
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
 	"github.com/SamYue1/go-docx/internal/shared"
@@ -149,36 +148,151 @@ func (pf *ParagraphFormat) LineSpacing() (int, bool) {
 	return spacing.Line()
 }
 
-func (pf *ParagraphFormat) SetKeepNext(val bool) {
-	if val {
-		el := pf.pPr.KeepNext()
-		if el == nil {
-			el = dom.NewElement(ns.NsMap["w"], "keepNext")
-			pf.pPr.Element.AddChild(el)
-		}
-		_ = el
+func (pf *ParagraphFormat) KeepNext() *bool {
+	if pf == nil || pf.pPr == nil {
+		return nil
+	}
+	el := pf.pPr.KeepNext()
+	if el == nil {
+		return nil
+	}
+	v, ok := el.GetAttr(ns.NsMap["w"], "val")
+	if !ok {
+		t := true
+		return &t
+	}
+	b := v == "true" || v == "1" || v == "on"
+	return &b
+}
+
+func (pf *ParagraphFormat) SetKeepNext(val *bool) {
+	if pf == nil || pf.pPr == nil {
+		return
+	}
+	if val == nil {
+		pf.pPr.RemoveKeepNext()
+	} else if *val {
+		pf.pPr.GetOrAddKeepNext()
 	} else {
-		for _, c := range pf.pPr.Element.Children() {
-			if c.Local() == "keepNext" {
-				pf.pPr.Element.RemoveChild(c)
-			}
-		}
+		pf.pPr.RemoveKeepNext()
 	}
 }
 
-func (pf *ParagraphFormat) SetKeepLines(val bool) {
-	if val {
-		el := pf.pPr.KeepLines()
-		if el == nil {
-			el = dom.NewElement(ns.NsMap["w"], "keepLines")
-			pf.pPr.Element.AddChild(el)
-		}
-		_ = el
+func (pf *ParagraphFormat) KeepTogether() *bool {
+	if pf == nil || pf.pPr == nil {
+		return nil
+	}
+	el := pf.pPr.KeepLines()
+	if el == nil {
+		return nil
+	}
+	v, ok := el.GetAttr(ns.NsMap["w"], "val")
+	if !ok {
+		t := true
+		return &t
+	}
+	b := v == "true" || v == "1" || v == "on"
+	return &b
+}
+
+func (pf *ParagraphFormat) SetKeepTogether(val *bool) {
+	if pf == nil || pf.pPr == nil {
+		return
+	}
+	if val == nil {
+		pf.pPr.RemoveKeepLines()
+	} else if *val {
+		pf.pPr.GetOrAddKeepLines()
 	} else {
-		for _, c := range pf.pPr.Element.Children() {
-			if c.Local() == "keepLines" {
-				pf.pPr.Element.RemoveChild(c)
-			}
-		}
+		pf.pPr.RemoveKeepLines()
 	}
 }
+
+func (pf *ParagraphFormat) PageBreakBefore() *bool {
+	if pf == nil || pf.pPr == nil {
+		return nil
+	}
+	el := pf.pPr.PageBreakBefore()
+	if el == nil {
+		return nil
+	}
+	v, ok := el.GetAttr(ns.NsMap["w"], "val")
+	if !ok {
+		t := true
+		return &t
+	}
+	b := v == "true" || v == "1" || v == "on"
+	return &b
+}
+
+func (pf *ParagraphFormat) SetPageBreakBefore(val *bool) {
+	if pf == nil || pf.pPr == nil {
+		return
+	}
+	if val == nil {
+		pf.pPr.RemovePageBreakBefore()
+	} else if *val {
+		pf.pPr.GetOrAddPageBreakBefore()
+	} else {
+		pf.pPr.RemovePageBreakBefore()
+	}
+}
+
+func (pf *ParagraphFormat) WidowControl() *bool {
+	if pf == nil || pf.pPr == nil {
+		return nil
+	}
+	el := pf.pPr.WidowControl()
+	if el == nil {
+		return nil
+	}
+	v, ok := el.GetAttr(ns.NsMap["w"], "val")
+	if !ok {
+		t := true
+		return &t
+	}
+	b := v == "true" || v == "1" || v == "on"
+	return &b
+}
+
+func (pf *ParagraphFormat) SetWidowControl(val *bool) {
+	if pf == nil || pf.pPr == nil {
+		return
+	}
+	if val == nil {
+		pf.pPr.RemoveWidowControl()
+	} else if *val {
+		pf.pPr.GetOrAddWidowControl()
+	} else {
+		pf.pPr.RemoveWidowControl()
+	}
+}
+
+func (pf *ParagraphFormat) LineSpacingRule() (string, bool) {
+	if pf == nil || pf.pPr == nil {
+		return "", false
+	}
+	spacing := pf.pPr.Spacing()
+	if spacing == nil {
+		return "", false
+	}
+	return spacing.LineRule()
+}
+
+func (pf *ParagraphFormat) SetLineSpacingRule(val string) {
+	if pf == nil || pf.pPr == nil {
+		return
+	}
+	spacing := pf.pPr.GetOrAddSpacing()
+	spacing.SetLineRule(val)
+}
+
+func (pf *ParagraphFormat) TabStops() *TabStops {
+	if pf == nil || pf.pPr == nil {
+		return nil
+	}
+	tabs := pf.pPr.GetOrAddTabs()
+	return NewTabStops(tabs, pf.pPr)
+}
+
+

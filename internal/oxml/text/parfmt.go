@@ -101,6 +101,79 @@ func (p *CT_PPr) WidowControl() *dom.Element {
 	return findChild(p.Element, wqn("widowControl"))
 }
 
+func (p *CT_PPr) GetOrAddKeepNext() *dom.Element {
+	el := p.KeepNext()
+	if el == nil {
+		el = dom.NewElement(ns.NsMap["w"], "keepNext")
+		p.Element.InsertBefore(el, nil)
+	}
+	return el
+}
+
+func (p *CT_PPr) RemoveKeepNext() {
+	el := p.KeepNext()
+	if el != nil {
+		p.Element.RemoveChild(el)
+	}
+}
+
+func (p *CT_PPr) GetOrAddKeepLines() *dom.Element {
+	el := p.KeepLines()
+	if el == nil {
+		el = dom.NewElement(ns.NsMap["w"], "keepLines")
+		p.Element.InsertBefore(el, nil)
+	}
+	return el
+}
+
+func (p *CT_PPr) RemoveKeepLines() {
+	el := p.KeepLines()
+	if el != nil {
+		p.Element.RemoveChild(el)
+	}
+}
+
+func (p *CT_PPr) GetOrAddPageBreakBefore() *dom.Element {
+	el := p.PageBreakBefore()
+	if el == nil {
+		el = dom.NewElement(ns.NsMap["w"], "pageBreakBefore")
+		p.Element.InsertBefore(el, nil)
+	}
+	return el
+}
+
+func (p *CT_PPr) RemovePageBreakBefore() {
+	el := p.PageBreakBefore()
+	if el != nil {
+		p.Element.RemoveChild(el)
+	}
+}
+
+func (p *CT_PPr) GetOrAddWidowControl() *dom.Element {
+	el := p.WidowControl()
+	if el == nil {
+		el = dom.NewElement(ns.NsMap["w"], "widowControl")
+		p.Element.InsertBefore(el, nil)
+	}
+	return el
+}
+
+func (p *CT_PPr) RemoveWidowControl() {
+	el := p.WidowControl()
+	if el != nil {
+		p.Element.RemoveChild(el)
+	}
+}
+
+func (p *CT_PPr) GetOrAddTabs() *CT_TabStops {
+	el := findChild(p.Element, wqn("tabs"))
+	if el == nil {
+		el = dom.NewElement(ns.NsMap["w"], "tabs")
+		p.Element.AddChild(el)
+	}
+	return &CT_TabStops{Element: el}
+}
+
 type CT_PP_Style struct {
 	*dom.Element
 }

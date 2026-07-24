@@ -112,6 +112,58 @@ func (r *CT_RPr) Dstrike() *dom.Element {
 	return findChild(r.Element, wqn("dstrike"))
 }
 
+func (r *CT_RPr) HighlightVal() string {
+	h := r.Highlight()
+	if h == nil {
+		return ""
+	}
+	val, _ := h.Val()
+	return val
+}
+
+func (r *CT_RPr) SetHighlightVal(val string) {
+	r.GetOrAddHighlight().SetVal(val)
+}
+
+func (r *CT_RPr) RemoveHighlight() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == ns.Qn("w:highlight") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+func (r *CT_RPr) GetOrAddHighlight() *CT_Highlight {
+	el := xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:highlight")
+	return &CT_Highlight{Element: el}
+}
+
+func (r *CT_RPr) VertAlignVal() string {
+	v := r.VertAlign()
+	if v == nil {
+		return ""
+	}
+	val, _ := v.Val()
+	return val
+}
+
+func (r *CT_RPr) SetVertAlignVal(val string) {
+	r.GetOrAddVertAlign().SetVal(val)
+}
+
+func (r *CT_RPr) RemoveVertAlign() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == ns.Qn("w:vertAlign") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+func (r *CT_RPr) GetOrAddVertAlign() *CT_VerticalAlignRun {
+	el := xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:vertAlign")
+	return &CT_VerticalAlignRun{Element: el}
+}
+
 type CT_Fonts struct {
 	*dom.Element
 }
@@ -162,6 +214,18 @@ func (c *CT_Color) Val() (string, bool) {
 
 func (c *CT_Color) SetVal(val string) {
 	c.Element.SetAttr(ns.NsMap["w"], "val", val)
+}
+
+func (c *CT_Color) ThemeColor() (string, bool) {
+	return c.Element.GetAttr(ns.NsMap["w"], "themeColor")
+}
+
+func (c *CT_Color) SetThemeColor(val string) {
+	c.Element.SetAttr(ns.NsMap["w"], "themeColor", val)
+}
+
+func (c *CT_Color) RemoveThemeColor() {
+	c.Element.RemoveAttr(ns.NsMap["w"], "themeColor")
 }
 
 type CT_HpsMeasure struct {

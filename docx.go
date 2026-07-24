@@ -30,6 +30,8 @@ type Styles = styles.Styles
 type Style = styles.Style
 type LatentStyles = styles.LatentStyles
 type LatentStyle = styles.LatentStyle
+type TabStops = otext.TabStops
+type TabStop = otext.TabStop
 type Length = shared.Length
 type RGBColor = shared.RGBColor
 

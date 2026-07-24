@@ -1,6 +1,8 @@
 package oxml
 
 import (
+	"strconv"
+
 	"github.com/SamYue1/go-docx/internal/oxml/dom"
 	"github.com/SamYue1/go-docx/internal/oxml/ns"
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
@@ -120,6 +122,121 @@ func (s *CT_Style) SemiHidden() *dom.Element {
 
 func (s *CT_Style) UnhideWhenUsed() *dom.Element {
 	return findChild(s.Element, wqn("unhideWhenUsed"))
+}
+
+// ===== Hidden (w:semiHidden) =====
+
+func (s *CT_Style) GetOrAddHidden() *dom.Element {
+	el := s.SemiHidden()
+	if el == nil {
+		el = dom.NewElement(ns.NsMap["w"], "semiHidden")
+		s.Element.AddChild(el)
+	}
+	return el
+}
+
+func (s *CT_Style) RemoveHidden() {
+	el := s.SemiHidden()
+	if el != nil {
+		s.Element.RemoveChild(el)
+	}
+}
+
+// ===== Locked (w:locked) =====
+
+func (s *CT_Style) GetOrAddLocked() *dom.Element {
+	el := s.Locked()
+	if el == nil {
+		el = dom.NewElement(ns.NsMap["w"], "locked")
+		s.Element.AddChild(el)
+	}
+	return el
+}
+
+func (s *CT_Style) RemoveLocked() {
+	el := s.Locked()
+	if el != nil {
+		s.Element.RemoveChild(el)
+	}
+}
+
+// ===== QFormat (w:qFormat) =====
+
+func (s *CT_Style) GetOrAddQFormat() *dom.Element {
+	el := s.QFormat()
+	if el == nil {
+		el = dom.NewElement(ns.NsMap["w"], "qFormat")
+		s.Element.AddChild(el)
+	}
+	return el
+}
+
+func (s *CT_Style) RemoveQFormat() {
+	el := s.QFormat()
+	if el != nil {
+		s.Element.RemoveChild(el)
+	}
+}
+
+// ===== UiPriority (w:uiPriority) =====
+
+func (s *CT_Style) UiPriority() *dom.Element {
+	return findChild(s.Element, wqn("uiPriority"))
+}
+
+func (s *CT_Style) GetOrAddUiPriority() *dom.Element {
+	el := s.UiPriority()
+	if el == nil {
+		el = dom.NewElement(ns.NsMap["w"], "uiPriority")
+		s.Element.AddChild(el)
+	}
+	return el
+}
+
+func (s *CT_Style) UiPriorityVal() (int, bool) {
+	el := s.UiPriority()
+	if el == nil {
+		return 0, false
+	}
+	v, ok := getWVal(el)
+	if !ok {
+		return 0, false
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, false
+	}
+	return n, true
+}
+
+func (s *CT_Style) SetUiPriorityVal(val int) {
+	el := s.GetOrAddUiPriority()
+	setWVal(el, strconv.Itoa(val))
+}
+
+func (s *CT_Style) RemoveUiPriority() {
+	el := s.UiPriority()
+	if el != nil {
+		s.Element.RemoveChild(el)
+	}
+}
+
+// ===== UnhideWhenUsed (w:unhideWhenUsed) =====
+
+func (s *CT_Style) GetOrAddUnhideWhenUsed() *dom.Element {
+	el := s.UnhideWhenUsed()
+	if el == nil {
+		el = dom.NewElement(ns.NsMap["w"], "unhideWhenUsed")
+		s.Element.AddChild(el)
+	}
+	return el
+}
+
+func (s *CT_Style) RemoveUnhideWhenUsed() {
+	el := s.UnhideWhenUsed()
+	if el != nil {
+		s.Element.RemoveChild(el)
+	}
 }
 
 type CT_StyleName struct {

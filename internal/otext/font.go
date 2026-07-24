@@ -128,6 +128,183 @@ func (f *Font) Underline() string {
 	return val
 }
 
+func (f *Font) Subscript() *bool {
+	if f == nil || f.rPr == nil {
+		return nil
+	}
+	val := f.rPr.VertAlignVal()
+	switch val {
+	case "subscript":
+		t := true
+		return &t
+	case "superscript":
+		t := false
+		return &t
+	default:
+		return nil
+	}
+}
+
+func (f *Font) SetSubscript(val *bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val == nil {
+		f.rPr.RemoveVertAlign()
+		return
+	}
+	if *val {
+		f.rPr.SetVertAlignVal("subscript")
+	} else if f.rPr.VertAlignVal() == "subscript" {
+		f.rPr.RemoveVertAlign()
+	}
+}
+
+func (f *Font) Superscript() *bool {
+	if f == nil || f.rPr == nil {
+		return nil
+	}
+	val := f.rPr.VertAlignVal()
+	switch val {
+	case "superscript":
+		t := true
+		return &t
+	case "subscript":
+		t := false
+		return &t
+	default:
+		return nil
+	}
+}
+
+func (f *Font) SetSuperscript(val *bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val == nil {
+		f.rPr.RemoveVertAlign()
+		return
+	}
+	if *val {
+		f.rPr.SetVertAlignVal("superscript")
+	} else if f.rPr.VertAlignVal() == "superscript" {
+		f.rPr.RemoveVertAlign()
+	}
+}
+
+func (f *Font) HighlightColor() string {
+	if f == nil || f.rPr == nil {
+		return ""
+	}
+	return f.rPr.HighlightVal()
+}
+
+func (f *Font) SetHighlightColor(val string) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val == "" {
+		f.rPr.RemoveHighlight()
+		return
+	}
+	f.rPr.SetHighlightVal(val)
+}
+
+func (f *Font) ColorHex() string {
+	if f == nil || f.rPr == nil {
+		return ""
+	}
+	c := f.rPr.Color()
+	if c == nil {
+		return ""
+	}
+	val, ok := c.Val()
+	if !ok {
+		return ""
+	}
+	return val
+}
+
+func (f *Font) SetColorHex(val string) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val == "" {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:color") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+		return
+	}
+	c := f.rPr.GetOrAddColor()
+	c.SetVal(val)
+	c.RemoveThemeColor()
+}
+
+func (f *Font) ColorTheme() string {
+	if f == nil || f.rPr == nil {
+		return ""
+	}
+	c := f.rPr.Color()
+	if c == nil {
+		return ""
+	}
+	val, ok := c.ThemeColor()
+	if !ok {
+		return ""
+	}
+	return val
+}
+
+func (f *Font) SetColorTheme(val string) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val == "" {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:color") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+		return
+	}
+	c := f.rPr.GetOrAddColor()
+	c.SetThemeColor(val)
+	if _, hasVal := c.Val(); !hasVal {
+		c.SetVal("000000")
+	}
+}
+
+func (f *Font) ColorType() string {
+	if f == nil || f.rPr == nil {
+		return ""
+	}
+	c := f.rPr.Color()
+	if c == nil {
+		return ""
+	}
+	val, hasVal := c.Val()
+	_, hasTheme := c.ThemeColor()
+	if hasTheme {
+		return "THEME"
+	}
+	if hasVal && val == "auto" {
+		return "AUTO"
+	}
+	if hasVal {
+		return "RGB"
+	}
+	return ""
+}
+
+func (f *Font) HasColor() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.Color() != nil
+}
+
 func (f *Font) SetUnderline(val string) {
 	if val == "" {
 		for _, c := range f.rPr.Element.Children() {

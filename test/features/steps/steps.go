@@ -32,8 +32,8 @@ type featureSuite struct {
 	footer2            *docx.HeaderFooter
 	header2            *docx.HeaderFooter
 	hyperlink          *docx.Hyperlink
-	tabStops           interface{}
-	tabStop            interface{}
+	tabStops           *docx.TabStops
+	tabStop            *docx.TabStop
 	inlineShapes       interface{}
 	inlineShape        interface{}
 	picture            interface{}
@@ -1879,43 +1879,143 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 
 	// ========== FONT (font.py) ==========
 	ctx.Step(`^a font$`, func() error {
-		return openTestDoc(s, "txt-font-props")
+		if err := openTestDoc(s, "txt-font-props"); err != nil {
+			return err
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) == 0 || len(paras[0].Runs()) == 0 {
+			return fmt.Errorf("no runs in first paragraph")
+		}
+		s.font = paras[0].Runs()[0].Font()
+		return nil
 	})
 
 	ctx.Step(`^a font having (\w+(?: \w+)*) highlighting$`, func(color string) error {
-		return openTestDoc(s, "txt-font-highlight-color")
+		if err := openTestDoc(s, "txt-font-highlight-color"); err != nil {
+			return err
+		}
+		idx := map[string]int{"no": 0, "yellow": 1, "bright green": 2}[color]
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		paras := s.document.Paragraphs()
+		if idx < len(paras) && len(paras[idx].Runs()) > 0 {
+			s.font = paras[idx].Runs()[0].Font()
+		}
+		return nil
 	})
 
 	ctx.Step(`^a font having (\w+(?: \w+)*) color$`, func(typ string) error {
-		return openTestDoc(s, "fnt-color")
+		if err := openTestDoc(s, "fnt-color"); err != nil {
+			return err
+		}
+		idx := map[string]int{"no": 0, "auto": 1, "an RGB": 2, "a theme": 3}[typ]
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) > 0 {
+			runs := paras[0].Runs()
+			if idx < len(runs) {
+				s.font = runs[idx].Font()
+			}
+		}
+		return nil
 	})
 
 	ctx.Step(`^a font having typeface name (\w+(?: \w+)*)$`, func(name string) error {
-		return openTestDoc(s, "txt-font-props")
+		if err := openTestDoc(s, "txt-font-props"); err != nil {
+			return err
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) > 0 && len(paras[0].Runs()) > 0 {
+			s.font = paras[0].Runs()[0].Font()
+		}
+		return nil
 	})
 
 	ctx.Step(`^a font having (\w+(?:-\w+)*) underline$`, func(underlineType string) error {
-		return openTestDoc(s, "txt-font-props")
+		if err := openTestDoc(s, "txt-font-props"); err != nil {
+			return err
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) > 0 && len(paras[0].Runs()) > 0 {
+			s.font = paras[0].Runs()[0].Font()
+		}
+		return nil
 	})
 
 	ctx.Step(`^a font having (\w+) vertical alignment$`, func(vertAlignState string) error {
-		return openTestDoc(s, "txt-font-props")
+		if err := openTestDoc(s, "txt-font-props"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		names := map[string]string{"inherited": "Normal", "subscript": "Subscript", "superscript": "Superscript"}
+		style := s.document.Styles().Style(names[vertAlignState])
+		if style == nil {
+			return nil
+		}
+		s.font = style.Font()
+		return nil
 	})
 
 	ctx.Step(`^a font of size (\w+(?: \w+)*)$`, func(size string) error {
-		return openTestDoc(s, "txt-font-props")
+		if err := openTestDoc(s, "txt-font-props"); err != nil {
+			return err
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) > 0 && len(paras[0].Runs()) > 0 {
+			s.font = paras[0].Runs()[0].Font()
+		}
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to font\.color\.rgb$`, func(value string) error {
-		return stepNotImplemented("font color.rgb assignment")
+		if s.font == nil {
+			return fmt.Errorf("no font")
+		}
+		if value == "None" {
+			s.font.SetColorHex("")
+			return nil
+		}
+		s.font.SetColorHex(value)
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to font\.color\.theme_color$`, func(value string) error {
-		return stepNotImplemented("font color.theme_color assignment")
+		if s.font == nil {
+			return fmt.Errorf("no font")
+		}
+		if value == "None" {
+			s.font.SetColorTheme("")
+			return nil
+		}
+		xmlVal := themeStepToXML(value)
+		s.font.SetColorTheme(xmlVal)
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to font\.highlight_color$`, func(value string) error {
-		return stepNotImplemented("font highlight_color")
+		if s.font == nil {
+			return fmt.Errorf("no font")
+		}
+		xmlVal := highlightStepToXML(value)
+		s.font.SetHighlightColor(xmlVal)
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to font\.name$`, func(value string) error {
@@ -1957,27 +2057,109 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to font\.(\w+)script$`, func(value, subSuper string) error {
-		return stepNotImplemented("font sub/superscript")
+		if s.font == nil {
+			return fmt.Errorf("no font")
+		}
+		var ptr *bool
+		switch value {
+		case "True":
+			t := true
+			ptr = &t
+		case "False":
+			f := false
+			ptr = &f
+		}
+		switch subSuper {
+		case "sub":
+			s.font.SetSubscript(ptr)
+		case "super":
+			s.font.SetSuperscript(ptr)
+		}
+		return nil
 	})
 
 	ctx.Step(`^font\.color is a ColorFormat object$`, func() error {
-		return stepNotImplemented("font.color")
+		if s.font == nil {
+			return fmt.Errorf("no font")
+		}
+		if !s.font.HasColor() {
+			return fmt.Errorf("font has no color element")
+		}
+		return nil
 	})
 
 	ctx.Step(`^font\.color\.rgb is (\w+(?:\.\w+)*)$`, func(value string) error {
-		return stepNotImplemented("font.color.rgb")
+		if s.font == nil {
+			return fmt.Errorf("no font")
+		}
+		actual := s.font.ColorHex()
+		if value == "None" {
+			if actual != "" {
+				return fmt.Errorf("expected None, got %q", actual)
+			}
+			return nil
+		}
+		if !strings.EqualFold(actual, value) {
+			return fmt.Errorf("expected color.rgb %q, got %q", value, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^font\.color\.theme_color is (\w+(?:\.\w+)*)$`, func(value string) error {
-		return stepNotImplemented("font.color.theme_color")
+		if s.font == nil {
+			return fmt.Errorf("no font")
+		}
+		actualXML := s.font.ColorTheme()
+		if value == "None" {
+			if actualXML != "" {
+				return fmt.Errorf("expected None, got %q", actualXML)
+			}
+			return nil
+		}
+		expectedXML := themeStepToXML(value)
+		if actualXML != expectedXML {
+			return fmt.Errorf("expected theme_color %q, got %q", expectedXML, actualXML)
+		}
+		return nil
 	})
 
 	ctx.Step(`^font\.color\.type is (\w+(?:\.\w+)*)$`, func(value string) error {
-		return stepNotImplemented("font.color.type")
+		if s.font == nil {
+			return fmt.Errorf("no font")
+		}
+		typ := s.font.ColorType()
+		expected := ""
+		switch value {
+		case "None":
+			expected = ""
+		case "AUTO":
+			expected = "AUTO"
+		case "RGB":
+			expected = "RGB"
+		case "THEME":
+			expected = "THEME"
+		default:
+			return fmt.Errorf("unknown color type: %s", value)
+		}
+		if typ != expected {
+			return fmt.Errorf("expected color type %q, got %q", expected, typ)
+		}
+		return nil
 	})
 
 	ctx.Step(`^font\.highlight_color is (\w+(?:\.\w+)*)$`, func(value string) error {
-		return stepNotImplemented("font.highlight_color")
+		if s.font == nil {
+			return fmt.Errorf("no font")
+		}
+		actual := s.font.HighlightColor()
+		if value == "None" && actual == "" {
+			return nil
+		}
+		expected := highlightStepToXML(value)
+		if actual != expected {
+			return fmt.Errorf("expected highlight_color %q, got %q", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^font\.name is (\w+(?:\.\w+)*)$`, func(value string) error {
@@ -2021,7 +2203,31 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^font\.(\w+)script is (\w+(?:\.\w+)*)$`, func(subSuper, value string) error {
-		return stepNotImplemented("font sub/superscript check")
+		if s.font == nil {
+			return fmt.Errorf("no font")
+		}
+		var actual *bool
+		switch subSuper {
+		case "sub":
+			actual = s.font.Subscript()
+		case "super":
+			actual = s.font.Superscript()
+		}
+		switch value {
+		case "None":
+			if actual != nil {
+				return fmt.Errorf("expected None, got %v", *actual)
+			}
+		case "True":
+			if actual == nil || !*actual {
+				return fmt.Errorf("expected True")
+			}
+		case "False":
+			if actual == nil || *actual {
+				return fmt.Errorf("expected False")
+			}
+		}
+		return nil
 	})
 
 	// ========== STYLES (styles.py) ==========
@@ -2046,55 +2252,208 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a latent style having a known name$`, func() error {
-		return openTestDoc(s, "sty-known-styles")
+		if err := openTestDoc(s, "sty-known-styles"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		ls := s.document.Styles().LatentStyles()
+		if ls == nil {
+			return fmt.Errorf("no latent styles")
+		}
+		l := ls.LatentStyle("Normal")
+		if l == nil {
+			return fmt.Errorf("latent style Normal not found")
+		}
+		s.latentStyle = l
+		return nil
 	})
 
 	ctx.Step(`^a latent style having priority of (\w+(?: \w+)*)$`, func(setting string) error {
-		return openTestDoc(s, "sty-known-styles")
+		if err := openTestDoc(s, "sty-known-styles"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		ls := s.document.Styles().LatentStyles()
+		if ls == nil {
+			return fmt.Errorf("no latent styles")
+		}
+		s.latentStyles = ls
+		name := map[string]string{"no setting": "Subtitle", "42": "Normal", "10": "Title", "9": "heading 1"}[setting]
+		l := ls.LatentStyle(name)
+		if l == nil {
+			return fmt.Errorf("latent style %q not found", name)
+		}
+		s.latentStyle = l
+		return nil
 	})
 
 	ctx.Step(`^a latent style having (\w+) set (\w+(?: \w+)*)$`, func(propName, setting string) error {
-		return openTestDoc(s, "sty-known-styles")
+		if err := openTestDoc(s, "sty-known-styles"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		ls := s.document.Styles().LatentStyles()
+		if ls == nil {
+			return fmt.Errorf("no latent styles")
+		}
+		s.latentStyles = ls
+		name := map[string]string{"on": "Normal", "off": "Title", "no setting": "Subtitle"}[setting]
+		l := ls.LatentStyle(name)
+		if l == nil {
+			return fmt.Errorf("latent style %q not found", name)
+		}
+		s.latentStyle = l
+		return nil
 	})
 
 	ctx.Step(`^a latent styles object with known defaults$`, func() error {
-		return openTestDoc(s, "sty-known-styles")
+		if err := openTestDoc(s, "sty-known-styles"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		ls := s.document.Styles().LatentStyles()
+		if ls == nil {
+			return fmt.Errorf("no latent styles")
+		}
+		s.latentStyles = ls
+		return nil
 	})
 
 	ctx.Step(`^a style based on (\w+(?: \w+)*)$`, func(baseStyle string) error {
-		return openTestDoc(s, "sty-known-styles")
+		if err := openTestDoc(s, "sty-known-styles"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		s.style = s.document.Styles().Style(baseStyle)
+		if s.style == nil {
+			return fmt.Errorf("style %q not found", baseStyle)
+		}
+		return nil
 	})
 
 	ctx.Step(`^a style having a known (\w+)$`, func(attrName string) error {
-		return openTestDoc(s, "sty-having-styles-part")
+		if err := openTestDoc(s, "sty-having-styles-part"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		s.style = s.document.Styles().Style("Normal")
+		if s.style == nil {
+			return fmt.Errorf("Normal style not found")
+		}
+		return nil
 	})
 
 	ctx.Step(`^a style having hidden set (\w+(?: \w+)*)$`, func(setting string) error {
-		return openTestDoc(s, "sty-behav-props")
+		if err := openTestDoc(s, "sty-behav-props"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		name := map[string]string{"on": "Foo", "off": "Bar", "no setting": "Baz"}[setting]
+		s.style = s.document.Styles().Style(name)
+		if s.style == nil {
+			return fmt.Errorf("style %q not found", name)
+		}
+		return nil
 	})
 
 	ctx.Step(`^a style having locked set (\w+(?: \w+)*)$`, func(setting string) error {
-		return openTestDoc(s, "sty-behav-props")
+		if err := openTestDoc(s, "sty-behav-props"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		name := map[string]string{"on": "Foo", "off": "Bar", "no setting": "Baz"}[setting]
+		s.style = s.document.Styles().Style(name)
+		if s.style == nil {
+			return fmt.Errorf("style %q not found", name)
+		}
+		return nil
 	})
 
 	ctx.Step(`^a style having next paragraph style set to (\w+(?: \w+)*)$`, func(setting string) error {
-		return openTestDoc(s, "sty-known-styles")
+		if err := openTestDoc(s, "sty-known-styles"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		names := map[string]string{
+			"inherited": "Normal", "Base Style": "Normal",
+			"Normal": "Normal", "Heading 1": "Heading 1",
+		}
+		s.style = s.document.Styles().Style(names[setting])
+		return nil
 	})
 
 	ctx.Step(`^a style having priority of (\w+(?: \w+)*)$`, func(setting string) error {
-		return openTestDoc(s, "sty-behav-props")
+		if err := openTestDoc(s, "sty-behav-props"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		name := map[string]string{"no setting": "Baz", "42": "Foo", "24": "Bar", "99": "Normal Table"}[setting]
+		s.style = s.document.Styles().Style(name)
+		if s.style == nil {
+			return fmt.Errorf("style %q not found", name)
+		}
+		return nil
 	})
 
 	ctx.Step(`^a style having quick-style set (\w+(?: \w+)*)$`, func(setting string) error {
-		return openTestDoc(s, "sty-behav-props")
+		if err := openTestDoc(s, "sty-behav-props"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		name := map[string]string{"on": "Foo", "off": "Bar", "no setting": "Baz"}[setting]
+		s.style = s.document.Styles().Style(name)
+		if s.style == nil {
+			return fmt.Errorf("style %q not found", name)
+		}
+		return nil
 	})
 
 	ctx.Step(`^a style having unhide-when-used set (\w+(?: \w+)*)$`, func(setting string) error {
-		return openTestDoc(s, "sty-behav-props")
+		if err := openTestDoc(s, "sty-behav-props"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		name := map[string]string{"on": "Foo", "off": "Bar", "no setting": "Baz"}[setting]
+		s.style = s.document.Styles().Style(name)
+		if s.style == nil {
+			return fmt.Errorf("style %q not found", name)
+		}
+		return nil
 	})
 
 	ctx.Step(`^a style of type (\w+(?:\.\w+)*)$`, func(styleType string) error {
-		return openTestDoc(s, "sty-known-styles")
+		if err := openTestDoc(s, "sty-known-styles"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		s.style = s.document.Styles().Style("Normal")
+		return nil
 	})
 
 	ctx.Step(`^the style collection of a document$`, func() error {
@@ -2127,15 +2486,27 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.latentStyle == nil {
 			return fmt.Errorf("no latent style")
 		}
+		var v *bool
+		switch value {
+		case "True":
+			t := true
+			v = &t
+		case "False":
+			f := false
+			v = &f
+		}
 		switch propName {
 		case "locked":
-			s.latentStyle.SetLocked(boolVal(value))
+			s.latentStyle.SetLocked(v)
 		case "semiHidden":
-			s.latentStyle.SetSemiHidden(boolVal(value))
+			s.latentStyle.SetHidden(v)
 		case "unhideWhenUsed":
-			s.latentStyle.SetUnhideWhenUsed(boolVal(value))
+			s.latentStyle.SetUnhideWhenUsed(v)
 		case "priority":
-			// not directly exposed
+			if value != "None" {
+				n, _ := strconv.Atoi(value)
+				s.latentStyle.SetPriority(n)
+			}
 		}
 		return nil
 	})
@@ -2271,20 +2642,45 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.latentStyle == nil {
 			return fmt.Errorf("no latent style")
 		}
-		expected := boolVal(value)
-		var actual bool
 		switch propName {
 		case "locked":
-			actual = s.latentStyle.Locked()
+			actual := s.latentStyle.Locked()
+			if value == "None" {
+				if actual != nil {
+					return fmt.Errorf("expected locked=None, got %v", *actual)
+				}
+			} else {
+				expected := boolVal(value)
+				if actual == nil || *actual != expected {
+					return fmt.Errorf("expected locked=%v, got %v", expected, actual)
+				}
+			}
 		case "semiHidden":
-			actual = s.latentStyle.SemiHidden()
+			actual := s.latentStyle.Hidden()
+			if value == "None" {
+				if actual != nil {
+					return fmt.Errorf("expected hidden=None, got %v", *actual)
+				}
+			} else {
+				expected := boolVal(value)
+				if actual == nil || *actual != expected {
+					return fmt.Errorf("expected hidden=%v, got %v", expected, actual)
+				}
+			}
 		case "unhideWhenUsed":
-			actual = s.latentStyle.UnhideWhenUsed()
+			actual := s.latentStyle.UnhideWhenUsed()
+			if value == "None" {
+				if actual != nil {
+					return fmt.Errorf("expected unhideWhenUsed=None, got %v", *actual)
+				}
+			} else {
+				expected := boolVal(value)
+				if actual == nil || *actual != expected {
+					return fmt.Errorf("expected unhideWhenUsed=%v, got %v", expected, actual)
+				}
+			}
 		default:
 			return stepNotImplemented("latent_style." + propName)
-		}
-		if actual != expected {
-			return fmt.Errorf("expected %v, got %v", expected, actual)
 		}
 		return nil
 	})
@@ -2551,7 +2947,29 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to paragraph_format\.line_spacing_rule$`, func(value string) error {
-		return stepNotImplemented("paragraph_format.line_spacing_rule")
+		if s.paragraphFormat == nil {
+			return fmt.Errorf("no paragraph format")
+		}
+		mapping := map[string]string{
+			"None":                       "",
+			"WD_LINE_SPACING.EXACTLY":    "exactly",
+			"WD_LINE_SPACING.MULTIPLE":   "auto",
+			"WD_LINE_SPACING.SINGLE":     "auto",
+			"WD_LINE_SPACING.DOUBLE":     "auto",
+			"WD_LINE_SPACING.AT_LEAST":   "atLeast",
+			"WD_LINE_SPACING.ONE_POINT_FIVE": "auto",
+		}
+		if v, ok := mapping[value]; ok {
+			s.paragraphFormat.SetLineSpacingRule(v)
+			if value == "WD_LINE_SPACING.SINGLE" {
+				s.paragraphFormat.SetLineSpacing(240)
+			} else if value == "WD_LINE_SPACING.DOUBLE" {
+				s.paragraphFormat.SetLineSpacing(480)
+			} else if value == "WD_LINE_SPACING.ONE_POINT_FIVE" {
+				s.paragraphFormat.SetLineSpacing(360)
+			}
+		}
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to paragraph_format\.alignment$`, func(value string) error {
@@ -2615,18 +3033,33 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			"False": false,
 		}
 		if v, ok := mapping[value]; ok {
+			var pv *bool
+			if v {
+				t := true
+				pv = &t
+			} else {
+				f := false
+				pv = &f
+			}
 			switch propName {
 			case "keepNext":
-				s.paragraphFormat.SetKeepNext(v)
-			case "keepLines":
-				s.paragraphFormat.SetKeepLines(v)
+				s.paragraphFormat.SetKeepNext(pv)
+			case "keepLines", "keepTogether":
+				s.paragraphFormat.SetKeepTogether(pv)
 			}
 		}
 		return nil
 	})
 
 	ctx.Step(`^paragraph_format\.tab_stops is a TabStops object$`, func() error {
-		return stepNotImplemented("paragraph_format.tab_stops")
+		if s.paragraphFormat == nil {
+			return fmt.Errorf("no paragraph format")
+		}
+		ts := s.paragraphFormat.TabStops()
+		if ts == nil {
+			return fmt.Errorf("tab stops is nil")
+		}
+		return nil
 	})
 
 	ctx.Step(`^paragraph_format\.alignment is (\w+(?:\.\w+)*)$`, func(value string) error {
@@ -2666,7 +3099,26 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^paragraph_format\.line_spacing_rule is (\w+(?:\.\w+)*)$`, func(value string) error {
-		return stepNotImplemented("paragraph_format.line_spacing_rule check")
+		if s.paragraphFormat == nil {
+			return fmt.Errorf("no paragraph format")
+		}
+		expected := map[string]string{
+			"None":                     "",
+			"WD_LINE_SPACING.EXACTLY":  "exactly",
+			"WD_LINE_SPACING.MULTIPLE": "auto",
+			"WD_LINE_SPACING.AT_LEAST": "atLeast",
+		}[value]
+		actual, ok := s.paragraphFormat.LineSpacingRule()
+		if !ok {
+			if value == "None" {
+				return nil
+			}
+			return fmt.Errorf("expected %s, got no rule", value)
+		}
+		if actual != expected {
+			return fmt.Errorf("expected %q, got %q", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^paragraph_format\.space_(\w+) is (\w+(?:\.\w+)*)$`, func(side, value string) error {
@@ -2693,56 +3145,247 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^paragraph_format\.(\w+)_indent is (\w+(?:\.\w+)*)$`, func(type_, value string) error {
-		return stepNotImplemented("paragraph_format indent check")
+		if s.paragraphFormat == nil {
+			return fmt.Errorf("no paragraph format")
+		}
+		var actual *shared.Length
+		switch type_ {
+		case "first_line":
+			actual = s.paragraphFormat.FirstLineIndent()
+		case "left":
+			actual = s.paragraphFormat.LeftIndent()
+		case "right":
+			actual = s.paragraphFormat.RightIndent()
+		}
+		if value == "None" {
+			if actual != nil {
+				return fmt.Errorf("expected None, got %v", *actual)
+			}
+			return nil
+		}
+		expected, _ := strconv.Atoi(value)
+		if actual == nil {
+			return fmt.Errorf("expected %d, got nil", expected)
+		}
+		if int(*actual) != expected {
+			return fmt.Errorf("expected %d, got %d", expected, int(*actual))
+		}
+		return nil
 	})
 
 	ctx.Step(`^paragraph_format\.(\w+) is (\w+)$`, func(propName, value string) error {
-		return stepNotImplemented("paragraph_format property check")
+		if s.paragraphFormat == nil {
+			return fmt.Errorf("no paragraph format")
+		}
+		switch propName {
+		case "keep_together":
+			actual := s.paragraphFormat.KeepTogether()
+			if value == "None" {
+				if actual != nil {
+					return fmt.Errorf("expected None, got %v", *actual)
+				}
+			} else if boolVal(value) {
+				if actual == nil || !*actual {
+					return fmt.Errorf("expected keep_together=true")
+				}
+			} else {
+				if actual == nil || *actual {
+					return fmt.Errorf("expected keep_together=false")
+				}
+			}
+		case "keep_with_next":
+			actual := s.paragraphFormat.KeepNext()
+			if value == "None" {
+				if actual != nil {
+					return fmt.Errorf("expected None, got %v", *actual)
+				}
+			} else if boolVal(value) {
+				if actual == nil || !*actual {
+					return fmt.Errorf("expected keep_with_next=true")
+				}
+			} else {
+				if actual == nil || *actual {
+					return fmt.Errorf("expected keep_with_next=false")
+				}
+			}
+		case "page_break_before":
+			actual := s.paragraphFormat.PageBreakBefore()
+			if value == "None" {
+				if actual != nil {
+					return fmt.Errorf("expected None, got %v", *actual)
+				}
+			} else if boolVal(value) {
+				if actual == nil || !*actual {
+					return fmt.Errorf("expected page_break_before=true")
+				}
+			} else {
+				if actual == nil || *actual {
+					return fmt.Errorf("expected page_break_before=false")
+				}
+			}
+		case "widow_control":
+			actual := s.paragraphFormat.WidowControl()
+			if value == "None" {
+				if actual != nil {
+					return fmt.Errorf("expected None, got %v", *actual)
+				}
+			} else if boolVal(value) {
+				if actual == nil || !*actual {
+					return fmt.Errorf("expected widow_control=true")
+				}
+			} else {
+				if actual == nil || *actual {
+					return fmt.Errorf("expected widow_control=false")
+				}
+			}
+		default:
+			return stepNotImplemented("paragraph_format property check: " + propName)
+		}
+		return nil
 	})
 
 	// ========== TAB STOPS (tabstops.py) ==========
 	ctx.Step(`^a tab_stops having (\d+) tab stops$`, func(count string) error {
-		return openTestDoc(s, "tab-stops")
+		if err := openTestDoc(s, "tab-stops"); err != nil {
+			return err
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) == 0 {
+			return fmt.Errorf("no paragraphs")
+		}
+		idx := 0
+		if count == "3" {
+			idx = 1
+		}
+		ts := paras[idx].ParagraphFormat().TabStops()
+		s.tabStops = ts
+		return nil
 	})
 
 	ctx.Step(`^a tab stop ([\d.]+) inches (\w+) from the paragraph left edge$`, func(inches, inOrOut string) error {
-		return openTestDoc(s, "tab-stops")
+		if err := openTestDoc(s, "tab-stops"); err != nil {
+			return err
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) < 3 {
+			return fmt.Errorf("not enough paragraphs")
+		}
+		ts := paras[2].ParagraphFormat().TabStops()
+		tabIdx := 0
+		if inOrOut == "in" {
+			tabIdx = 1
+		}
+		s.tabStops = ts
+		s.tabStop = ts.Get(tabIdx)
+		return nil
 	})
 
 	ctx.Step(`^a tab stop having (\w+) alignment$`, func(alignment string) error {
-		return openTestDoc(s, "tab-stops")
+		if err := openTestDoc(s, "tab-stops"); err != nil {
+			return err
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) < 2 {
+			return fmt.Errorf("not enough paragraphs")
+		}
+		ts := paras[1].ParagraphFormat().TabStops()
+		tabIdx := map[string]int{"LEFT": 0, "CENTER": 1, "RIGHT": 2}[alignment]
+		s.tabStop = ts.Get(tabIdx)
+		return nil
 	})
 
 	ctx.Step(`^a tab stop having (\w+(?: \w+)*) leader$`, func(leader string) error {
-		return openTestDoc(s, "tab-stops")
+		if err := openTestDoc(s, "tab-stops"); err != nil {
+			return err
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) < 2 {
+			return fmt.Errorf("not enough paragraphs")
+		}
+		ts := paras[1].ParagraphFormat().TabStops()
+		tabIdx := 0
+		if leader == "a dotted" {
+			tabIdx = 2
+		}
+		s.tabStop = ts.Get(tabIdx)
+		return nil
 	})
 
 	ctx.Step(`^I add a tab stop$`, func() error {
-		return stepNotImplemented("add tab stop")
+		if s.tabStops == nil {
+			return fmt.Errorf("no tab stops")
+		}
+		s.tabStops.AddTabStop(docx.Inches(1.75), "", "")
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to tab_stop\.alignment$`, func(member string) error {
-		return stepNotImplemented("tab_stop.alignment")
+		if s.tabStop == nil {
+			return fmt.Errorf("no tab stop")
+		}
+		mapping := map[string]string{
+			"LEFT":   "left",
+			"CENTER": "center",
+			"RIGHT":  "right",
+		}
+		if v, ok := mapping[member]; ok {
+			s.tabStop.SetAlignment(v)
+		}
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to tab_stop\.leader$`, func(member string) error {
-		return stepNotImplemented("tab_stop.leader")
+		if s.tabStop == nil {
+			return fmt.Errorf("no tab stop")
+		}
+		mapping := map[string]string{
+			"DOTS":  "dot",
+			"DASHES": "hyphen",
+		}
+		if v, ok := mapping[member]; ok {
+			s.tabStop.SetLeader(v)
+		}
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to tab_stop\.position$`, func(value string) error {
-		return stepNotImplemented("tab_stop.position")
+		if s.tabStop == nil {
+			return fmt.Errorf("no tab stop")
+		}
+		v, _ := strconv.Atoi(value)
+		s.tabStop.SetPosition(v)
+		return nil
 	})
 
 	ctx.Step(`^I call tab_stops\.clear_all\(\)$`, func() error {
-		return stepNotImplemented("tab_stops.clear_all")
+		if s.tabStops == nil {
+			return fmt.Errorf("no tab stops")
+		}
+		s.tabStops.ClearAll()
+		return nil
 	})
 
 	ctx.Step(`^I remove a tab stop$`, func() error {
-		return stepNotImplemented("remove tab stop")
+		if s.tabStops == nil {
+			return fmt.Errorf("no tab stops")
+		}
+		s.tabStops.Remove(1)
+		return nil
 	})
 
 	ctx.Step(`^I can access a tab stop by index$`, func() error {
-		return stepNotImplemented("tab stop by index")
+		if s.tabStops == nil {
+			return fmt.Errorf("no tab stops")
+		}
+		for i := 0; i < 3; i++ {
+			if s.tabStops.Get(i) == nil {
+				return fmt.Errorf("tab stop %d is nil", i)
+			}
+		}
+		return nil
 	})
 
 	ctx.Step(`^I can iterate the TabStops object$`, func() error {
@@ -2750,27 +3393,82 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^len\(tab_stops\) is (\d+)$`, func(count string) error {
-		return stepNotImplemented("len(tab_stops)")
+		if s.tabStops == nil {
+			return fmt.Errorf("no tab stops")
+		}
+		expected, _ := strconv.Atoi(count)
+		if s.tabStops.Len() != expected {
+			return fmt.Errorf("expected %d tab stops, got %d", expected, s.tabStops.Len())
+		}
+		return nil
 	})
 
 	ctx.Step(`^tab_stop\.alignment is (\w+)$`, func(alignment string) error {
-		return stepNotImplemented("tab_stop.alignment check")
+		if s.tabStop == nil {
+			return fmt.Errorf("no tab stop")
+		}
+		expected := map[string]string{
+			"LEFT": "left", "CENTER": "center", "RIGHT": "right",
+			"DECIMAL": "decimal", "BAR": "bar",
+		}[alignment]
+		if s.tabStop.Alignment() != expected {
+			return fmt.Errorf("expected alignment %q, got %q", expected, s.tabStop.Alignment())
+		}
+		return nil
 	})
 
 	ctx.Step(`^tab_stop\.leader is (\w+)$`, func(leader string) error {
-		return stepNotImplemented("tab_stop.leader check")
+		if s.tabStop == nil {
+			return fmt.Errorf("no tab stop")
+		}
+		expected := map[string]string{
+			"DOTS": "dot", "DASHES": "hyphen",
+		}[leader]
+		if s.tabStop.Leader() != expected {
+			return fmt.Errorf("expected leader %q, got %q", expected, s.tabStop.Leader())
+		}
+		return nil
 	})
 
 	ctx.Step(`^tab_stop\.position is (\w+(?:\.\w+)*)$`, func(position string) error {
-		return stepNotImplemented("tab_stop.position check")
+		if s.tabStop == nil {
+			return fmt.Errorf("no tab stop")
+		}
+		expected, _ := strconv.Atoi(position)
+		pos := s.tabStop.Position()
+		if pos == nil {
+			return fmt.Errorf("expected %d, got nil", expected)
+		}
+		if int(*pos) != expected {
+			return fmt.Errorf("expected %d, got %d", expected, int(*pos))
+		}
+		return nil
 	})
 
 	ctx.Step(`^the removed tab stop is no longer present in tab_stops$`, func() error {
-		return stepNotImplemented("removed tab stop")
+		if s.tabStops == nil {
+			return fmt.Errorf("no tab stops")
+		}
+		first := s.tabStops.Get(0)
+		second := s.tabStops.Get(1)
+		if first == nil || second == nil {
+			return fmt.Errorf("missing tab stops after removal")
+		}
+		return nil
 	})
 
 	ctx.Step(`^the tab stops are sequenced in position order$`, func() error {
-		return stepNotImplemented("tab stops order")
+		if s.tabStops == nil {
+			return fmt.Errorf("no tab stops")
+		}
+		for i := 0; i < s.tabStops.Len()-1; i++ {
+			p1 := s.tabStops.Get(i).Position()
+			p2 := s.tabStops.Get(i + 1).Position()
+			if p1 == nil || p2 == nil || *p1 >= *p2 {
+				return fmt.Errorf("tab stops not in order at index %d", i)
+			}
+		}
+		return nil
 	})
 
 	// ========== COMMENTS (comments.py) ==========
@@ -3362,4 +4060,56 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 func atof(s string) float64 {
 	v, _ := strconv.ParseFloat(s, 64)
 	return v
+}
+
+var highlightXMLMap = map[string]string{
+	"None":         "",
+	"YELLOW":       "yellow",
+	"BRIGHT_GREEN": "brightGreen",
+	"CYAN":         "cyan",
+	"MAGENTA":      "magenta",
+	"BLUE":         "blue",
+	"RED":          "red",
+	"DARK_BLUE":    "darkBlue",
+	"DARK_RED":     "darkRed",
+	"DARK_YELLOW":  "darkYellow",
+	"GRAY_25":      "gray25",
+	"GRAY_50":      "gray50",
+	"GREEN":        "green",
+	"PINK":         "pink",
+	"TEAL":         "teal",
+	"TURQUOISE":    "turquoise",
+	"VIOLET":       "violet",
+	"WHITE":        "white",
+	"BLACK":        "black",
+}
+
+var themeXMLMap = map[string]string{
+	"None":                "",
+	"DARK_1":              "dark1",
+	"LIGHT_1":             "light1",
+	"DARK_2":              "dark2",
+	"LIGHT_2":             "light2",
+	"ACCENT_1":            "accent1",
+	"ACCENT_2":            "accent2",
+	"ACCENT_3":            "accent3",
+	"ACCENT_4":            "accent4",
+	"ACCENT_5":            "accent5",
+	"ACCENT_6":            "accent6",
+	"HYPERLINK":           "hyperlink",
+	"FOLLOWED_HYPERLINK":  "followedHyperlink",
+}
+
+func highlightStepToXML(key string) string {
+	if v, ok := highlightXMLMap[key]; ok {
+		return v
+	}
+	return ""
+}
+
+func themeStepToXML(key string) string {
+	if v, ok := themeXMLMap[key]; ok {
+		return v
+	}
+	return ""
 }
