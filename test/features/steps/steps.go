@@ -626,6 +626,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^paragraph\.contains_page_break is (\w+)$`, func(value string) error {
+		if s.paragraph == nil {
+			return fmt.Errorf("no paragraph")
+		}
 		expected := boolVal(value)
 		actual := s.paragraph.ContainsPageBreak()
 		if actual != expected {
@@ -955,6 +958,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			"WD_TABLE_ALIGNMENT.RIGHT":  "right",
 			"WD_TABLE_ALIGNMENT.CENTER": "center",
 		}
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
 		if v, ok := mapping[valueStr]; ok {
 			s.table.SetAlignment(v)
 		}
@@ -962,6 +968,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to table\.style$`, func(value string) error {
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
 		if value == "None" {
 			s.table.SetStyle("")
 		} else {
@@ -1000,6 +1009,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I set the table autofit to (\w+)$`, func(setting string) error {
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
 		s.table.SetAutofit(setting == "autofit")
 		return nil
 	})
@@ -1033,20 +1045,23 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I can access the column collection of the table$`, func() error {
-		if s.table.Columns() == nil {
+		if s.table == nil || s.table.Columns() == nil {
 			return fmt.Errorf("columns is nil")
 		}
 		return nil
 	})
 
 	ctx.Step(`^I can access the row collection of the table$`, func() error {
-		if s.table.Rows() == nil {
+		if s.table == nil || s.table.Rows() == nil {
 			return fmt.Errorf("rows is nil")
 		}
 		return nil
 	})
 
 	ctx.Step(`^I can iterate over the column collection$`, func() error {
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
 		count := 0
 		for range s.table.Columns() {
 			count++
@@ -1058,6 +1073,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I can iterate over the row collection$`, func() error {
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
 		count := 0
 		for range s.table.Rows() {
 			count++
@@ -1092,6 +1110,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			"WD_TABLE_ALIGNMENT.CENTER": "center",
 		}
 		expected := mapping[valueStr]
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
 		actual, ok := s.table.Alignment()
 		if !ok {
 			return fmt.Errorf("table has no alignment")
@@ -1105,6 +1126,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^table\.cell\((\d+), (\d+)\)\.text is ([^\s].*)$`, func(row, col, expectedText string) error {
 		r, _ := strconv.Atoi(row)
 		c, _ := strconv.Atoi(col)
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
 		cell := s.table.Cell(r, c)
 		if cell == nil {
 			return fmt.Errorf("cell(%d,%d) is nil", r, c)
@@ -1116,6 +1140,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^table\.style is styles\['([^']*)'\]$`, func(styleName string) error {
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
 		if s.table.Style() != styleName {
 			return fmt.Errorf("expected style %q, got %q", styleName, s.table.Style())
 		}
@@ -1181,6 +1208,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the new row has (\d+) cells$`, func(count string) error {
+		if s.row == nil {
+			return fmt.Errorf("no row")
+		}
 		expected, _ := strconv.Atoi(count)
 		if len(s.row.Cells()) != expected {
 			return fmt.Errorf("expected %d cells, got %d", expected, len(s.row.Cells()))
@@ -1211,6 +1241,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the row cells text is ([^\s].*)$`, func(encodedText string) error {
 		expectedText := strings.ReplaceAll(encodedText, "\\", "\n")
 		var texts []string
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
 		for _, row := range s.table.Rows() {
 			for _, c := range row.Cells() {
 				texts = append(texts, c.Text())
@@ -1224,6 +1257,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the table has (\d+) columns$`, func(count string) error {
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
 		expected, _ := strconv.Atoi(count)
 		if len(s.table.Columns()) != expected {
 			return fmt.Errorf("expected %d columns, got %d", expected, len(s.table.Columns()))
@@ -1232,6 +1268,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the table has (\d+) rows$`, func(count string) error {
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
 		expected, _ := strconv.Atoi(count)
 		if len(s.table.Rows()) != expected {
 			return fmt.Errorf("expected %d rows, got %d", expected, len(s.table.Rows()))
@@ -1466,6 +1505,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		case "WD_ORIENT.PORTRAIT":
 			expected = "portrait"
 		}
+		if s.section == nil {
+			return fmt.Errorf("no section")
+		}
 		actual := s.section.Orientation()
 		if actual != expected {
 			return fmt.Errorf("expected %q, got %q", expected, actual)
@@ -1475,6 +1517,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 
 	ctx.Step(`^the reported page width is ([\d.]+) inches$`, func(x string) error {
 		expected := docx.Inches(atof(x))
+		if s.section == nil {
+			return fmt.Errorf("no section")
+		}
 		actual := s.section.PageWidth()
 		if actual == nil {
 			return fmt.Errorf("page width is nil")
@@ -1487,6 +1532,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 
 	ctx.Step(`^the reported page height is ([\d.]+) inches$`, func(y string) error {
 		expected := docx.Inches(atof(y))
+		if s.section == nil {
+			return fmt.Errorf("no section")
+		}
 		actual := s.section.PageHeight()
 		if actual == nil {
 			return fmt.Errorf("page height is nil")
@@ -1506,6 +1554,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			"ODD_PAGE":   "oddPage",
 		}
 		expected := mapping[startType]
+		if s.section == nil {
+			return fmt.Errorf("no section")
+		}
 		actual, ok := s.section.StartType()
 		if !ok {
 			return fmt.Errorf("section has no start type")
@@ -1572,7 +1623,15 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		case "Table.row.cells":
 			cell = tbl.Rows()[0].Cells()[1]
 		case "Table.column.cells":
-			cell = tbl.Columns()[1].Cells()[0]
+			cols := tbl.Columns()
+			if len(cols) < 2 {
+				return fmt.Errorf("table has %d columns, need 2", len(cols))
+			}
+			cells := cols[1].Cells()
+			if len(cells) == 0 {
+				return fmt.Errorf("column has no cells")
+			}
+			cell = cells[0]
 		}
 		if cell == nil {
 			return fmt.Errorf("could not get cell from %s", cellSource)
@@ -1663,7 +1722,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			"WD_UNDERLINE.SINGLE": "single",
 			"WD_UNDERLINE.DOUBLE": "double",
 		}
-		if v, ok := mapping[underlineValue]; ok {
+		if v, ok := mapping[underlineValue]; ok && s.run != nil {
 			s.run.Font().SetUnderline(v)
 		}
 		return nil
@@ -1682,6 +1741,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^run\.contains_page_break is (\w+)$`, func(value string) error {
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
 		expected := boolVal(value)
 		actual := s.run.ContainsPageBreak()
 		if actual != expected {
@@ -1691,6 +1753,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^run\.font is the Font object for the run$`, func() error {
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
 		font := s.run.Font()
 		if font == nil {
 			return fmt.Errorf("font is nil")
@@ -1798,6 +1863,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			"WD_UNDERLINE.DOUBLE": "double",
 		}
 		expected := mapping[underlineValue]
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
 		actual := s.run.Font().Underline()
 		if actual != expected {
 			return fmt.Errorf("expected underline %q, got %q", expected, actual)
@@ -3064,7 +3132,18 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a hyperlink having address (.*) and fragment (.*)$`, func(address, fragment string) error {
-		return openTestDoc(s, "par-hlink-frags")
+		if err := openTestDoc(s, "par-hlink-frags"); err != nil {
+			return err
+		}
+		paras := s.document.Paragraphs()
+		for _, p := range paras {
+			hls := p.Hyperlinks()
+			if len(hls) > 0 {
+				s.hyperlink = hls[0]
+				return nil
+			}
+		}
+		return nil
 	})
 
 	ctx.Step(`^a hyperlink having (no|one|two) rendered page breaks$`, func(zeroOrMore string) error {
@@ -3134,7 +3213,19 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^hyperlink\.url is (.*)$`, func(value string) error {
-		return stepNotImplemented("hyperlink.url")
+		if s.hyperlink == nil {
+			return fmt.Errorf("no hyperlink")
+		}
+		address := s.hyperlink.Address()
+		fragment := s.hyperlink.Fragment()
+		actual := address
+		if fragment != "" {
+			actual = address + "#" + fragment
+		}
+		if actual != value {
+			return fmt.Errorf("expected hyperlink.url %q, got %q", value, actual)
+		}
+		return nil
 	})
 
 	// ========== IMAGE (image.py) ==========
