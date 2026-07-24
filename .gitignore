@@ -33,3 +33,4 @@ go.work.sum
 
 sample
 test/features/_scratch/
+tmp/
