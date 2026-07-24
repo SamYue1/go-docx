@@ -571,7 +571,14 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a paragraph having (\w+(?: \w+)*) style$`, func(styleState string) error {
-		return openTestDoc(s, "par-known-styles")
+		if err := openTestDoc(s, "par-known-styles"); err != nil {
+			return err
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) > 0 {
+			s.paragraph = paras[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a paragraph having (no|one|three) hyperlinks$`, func(zeroOrMore string) error {
@@ -808,7 +815,14 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a 3x3 table having (\w+(?: \w+)*)$`, func(spanState string) error {
-		return openTestDoc(s, "tbl-cell-access")
+		if err := openTestDoc(s, "tbl-cell-access"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a _Cell object spanning (\d+) layout-grid cells$`, func(count string) error {
