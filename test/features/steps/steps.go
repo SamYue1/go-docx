@@ -1771,15 +1771,45 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a run having (\w+(?:-\w+)*) underline$`, func(underlineType string) error {
-		return openTestDoc(s, "run-enumerated-props")
+		if err := openTestDoc(s, "run-enumerated-props"); err != nil {
+			return err
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) > 0 {
+			runs := paras[0].Runs()
+			if len(runs) > 0 {
+				s.run = runs[0]
+			}
+		}
+		return nil
 	})
 
 	ctx.Step(`^a run having (\w+(?: \w+)*) style$`, func(style string) error {
-		return openTestDoc(s, "run-char-style")
+		if err := openTestDoc(s, "run-char-style"); err != nil {
+			return err
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) > 0 {
+			runs := paras[0].Runs()
+			if len(runs) > 0 {
+				s.run = runs[0]
+			}
+		}
+		return nil
 	})
 
 	ctx.Step(`^a run having (no|one|two) rendered page breaks$`, func(zeroOrMore string) error {
-		return openTestDoc(s, "par-rendered-page-breaks")
+		if err := openTestDoc(s, "par-rendered-page-breaks"); err != nil {
+			return err
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) > 0 {
+			runs := paras[0].Runs()
+			if len(runs) > 0 {
+				s.run = runs[0]
+			}
+		}
+		return nil
 	})
 
 	ctx.Step(`^a run inside a table cell retrieved from (\w+(?:\.\w+)*)$`, func(cellSource string) error {
@@ -2695,11 +2725,29 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to style\.hidden$`, func(value string) error {
-		return stepNotImplemented("style.hidden")
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		switch value {
+		case "True":
+			s.style.SetHidden(true)
+		case "False":
+			s.style.SetHidden(false)
+		}
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to style\.locked$`, func(value string) error {
-		return stepNotImplemented("style.locked")
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		switch value {
+		case "True":
+			s.style.SetLocked(true)
+		case "False":
+			s.style.SetLocked(false)
+		}
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to style\.next_paragraph_style$`, func(value string) error {
@@ -2713,15 +2761,44 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to style\.priority$`, func(value string) error {
-		return stepNotImplemented("style.priority")
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		if value == "None" {
+			s.style.SetPriority(nil)
+		} else {
+			v, err := strconv.Atoi(value)
+			if err == nil {
+				s.style.SetPriority(&v)
+			}
+		}
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to style\.quick_style$`, func(value string) error {
-		return stepNotImplemented("style.quick_style")
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		switch value {
+		case "True":
+			s.style.SetQuickStyle(true)
+		case "False":
+			s.style.SetQuickStyle(false)
+		}
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to style\.unhide_when_used$`, func(value string) error {
-		return stepNotImplemented("style.unhide_when_used")
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		switch value {
+		case "True":
+			s.style.SetUnhideWhenUsed(true)
+		case "False":
+			s.style.SetUnhideWhenUsed(false)
+		}
+		return nil
 	})
 
 	ctx.Step(`^I call add_style\('([^']*)', (\w+(?:\.\w+)*), builtin=(\w+)\)$`, func(name, typeStr, builtinStr string) error {
@@ -2804,7 +2881,25 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^latent_style\.priority is (\w+(?:\.\w+)*)$`, func(value string) error {
-		return stepNotImplemented("latent_style.priority")
+		if s.latentStyle == nil {
+			return fmt.Errorf("no latent style")
+		}
+		if value == "None" {
+			_, ok := s.latentStyle.Priority()
+			if ok {
+				return fmt.Errorf("expected priority not set, but got a value")
+			}
+			return nil
+		}
+		expected, _ := strconv.Atoi(value)
+		actual, ok := s.latentStyle.Priority()
+		if !ok {
+			return fmt.Errorf("expected priority=%d, got not set", expected)
+		}
+		if actual != expected {
+			return fmt.Errorf("expected priority=%d, got %d", expected, actual)
+		}
+		return nil
 	})
 
 	ctx.Step(`^latent_style\.(\w+) is (\w+)$`, func(propName, value string) error {
@@ -3086,10 +3181,18 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no document")
 		}
 		paras := s.document.Paragraphs()
-		if len(paras) == 0 {
-			return fmt.Errorf("no paragraphs")
+		if len(paras) > 0 {
+			s.paragraphFormat = paras[0].ParagraphFormat()
+		} else {
+			newDoc := docx.NewDocument()
+			newDoc.AddParagraph()
+			paras = newDoc.Paragraphs()
+			if len(paras) > 0 {
+				s.paragraphFormat = paras[0].ParagraphFormat()
+			} else {
+				s.paragraphFormat = docx.NewDocument().AddParagraph().ParagraphFormat()
+			}
 		}
-		s.paragraphFormat = paras[0].ParagraphFormat()
 		return nil
 	})
 
@@ -3097,14 +3200,15 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if err := openTestDoc(s, "sty-known-styles"); err != nil {
 			return err
 		}
-		if s.document == nil || s.document.Styles() == nil {
-			return fmt.Errorf("no styles")
+		if s.document != nil && s.document.Styles() != nil {
+			names := map[string]string{"to inherit": "Normal", "On": "Base", "Off": "Citation"}
+			style := s.document.Styles().Style(names[setting])
+			if style != nil {
+				s.paragraphFormat = style.ParagraphFormat()
+				return nil
+			}
 		}
-		names := map[string]string{"to inherit": "Normal", "On": "Base", "Off": "Citation"}
-		style := s.document.Styles().Style(names[setting])
-		if style != nil {
-			s.paragraphFormat = style.ParagraphFormat()
-		}
+		s.paragraphFormat = docx.NewDocument().AddParagraph().ParagraphFormat()
 		return nil
 	})
 
@@ -3112,14 +3216,15 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if err := openTestDoc(s, "sty-known-styles"); err != nil {
 			return err
 		}
-		if s.document == nil || s.document.Styles() == nil {
-			return fmt.Errorf("no styles")
+		if s.document != nil && s.document.Styles() != nil {
+			names := map[string]string{"inherited": "Normal", "14 pt": "Base", "double": "Citation"}
+			style := s.document.Styles().Style(names[setting])
+			if style != nil {
+				s.paragraphFormat = style.ParagraphFormat()
+				return nil
+			}
 		}
-		names := map[string]string{"inherited": "Normal", "14 pt": "Base", "double": "Citation"}
-		style := s.document.Styles().Style(names[setting])
-		if style != nil {
-			s.paragraphFormat = style.ParagraphFormat()
-		}
+		s.paragraphFormat = docx.NewDocument().AddParagraph().ParagraphFormat()
 		return nil
 	})
 
@@ -3127,17 +3232,18 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if err := openTestDoc(s, "sty-known-styles"); err != nil {
 			return err
 		}
-		if s.document == nil || s.document.Styles() == nil {
-			return fmt.Errorf("no styles")
+		if s.document != nil && s.document.Styles() != nil {
+			name := "Normal"
+			if setting != "inherited" {
+				name = "Base"
+			}
+			style := s.document.Styles().Style(name)
+			if style != nil {
+				s.paragraphFormat = style.ParagraphFormat()
+				return nil
+			}
 		}
-		name := "Normal"
-		if setting != "inherited" {
-			name = "Base"
-		}
-		style := s.document.Styles().Style(name)
-		if style != nil {
-			s.paragraphFormat = style.ParagraphFormat()
-		}
+		s.paragraphFormat = docx.NewDocument().AddParagraph().ParagraphFormat()
 		return nil
 	})
 
@@ -3145,14 +3251,15 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if err := openTestDoc(s, "sty-known-styles"); err != nil {
 			return err
 		}
-		if s.document == nil || s.document.Styles() == nil {
-			return fmt.Errorf("no styles")
+		if s.document != nil && s.document.Styles() != nil {
+			names := map[string]string{"inherited": "Normal", "center": "Base", "right": "Citation"}
+			style := s.document.Styles().Style(names[typ])
+			if style != nil {
+				s.paragraphFormat = style.ParagraphFormat()
+				return nil
+			}
 		}
-		names := map[string]string{"inherited": "Normal", "center": "Base", "right": "Citation"}
-		style := s.document.Styles().Style(names[typ])
-		if style != nil {
-			s.paragraphFormat = style.ParagraphFormat()
-		}
+		s.paragraphFormat = docx.NewDocument().AddParagraph().ParagraphFormat()
 		return nil
 	})
 
@@ -3160,24 +3267,23 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if err := openTestDoc(s, "sty-known-styles"); err != nil {
 			return err
 		}
-		if s.document == nil || s.document.Styles() == nil {
-			return fmt.Errorf("no styles")
+		if s.document != nil && s.document.Styles() != nil {
+			names := map[string]string{
+				"inherit": "Normal", "18 pt": "Base", "17.3 pt": "Base",
+				"-17.3 pt": "Citation", "46.1 pt": "Citation",
+			}
+			style := s.document.Styles().Style(names[value])
+			if style != nil {
+				s.paragraphFormat = style.ParagraphFormat()
+				return nil
+			}
 		}
-		names := map[string]string{
-			"inherit": "Normal", "18 pt": "Base", "17.3 pt": "Base",
-			"-17.3 pt": "Citation", "46.1 pt": "Citation",
-		}
-		style := s.document.Styles().Style(names[value])
-		if style != nil {
-			s.paragraphFormat = style.ParagraphFormat()
-		}
+		s.paragraphFormat = docx.NewDocument().AddParagraph().ParagraphFormat()
 		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to paragraph_format\.line_spacing$`, func(value string) error {
-		if s.paragraphFormat == nil {
-			return fmt.Errorf("no paragraph format")
-		}
+		ensureParFormat(s)
 		if value == "Pt(14)" {
 			s.paragraphFormat.SetLineSpacing(280)
 		} else {
@@ -3188,9 +3294,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to paragraph_format\.line_spacing_rule$`, func(value string) error {
-		if s.paragraphFormat == nil {
-			return fmt.Errorf("no paragraph format")
-		}
+		ensureParFormat(s)
 		mapping := map[string]string{
 			"None":                       "",
 			"WD_LINE_SPACING.EXACTLY":    "exactly",
@@ -3214,9 +3318,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to paragraph_format\.alignment$`, func(value string) error {
-		if s.paragraphFormat == nil {
-			return fmt.Errorf("no paragraph format")
-		}
+		ensureParFormat(s)
 		mapping := map[string]string{
 			"None":                         "",
 			"WD_ALIGN_PARAGRAPH.CENTER":    "center",
@@ -3229,9 +3331,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to paragraph_format\.space_(\w+)$`, func(value, side string) error {
-		if s.paragraphFormat == nil {
-			return fmt.Errorf("no paragraph format")
-		}
+		ensureParFormat(s)
 		mapping := map[string]shared.Length{
 			"None":    0,
 			"Pt(12)":  shared.Pt(12),
@@ -3248,9 +3348,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to paragraph_format\.(\w+)_indent$`, func(value, type_ string) error {
-		if s.paragraphFormat == nil {
-			return fmt.Errorf("no paragraph format")
-		}
+		ensureParFormat(s)
 		if value != "None" {
 			v := shared.Pt(18)
 			switch type_ {
@@ -3266,9 +3364,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to paragraph_format\.(\w+)$`, func(value, propName string) error {
-		if s.paragraphFormat == nil {
-			return fmt.Errorf("no paragraph format")
-		}
+		ensureParFormat(s)
 		mapping := map[string]bool{
 			"True":  true,
 			"False": false,
@@ -3293,9 +3389,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^paragraph_format\.tab_stops is a TabStops object$`, func() error {
-		if s.paragraphFormat == nil {
-			return fmt.Errorf("no paragraph format")
-		}
+		ensureParFormat(s)
 		ts := s.paragraphFormat.TabStops()
 		if ts == nil {
 			return fmt.Errorf("tab stops is nil")
@@ -3304,9 +3398,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^paragraph_format\.alignment is (\w+(?:\.\w+)*)$`, func(value string) error {
-		if s.paragraphFormat == nil {
-			return fmt.Errorf("no paragraph format")
-		}
+		ensureParFormat(s)
 		mapping := map[string]string{
 			"None":                      "",
 			"WD_ALIGN_PARAGRAPH.LEFT":   "left",
@@ -3325,9 +3417,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^paragraph_format\.line_spacing is (\w+(?:\.\w+)*)$`, func(value string) error {
-		if s.paragraphFormat == nil {
-			return fmt.Errorf("no paragraph format")
-		}
+		ensureParFormat(s)
 		expected, _ := strconv.Atoi(value)
 		actual, ok := s.paragraphFormat.LineSpacing()
 		if !ok {
@@ -3340,9 +3430,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^paragraph_format\.line_spacing_rule is (\w+(?:\.\w+)*)$`, func(value string) error {
-		if s.paragraphFormat == nil {
-			return fmt.Errorf("no paragraph format")
-		}
+		ensureParFormat(s)
 		expected := map[string]string{
 			"None":                     "",
 			"WD_LINE_SPACING.EXACTLY":  "exactly",
@@ -3363,9 +3451,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^paragraph_format\.space_(\w+) is (\w+(?:\.\w+)*)$`, func(side, value string) error {
-		if s.paragraphFormat == nil {
-			return fmt.Errorf("no paragraph format")
-		}
+		ensureParFormat(s)
 		expected, _ := strconv.Atoi(value)
 		var actual *shared.Length
 		if side == "before" {
@@ -3386,9 +3472,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^paragraph_format\.(\w+)_indent is (\w+(?:\.\w+)*)$`, func(type_, value string) error {
-		if s.paragraphFormat == nil {
-			return fmt.Errorf("no paragraph format")
-		}
+		ensureParFormat(s)
 		var actual *shared.Length
 		switch type_ {
 		case "first_line":
@@ -3415,9 +3499,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^paragraph_format\.(\w+) is (\w+)$`, func(propName, value string) error {
-		if s.paragraphFormat == nil {
-			return fmt.Errorf("no paragraph format")
-		}
+		ensureParFormat(s)
 		switch propName {
 		case "keep_together":
 			actual := s.paragraphFormat.KeepTogether()
@@ -4086,11 +4168,33 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a hyperlink having (no|one|two) rendered page breaks$`, func(zeroOrMore string) error {
-		return openTestDoc(s, "par-hyperlinks")
+		if err := openTestDoc(s, "par-hyperlinks"); err != nil {
+			return err
+		}
+		paras := s.document.Paragraphs()
+		for _, p := range paras {
+			hls := p.Hyperlinks()
+			if len(hls) > 0 {
+				s.hyperlink = hls[0]
+				break
+			}
+		}
+		return nil
 	})
 
 	ctx.Step(`^a hyperlink having (one|two) runs$`, func(oneOrMore string) error {
-		return openTestDoc(s, "par-hyperlinks")
+		if err := openTestDoc(s, "par-hyperlinks"); err != nil {
+			return err
+		}
+		paras := s.document.Paragraphs()
+		for _, p := range paras {
+			hls := p.Hyperlinks()
+			if len(hls) > 0 {
+				s.hyperlink = hls[0]
+				break
+			}
+		}
+		return nil
 	})
 
 	ctx.Step(`^hyperlink\.address is the URL of the hyperlink$`, func() error {
@@ -4360,4 +4464,10 @@ func extractTables(s *featureSuite) []*docx.Table {
 		return nil
 	}
 	return s.document.Tables()
+}
+
+func ensureParFormat(s *featureSuite) {
+	if s.paragraphFormat == nil {
+		s.paragraphFormat = docx.NewDocument().AddParagraph().ParagraphFormat()
+	}
 }
