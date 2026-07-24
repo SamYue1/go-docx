@@ -1292,35 +1292,115 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 
 	// ========== SECTION (section.py) ==========
 	ctx.Step(`^a Section object as section$`, func() error {
-		return openTestDoc(s, "sct-section-props")
+		if err := openTestDoc(s, "sct-section-props"); err != nil {
+			return err
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		sections := s.document.Sections()
+		if len(sections) > 0 {
+			s.section = sections[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a Section object of a multi-section document as section$`, func() error {
-		return openTestDoc(s, "sct-inner-content")
+		if err := openTestDoc(s, "sct-inner-content"); err != nil {
+			return err
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		sections := s.document.Sections()
+		if len(sections) > 0 {
+			s.section = sections[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a Section object (\w+(?:-\w+)*) a distinct first-page header as section$`, func(withOrWithout string) error {
-		return openTestDoc(s, "sct-first-page-hdrftr")
+		if err := openTestDoc(s, "sct-first-page-hdrftr"); err != nil {
+			return err
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		sections := s.document.Sections()
+		if len(sections) > 0 {
+			s.section = sections[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a section collection containing (\d+) sections$`, func(count string) error {
-		return openTestDoc(s, "doc-access-sections")
+		if err := openTestDoc(s, "doc-access-sections"); err != nil {
+			return err
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		s.sections = s.document.Sections()
+		if len(s.sections) > 0 {
+			s.section = s.sections[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a section having known page dimension$`, func() error {
-		return openTestDoc(s, "sct-section-props")
+		if err := openTestDoc(s, "sct-section-props"); err != nil {
+			return err
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		sections := s.document.Sections()
+		if len(sections) > 0 {
+			s.section = sections[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a section having known page margins$`, func() error {
-		return openTestDoc(s, "sct-section-props")
+		if err := openTestDoc(s, "sct-section-props"); err != nil {
+			return err
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		sections := s.document.Sections()
+		if len(sections) > 0 {
+			s.section = sections[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a section having start type (\w+)$`, func(startType string) error {
-		return openTestDoc(s, "sct-section-props")
+		if err := openTestDoc(s, "sct-section-props"); err != nil {
+			return err
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		sections := s.document.Sections()
+		if len(sections) > 0 {
+			s.section = sections[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a section known to have (\w+) orientation$`, func(orientation string) error {
-		return openTestDoc(s, "sct-section-props")
+		if err := openTestDoc(s, "sct-section-props"); err != nil {
+			return err
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		sections := s.document.Sections()
+		if len(sections) > 0 {
+			s.section = sections[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+) to section\.different_first_page_header_footer$`, func(boolVal string) error {
@@ -2910,27 +2990,99 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 
 	// ========== PARAGRAPH FORMAT (parfmt.py) ==========
 	ctx.Step(`^a paragraph format$`, func() error {
-		return openTestDoc(s, "tab-stops")
+		if err := openTestDoc(s, "tab-stops"); err != nil {
+			return err
+		}
+		if s.document == nil {
+			return fmt.Errorf("no document")
+		}
+		paras := s.document.Paragraphs()
+		if len(paras) == 0 {
+			return fmt.Errorf("no paragraphs")
+		}
+		s.paragraphFormat = paras[0].ParagraphFormat()
+		return nil
 	})
 
 	ctx.Step(`^a paragraph format having (\w+) set (\w+(?: \w+)*)$`, func(propName, setting string) error {
-		return openTestDoc(s, "sty-known-styles")
+		if err := openTestDoc(s, "sty-known-styles"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		names := map[string]string{"to inherit": "Normal", "On": "Base", "Off": "Citation"}
+		style := s.document.Styles().Style(names[setting])
+		if style != nil {
+			s.paragraphFormat = style.ParagraphFormat()
+		}
+		return nil
 	})
 
 	ctx.Step(`^a paragraph format having (\w+(?: \w+)*) line spacing$`, func(setting string) error {
-		return openTestDoc(s, "sty-known-styles")
+		if err := openTestDoc(s, "sty-known-styles"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		names := map[string]string{"inherited": "Normal", "14 pt": "Base", "double": "Citation"}
+		style := s.document.Styles().Style(names[setting])
+		if style != nil {
+			s.paragraphFormat = style.ParagraphFormat()
+		}
+		return nil
 	})
 
 	ctx.Step(`^a paragraph format having (\w+(?: \w+)*) space (\w+)$`, func(setting, side string) error {
-		return openTestDoc(s, "sty-known-styles")
+		if err := openTestDoc(s, "sty-known-styles"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		name := "Normal"
+		if setting != "inherited" {
+			name = "Base"
+		}
+		style := s.document.Styles().Style(name)
+		if style != nil {
+			s.paragraphFormat = style.ParagraphFormat()
+		}
+		return nil
 	})
 
 	ctx.Step(`^a paragraph format having (\w+) alignment$`, func(typ string) error {
-		return openTestDoc(s, "sty-known-styles")
+		if err := openTestDoc(s, "sty-known-styles"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		names := map[string]string{"inherited": "Normal", "center": "Base", "right": "Citation"}
+		style := s.document.Styles().Style(names[typ])
+		if style != nil {
+			s.paragraphFormat = style.ParagraphFormat()
+		}
+		return nil
 	})
 
 	ctx.Step(`^a paragraph format having (\w+) indent of (\w+(?:\.\w+)*)$`, func(typ, value string) error {
-		return openTestDoc(s, "sty-known-styles")
+		if err := openTestDoc(s, "sty-known-styles"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		names := map[string]string{
+			"inherit": "Normal", "18 pt": "Base", "17.3 pt": "Base",
+			"-17.3 pt": "Citation", "46.1 pt": "Citation",
+		}
+		style := s.document.Styles().Style(names[value])
+		if style != nil {
+			s.paragraphFormat = style.ParagraphFormat()
+		}
+		return nil
 	})
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to paragraph_format\.line_spacing$`, func(value string) error {
