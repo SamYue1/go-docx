@@ -846,51 +846,140 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a table cell having a width of (\w+(?: \w+)*)$`, func(width string) error {
-		return openTestDoc(s, "tbl-props")
+		if err := openTestDoc(s, "tbl-props"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+			s.cell = tables[0].Cell(0, 0)
+		}
+		return nil
 	})
 
 	ctx.Step(`^a table column having a width of (\w+(?: \w+)*)$`, func(widthDesc string) error {
-		return openTestDoc(s, "tbl-col-props")
+		if err := openTestDoc(s, "tbl-col-props"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+			cols := tables[0].Columns()
+			if len(cols) > 0 {
+				s.column = cols[0]
+			}
+		}
+		return nil
 	})
 
 	ctx.Step(`^a table having (\w+) alignment$`, func(alignment string) error {
-		return openTestDoc(s, "tbl-props")
+		if err := openTestDoc(s, "tbl-props"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a table having an autofit layout of (\w+)$`, func(autofit string) error {
-		return openTestDoc(s, "tbl-props")
+		if err := openTestDoc(s, "tbl-props"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a table having (\w+(?: \w+)*) style$`, func(style string) error {
-		return openTestDoc(s, "tbl-having-applied-style")
+		if err := openTestDoc(s, "tbl-having-applied-style"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a table having table direction set (\w+(?:-\w+)*)$`, func(setting string) error {
-		return openTestDoc(s, "tbl-on-off-props")
+		if err := openTestDoc(s, "tbl-on-off-props"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a table having two columns$`, func() error {
-		return openTestDoc(s, "blk-containing-table")
+		if err := openTestDoc(s, "blk-containing-table"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a table having two rows$`, func() error {
-		return openTestDoc(s, "blk-containing-table")
+		if err := openTestDoc(s, "blk-containing-table"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a table row ending with (\d+) empty grid columns$`, func(count string) error {
-		return openTestDoc(s, "tbl-props")
+		if err := openTestDoc(s, "tbl-props"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a table row having height of (\w+(?: \w+)*)$`, func(state string) error {
-		return openTestDoc(s, "tbl-props")
+		if err := openTestDoc(s, "tbl-props"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a table row having height rule (\w+(?: \w+)*)$`, func(state string) error {
-		return openTestDoc(s, "tbl-props")
+		if err := openTestDoc(s, "tbl-props"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a table row starting with (\d+) empty grid columns$`, func(count string) error {
-		return openTestDoc(s, "tbl-props")
+		if err := openTestDoc(s, "tbl-props"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^I add a 1\.0 inch column to the table$`, func() error {
@@ -4264,4 +4353,11 @@ func themeStepToXML(key string) string {
 		return v
 	}
 	return ""
+}
+
+func extractTables(s *featureSuite) []*docx.Table {
+	if s.document == nil {
+		return nil
+	}
+	return s.document.Tables()
 }
