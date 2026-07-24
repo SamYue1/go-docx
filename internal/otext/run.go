@@ -14,10 +14,16 @@ func NewRun(r *text.CT_R) *Run {
 }
 
 func (rn *Run) CT_R() *text.CT_R {
+	if rn == nil {
+		return nil
+	}
 	return rn.r
 }
 
 func (rn *Run) Text() string {
+	if rn == nil || rn.r == nil {
+		return ""
+	}
 	var result string
 	for _, t := range rn.r.T_lst() {
 		result += t.Text()
@@ -29,10 +35,16 @@ func (rn *Run) Text() string {
 }
 
 func (rn *Run) AddText(s string) {
+	if rn == nil || rn.r == nil {
+		return
+	}
 	rn.r.AddT(s)
 }
 
 func (rn *Run) AddBreak(breakType BreakType) {
+	if rn == nil || rn.r == nil {
+		return
+	}
 	br := rn.r.AddBr()
 	switch breakType {
 	case BreakPage:
@@ -53,6 +65,9 @@ func (rn *Run) AddBreak(breakType BreakType) {
 }
 
 func (rn *Run) Font() *Font {
+	if rn == nil || rn.r == nil {
+		return NewFont(text.NewCT_RPr())
+	}
 	rPr := rn.r.GetOrAddRPr()
 	return NewFont(rPr)
 }
@@ -74,6 +89,9 @@ func (rn *Run) ItalicSet(val bool) {
 }
 
 func (rn *Run) Style() (string, bool) {
+	if rn == nil || rn.r == nil {
+		return "", false
+	}
 	rPr := rn.r.RPr()
 	if rPr == nil {
 		return "", false
@@ -86,15 +104,24 @@ func (rn *Run) Style() (string, bool) {
 }
 
 func (rn *Run) SetStyle(name string) {
+	if rn == nil || rn.r == nil {
+		return
+	}
 	rPr := rn.r.GetOrAddRPr()
 	rPr.GetOrAddRStyle().SetAttr(ns.NsMap["w"], "val", name)
 }
 
 func (rn *Run) Clear() {
+	if rn == nil || rn.r == nil {
+		return
+	}
 	rn.r.ClearContent()
 }
 
 func (rn *Run) ContainsPageBreak() bool {
+	if rn == nil || rn.r == nil {
+		return false
+	}
 	for _, br := range rn.r.Br_lst() {
 		typ, ok := br.Element.GetAttr(ns.NsMap["w"], "type")
 		if ok && typ == "page" {

@@ -16,10 +16,16 @@ func NewTable(tbl *oxml.CT_Tbl) *Table {
 }
 
 func (t *Table) CT_Tbl() *oxml.CT_Tbl {
+	if t == nil {
+		return nil
+	}
 	return t.tbl
 }
 
 func (t *Table) Rows() []*Row {
+	if t == nil || t.tbl == nil {
+		return nil
+	}
 	trs := t.tbl.Tr_lst()
 	result := make([]*Row, len(trs))
 	for i, tr := range trs {
@@ -29,6 +35,9 @@ func (t *Table) Rows() []*Row {
 }
 
 func (t *Table) Columns() []*Column {
+	if t == nil || t.tbl == nil {
+		return nil
+	}
 	grid := t.tbl.TblGrid()
 	if grid == nil {
 		return nil
@@ -42,6 +51,9 @@ func (t *Table) Columns() []*Column {
 }
 
 func (t *Table) Cell(rowIdx, colIdx int) *Cell {
+	if t == nil {
+		return nil
+	}
 	rows := t.Rows()
 	if rowIdx < 0 || rowIdx >= len(rows) {
 		return nil
@@ -54,6 +66,9 @@ func (t *Table) Cell(rowIdx, colIdx int) *Cell {
 }
 
 func (t *Table) AddRow() *Row {
+	if t == nil || t.tbl == nil {
+		return nil
+	}
 	grid := t.tbl.GetOrAddTblGrid()
 	tr := t.tbl.AddTr()
 	for _, gc := range grid.GridCol_lst() {
@@ -69,6 +84,9 @@ func (t *Table) AddRow() *Row {
 }
 
 func (t *Table) AddColumn(width shared.Length) *Column {
+	if t == nil || t.tbl == nil {
+		return nil
+	}
 	grid := t.tbl.GetOrAddTblGrid()
 	gc := grid.AddGridCol()
 	gc.SetW(width.Twips())
@@ -83,6 +101,9 @@ func (t *Table) AddColumn(width shared.Length) *Column {
 }
 
 func (t *Table) Style() string {
+	if t == nil || t.tbl == nil {
+		return ""
+	}
 	tblPr := t.tbl.TblPr()
 	if tblPr == nil {
 		return ""
@@ -96,6 +117,9 @@ func (t *Table) Style() string {
 }
 
 func (t *Table) SetStyle(name string) {
+	if t == nil || t.tbl == nil {
+		return
+	}
 	tblPr := t.tbl.GetOrAddTblPr()
 	el := findChild(tblPr.Element, ns.Qn("w:tblStyle"))
 	if el == nil {
@@ -115,6 +139,9 @@ func findChild(parent *dom.Element, tag string) *dom.Element {
 }
 
 func (t *Table) Alignment() (string, bool) {
+	if t == nil || t.tbl == nil {
+		return "", false
+	}
 	tblPr := t.tbl.TblPr()
 	if tblPr == nil {
 		return "", false
@@ -127,6 +154,9 @@ func (t *Table) Alignment() (string, bool) {
 }
 
 func (t *Table) SetAlignment(val string) {
+	if t == nil || t.tbl == nil {
+		return
+	}
 	tblPr := t.tbl.GetOrAddTblPr()
 	jc := tblPr.Jc()
 	if jc == nil {
@@ -139,6 +169,9 @@ func (t *Table) SetAlignment(val string) {
 }
 
 func (t *Table) Autofit() (bool, bool) {
+	if t == nil || t.tbl == nil {
+		return false, false
+	}
 	tblPr := t.tbl.TblPr()
 	if tblPr == nil {
 		return false, false
@@ -155,6 +188,9 @@ func (t *Table) Autofit() (bool, bool) {
 }
 
 func (t *Table) SetAutofit(val bool) {
+	if t == nil || t.tbl == nil {
+		return
+	}
 	tblPr := t.tbl.GetOrAddTblPr()
 	layout := findChild(tblPr.Element, ns.Qn("w:tblLayout"))
 	if layout == nil {
@@ -174,6 +210,9 @@ type Column struct {
 }
 
 func (c *Column) Width() shared.Length {
+	if c == nil || c.gridCol == nil {
+		return 0
+	}
 	w, ok := c.gridCol.W()
 	if !ok {
 		return 0
@@ -182,10 +221,16 @@ func (c *Column) Width() shared.Length {
 }
 
 func (c *Column) SetWidth(width shared.Length) {
+	if c == nil || c.gridCol == nil {
+		return
+	}
 	c.gridCol.SetW(width.Twips())
 }
 
 func (c *Column) Cells() []*Cell {
+	if c == nil || c.table == nil {
+		return nil
+	}
 	var cells []*Cell
 	for _, row := range c.table.Rows() {
 		rowCells := row.Cells()

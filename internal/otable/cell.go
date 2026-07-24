@@ -21,6 +21,9 @@ func (c *Cell) CT_Tc() *oxml.CT_Tc {
 }
 
 func (c *Cell) Text() string {
+	if c == nil || c.tc == nil {
+		return ""
+	}
 	var result string
 	for i, p := range c.Paragraphs() {
 		if i > 0 {
@@ -39,6 +42,9 @@ func (c *Cell) SetText(textStr string) {
 }
 
 func (c *Cell) Paragraphs() []*otext.Paragraph {
+	if c == nil || c.tc == nil {
+		return nil
+	}
 	ps := c.tc.P_lst()
 	result := make([]*otext.Paragraph, len(ps))
 	for i, p := range ps {
@@ -69,6 +75,9 @@ func (c *Cell) AddTable() *Table {
 }
 
 func (c *Cell) Width() *shared.Length {
+	if c == nil || c.tc == nil {
+		return nil
+	}
 	tcPr := c.tc.TcPr()
 	if tcPr == nil {
 		return nil
@@ -93,6 +102,9 @@ func (c *Cell) SetWidth(width shared.Length) {
 }
 
 func (c *Cell) VerticalAlignment() (string, bool) {
+	if c == nil || c.tc == nil {
+		return "", false
+	}
 	tcPr := c.tc.TcPr()
 	if tcPr == nil {
 		return "", false
@@ -121,6 +133,9 @@ func (c *Cell) Merge(other *Cell) *Cell {
 }
 
 func (c *Cell) GridSpan() int {
+	if c == nil || c.tc == nil {
+		return 1
+	}
 	tcPr := c.tc.TcPr()
 	if tcPr == nil {
 		return 1

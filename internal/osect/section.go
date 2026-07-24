@@ -14,10 +14,16 @@ func NewSection(sectPr *oxml.CT_SectPr) *Section {
 }
 
 func (s *Section) CT_SectPr() *oxml.CT_SectPr {
+	if s == nil {
+		return nil
+	}
 	return s.sectPr
 }
 
 func (s *Section) PageWidth() *shared.Length {
+	if s == nil || s.sectPr == nil {
+		return nil
+	}
 	pgSz := s.sectPr.PgSz()
 	if pgSz == nil {
 		return nil
@@ -31,11 +37,17 @@ func (s *Section) PageWidth() *shared.Length {
 }
 
 func (s *Section) SetPageWidth(length shared.Length) {
+	if s == nil || s.sectPr == nil {
+		return
+	}
 	pgSz := s.sectPr.GetOrAddPgSz()
 	pgSz.SetW(length.Twips())
 }
 
 func (s *Section) PageHeight() *shared.Length {
+	if s == nil || s.sectPr == nil {
+		return nil
+	}
 	pgSz := s.sectPr.PgSz()
 	if pgSz == nil {
 		return nil
@@ -49,11 +61,17 @@ func (s *Section) PageHeight() *shared.Length {
 }
 
 func (s *Section) SetPageHeight(length shared.Length) {
+	if s == nil || s.sectPr == nil {
+		return
+	}
 	pgSz := s.sectPr.GetOrAddPgSz()
 	pgSz.SetH(length.Twips())
 }
 
 func (s *Section) Orientation() string {
+	if s == nil || s.sectPr == nil {
+		return ""
+	}
 	pgSz := s.sectPr.PgSz()
 	if pgSz == nil {
 		return ""
@@ -63,11 +81,17 @@ func (s *Section) Orientation() string {
 }
 
 func (s *Section) SetOrientation(o string) {
+	if s == nil || s.sectPr == nil {
+		return
+	}
 	pgSz := s.sectPr.GetOrAddPgSz()
 	pgSz.SetOrient(o)
 }
 
 func (s *Section) MarginTop() *shared.Length {
+	if s == nil || s.sectPr == nil {
+		return nil
+	}
 	pgMar := s.sectPr.PgMar()
 	if pgMar == nil {
 		return nil
@@ -81,11 +105,17 @@ func (s *Section) MarginTop() *shared.Length {
 }
 
 func (s *Section) SetMarginTop(length shared.Length) {
+	if s == nil || s.sectPr == nil {
+		return
+	}
 	pgMar := s.sectPr.GetOrAddPgMar()
 	pgMar.SetTop(length.Twips())
 }
 
 func (s *Section) MarginRight() *shared.Length {
+	if s == nil || s.sectPr == nil {
+		return nil
+	}
 	pgMar := s.sectPr.PgMar()
 	if pgMar == nil {
 		return nil
@@ -99,11 +129,17 @@ func (s *Section) MarginRight() *shared.Length {
 }
 
 func (s *Section) SetMarginRight(length shared.Length) {
+	if s == nil || s.sectPr == nil {
+		return
+	}
 	pgMar := s.sectPr.GetOrAddPgMar()
 	pgMar.SetRight(length.Twips())
 }
 
 func (s *Section) MarginBottom() *shared.Length {
+	if s == nil || s.sectPr == nil {
+		return nil
+	}
 	pgMar := s.sectPr.PgMar()
 	if pgMar == nil {
 		return nil
@@ -117,11 +153,17 @@ func (s *Section) MarginBottom() *shared.Length {
 }
 
 func (s *Section) SetMarginBottom(length shared.Length) {
+	if s == nil || s.sectPr == nil {
+		return
+	}
 	pgMar := s.sectPr.GetOrAddPgMar()
 	pgMar.SetBottom(length.Twips())
 }
 
 func (s *Section) MarginLeft() *shared.Length {
+	if s == nil || s.sectPr == nil {
+		return nil
+	}
 	pgMar := s.sectPr.PgMar()
 	if pgMar == nil {
 		return nil
@@ -135,11 +177,17 @@ func (s *Section) MarginLeft() *shared.Length {
 }
 
 func (s *Section) SetMarginLeft(length shared.Length) {
+	if s == nil || s.sectPr == nil {
+		return
+	}
 	pgMar := s.sectPr.GetOrAddPgMar()
 	pgMar.SetLeft(length.Twips())
 }
 
 func (s *Section) StartType() (string, bool) {
+	if s == nil || s.sectPr == nil {
+		return "", false
+	}
 	typ := s.sectPr.Type()
 	if typ == nil {
 		return "", false
@@ -148,6 +196,9 @@ func (s *Section) StartType() (string, bool) {
 }
 
 func (s *Section) SetStartType(val string) {
+	if s == nil || s.sectPr == nil {
+		return
+	}
 	typ := s.sectPr.GetOrAddType()
 	typ.SetVal(val)
 }
@@ -172,6 +223,9 @@ func hdrFtrRefValue(typ HeaderFooterType) string {
 }
 
 func (s *Section) Header(typ HeaderFooterType) *HeaderFooter {
+	if s == nil || s.sectPr == nil {
+		return &HeaderFooter{sectPr: nil, typ: hdrFtrRefValue(typ), isFooter: false}
+	}
 	return &HeaderFooter{
 		sectPr: s.sectPr,
 		typ:    hdrFtrRefValue(typ),
@@ -180,6 +234,9 @@ func (s *Section) Header(typ HeaderFooterType) *HeaderFooter {
 }
 
 func (s *Section) Footer(typ HeaderFooterType) *HeaderFooter {
+	if s == nil || s.sectPr == nil {
+		return &HeaderFooter{sectPr: nil, typ: hdrFtrRefValue(typ), isFooter: true}
+	}
 	return &HeaderFooter{
 		sectPr: s.sectPr,
 		typ:    hdrFtrRefValue(typ),
@@ -198,6 +255,9 @@ func NewHeaderFooter(sectPr *oxml.CT_SectPr, typ string, isFooter bool) *HeaderF
 }
 
 func (hf *HeaderFooter) RId() string {
+	if hf.sectPr == nil {
+		return ""
+	}
 	var refs []*oxml.CT_HdrFtrRef
 	if hf.isFooter {
 		refs = hf.sectPr.FooterReference_lst()

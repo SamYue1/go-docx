@@ -16,6 +16,9 @@ func NewFont(rPr *text.CT_RPr) *Font {
 }
 
 func (f *Font) Name() string {
+	if f == nil || f.rPr == nil {
+		return ""
+	}
 	rFonts := f.rPr.RFonts()
 	if rFonts == nil {
 		return ""
@@ -25,12 +28,18 @@ func (f *Font) Name() string {
 }
 
 func (f *Font) SetName(name string) {
+	if f == nil || f.rPr == nil {
+		return
+	}
 	rFonts := f.rPr.GetOrAddRFonts()
 	rFonts.SetAscii(name)
 	rFonts.SetHAnsi(name)
 }
 
 func (f *Font) Size() float64 {
+	if f == nil || f.rPr == nil {
+		return 0
+	}
 	sz := f.rPr.Sz()
 	if sz == nil {
 		return 0
@@ -84,6 +93,9 @@ func (f *Font) SetItalic(val bool) {
 }
 
 func (f *Font) Color() *shared.RGBColor {
+	if f == nil || f.rPr == nil {
+		return nil
+	}
 	c := f.rPr.Color()
 	if c == nil {
 		return nil
@@ -105,6 +117,9 @@ func (f *Font) SetColor(color shared.RGBColor) {
 }
 
 func (f *Font) Underline() string {
+	if f == nil || f.rPr == nil {
+		return ""
+	}
 	u := f.rPr.U()
 	if u == nil {
 		return ""

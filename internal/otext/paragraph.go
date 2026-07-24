@@ -26,6 +26,9 @@ func (p *Paragraph) CT_P() *text.CT_P {
 }
 
 func (p *Paragraph) Text() string {
+	if p == nil || p.p == nil {
+		return ""
+	}
 	var result string
 	for _, r := range p.p.R_lst() {
 		for _, t := range r.T_lst() {
@@ -40,6 +43,9 @@ func (p *Paragraph) Text() string {
 }
 
 func (p *Paragraph) AddRun(textStr string) *Run {
+	if p == nil || p.p == nil {
+		return nil
+	}
 	r := p.p.AddR()
 	run := NewRun(r)
 	if textStr != "" {
@@ -49,6 +55,9 @@ func (p *Paragraph) AddRun(textStr string) *Run {
 }
 
 func (p *Paragraph) Style() (string, bool) {
+	if p == nil || p.p == nil {
+		return "", false
+	}
 	pPr := p.p.PPr()
 	if pPr == nil {
 		return "", false
@@ -61,12 +70,18 @@ func (p *Paragraph) Style() (string, bool) {
 }
 
 func (p *Paragraph) SetStyle(name string) {
+	if p == nil || p.p == nil {
+		return
+	}
 	pPr := p.p.GetOrAddPPr()
 	pStyle := pPr.GetOrAddPStyle()
 	pStyle.SetVal(name)
 }
 
 func (p *Paragraph) Alignment() (string, bool) {
+	if p == nil || p.p == nil {
+		return "", false
+	}
 	pPr := p.p.PPr()
 	if pPr == nil {
 		return "", false
@@ -85,6 +100,9 @@ func (p *Paragraph) SetAlignment(val string) {
 }
 
 func (p *Paragraph) ParagraphFormat() *ParagraphFormat {
+	if p == nil || p.p == nil {
+		return NewParagraphFormat(text.NewCT_PPr())
+	}
 	pPr := p.p.GetOrAddPPr()
 	return NewParagraphFormat(pPr)
 }
@@ -108,6 +126,9 @@ func (p *Paragraph) InsertParagraphBefore() *Paragraph {
 }
 
 func (p *Paragraph) IterInnerContent() []interface{} {
+	if p == nil || p.p == nil {
+		return nil
+	}
 	var items []interface{}
 	for _, r := range p.p.R_lst() {
 		items = append(items, NewRun(r))
@@ -119,6 +140,9 @@ func (p *Paragraph) IterInnerContent() []interface{} {
 }
 
 func (p *Paragraph) Runs() []*Run {
+	if p == nil || p.p == nil {
+		return nil
+	}
 	runs := p.p.R_lst()
 	result := make([]*Run, len(runs))
 	for i, r := range runs {
@@ -128,6 +152,9 @@ func (p *Paragraph) Runs() []*Run {
 }
 
 func (p *Paragraph) Hyperlinks() []*Hyperlink {
+	if p == nil || p.p == nil {
+		return nil
+	}
 	links := p.p.Hyperlink_lst()
 	result := make([]*Hyperlink, len(links))
 	for i, h := range links {
@@ -137,6 +164,9 @@ func (p *Paragraph) Hyperlinks() []*Hyperlink {
 }
 
 func (p *Paragraph) ContainsPageBreak() bool {
+	if p == nil || p.p == nil {
+		return false
+	}
 	for _, r := range p.p.R_lst() {
 		if len(r.Br_lst()) > 0 {
 			for _, br := range r.Br_lst() {
@@ -155,6 +185,9 @@ func (p *Paragraph) SetRels(rels *opc.Relationships) {
 }
 
 func (p *Paragraph) RenderedPageBreaks() []*RenderedPageBreak {
+	if p == nil || p.p == nil {
+		return nil
+	}
 	var result []*RenderedPageBreak
 	for _, r := range p.p.R_lst() {
 		for _, c := range r.Element.Children() {

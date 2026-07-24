@@ -16,6 +16,9 @@ func NewParagraphFormat(pPr *text.CT_PPr) *ParagraphFormat {
 }
 
 func (pf *ParagraphFormat) Alignment() (string, bool) {
+	if pf == nil || pf.pPr == nil {
+		return "", false
+	}
 	jc := pf.pPr.Jc()
 	if jc == nil {
 		return "", false
@@ -29,6 +32,9 @@ func (pf *ParagraphFormat) SetAlignment(val string) {
 }
 
 func (pf *ParagraphFormat) SpaceBefore() *shared.Length {
+	if pf == nil || pf.pPr == nil {
+		return nil
+	}
 	spacing := pf.pPr.Spacing()
 	if spacing == nil {
 		return nil
@@ -47,6 +53,9 @@ func (pf *ParagraphFormat) SetSpaceBefore(length shared.Length) {
 }
 
 func (pf *ParagraphFormat) SpaceAfter() *shared.Length {
+	if pf == nil || pf.pPr == nil {
+		return nil
+	}
 	spacing := pf.pPr.Spacing()
 	if spacing == nil {
 		return nil
@@ -65,6 +74,9 @@ func (pf *ParagraphFormat) SetSpaceAfter(length shared.Length) {
 }
 
 func (pf *ParagraphFormat) FirstLineIndent() *shared.Length {
+	if pf == nil || pf.pPr == nil {
+		return nil
+	}
 	ind := pf.pPr.Ind()
 	if ind == nil {
 		return nil
@@ -82,6 +94,9 @@ func (pf *ParagraphFormat) SetFirstLineIndent(length shared.Length) {
 }
 
 func (pf *ParagraphFormat) LeftIndent() *shared.Length {
+	if pf == nil || pf.pPr == nil {
+		return nil
+	}
 	ind := pf.pPr.Ind()
 	if ind == nil {
 		return nil
@@ -99,6 +114,9 @@ func (pf *ParagraphFormat) SetLeftIndent(length shared.Length) {
 }
 
 func (pf *ParagraphFormat) RightIndent() *shared.Length {
+	if pf == nil || pf.pPr == nil {
+		return nil
+	}
 	ind := pf.pPr.Ind()
 	if ind == nil {
 		return nil
@@ -121,6 +139,9 @@ func (pf *ParagraphFormat) SetLineSpacing(line int) {
 }
 
 func (pf *ParagraphFormat) LineSpacing() (int, bool) {
+	if pf == nil || pf.pPr == nil {
+		return 0, false
+	}
 	spacing := pf.pPr.Spacing()
 	if spacing == nil {
 		return 0, false

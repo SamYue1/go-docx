@@ -6,6 +6,9 @@ import (
 )
 
 func (r *Row) Cells() []*Cell {
+	if r == nil || r.tr == nil {
+		return nil
+	}
 	tcs := r.tr.Tc_lst()
 	result := make([]*Cell, len(tcs))
 	for i, tc := range tcs {

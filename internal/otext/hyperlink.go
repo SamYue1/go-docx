@@ -20,6 +20,9 @@ func (hl *Hyperlink) CT_Hyperlink() *text.CT_Hyperlink {
 }
 
 func (hl *Hyperlink) Address() string {
+	if hl == nil || hl.h == nil {
+		return ""
+	}
 	rId, ok := hl.h.RId()
 	if !ok {
 		return ""
@@ -35,6 +38,9 @@ func (hl *Hyperlink) Address() string {
 }
 
 func (hl *Hyperlink) Text() string {
+	if hl == nil || hl.h == nil {
+		return ""
+	}
 	var result string
 	for _, r := range hl.h.R_lst() {
 		for _, t := range r.T_lst() {
@@ -54,6 +60,9 @@ func (hl *Hyperlink) Runs() []*Run {
 }
 
 func (hl *Hyperlink) Fragment() string {
+	if hl == nil || hl.h == nil {
+		return ""
+	}
 	anchor, ok := hl.h.Anchor()
 	if !ok {
 		return ""
