@@ -34,6 +34,15 @@ func (s *CT_Styles) LatentStyles() *CT_LatentStyles {
 	return &CT_LatentStyles{Element: el}
 }
 
+func (s *CT_Styles) GetOrAddLatentStyles() *CT_LatentStyles {
+	el := findChild(s.Element, wqn("latentStyles"))
+	if el == nil {
+		el = dom.NewElement(ns.NsMap["w"], "latentStyles")
+		s.Element.InsertBefore(el, nil)
+	}
+	return &CT_LatentStyles{Element: el}
+}
+
 func (s *CT_Styles) AddStyle() *CT_Style {
 	el := dom.NewElement(ns.NsMap["w"], "style")
 	s.Element.AddChild(el)
@@ -358,4 +367,8 @@ func (l *CT_LsdException) UiPriority() (string, bool) {
 
 func (l *CT_LsdException) SetUiPriority(val string) {
 	l.Element.SetAttr(ns.NsMap["w"], "uiPriority", val)
+}
+
+func (l *CT_LsdException) RemoveUiPriority() {
+	l.Element.RemoveAttr(ns.NsMap["w"], "uiPriority")
 }

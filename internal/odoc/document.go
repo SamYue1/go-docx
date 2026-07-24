@@ -181,18 +181,20 @@ func (d *Document) Styles() *styles.Styles {
 		sp := d.part.StylesPart()
 		if sp == nil {
 			ct := oxml.NewCT_Styles()
-			s := ct.AddStyle()
-			s.SetType("paragraph")
-			s.SetStyleId("Normal")
-			s = ct.AddStyle()
-			s.SetType("character")
-			s.SetStyleId("DefaultParagraphFont")
-			s = ct.AddStyle()
-			s.SetType("table")
-			s.SetStyleId("TableNormal")
-			s = ct.AddStyle()
-			s.SetType("numbering")
-			s.SetStyleId("NoList")
+			ct.GetOrAddLatentStyles()
+
+			addStyleWithName := func(typ, styleId, name string) {
+				s := ct.AddStyle()
+				s.SetType(typ)
+				s.SetStyleId(styleId)
+				nameEl := dom.NewElement(ns.NsMap["w"], "name")
+				nameEl.SetAttr(ns.NsMap["w"], "val", name)
+				s.Element.AddChild(nameEl)
+			}
+			addStyleWithName("paragraph", "Normal", "Normal")
+			addStyleWithName("character", "DefaultParagraphFont", "Default Paragraph Font")
+			addStyleWithName("table", "TableNormal", "Normal Table")
+			addStyleWithName("numbering", "NoList", "No List")
 			return styles.NewStyles(ct)
 		}
 		d.stylesPart = parts.NewStylesPart(sp)

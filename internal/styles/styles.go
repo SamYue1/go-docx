@@ -496,7 +496,7 @@ func (ls *LatentStyle) Priority() (int, bool) {
 
 func (ls *LatentStyle) SetPriority(val int) {
 	if val == 0 {
-		ls.lsd.SetUiPriority("0")
+		ls.lsd.RemoveUiPriority()
 	} else {
 		ls.lsd.SetUiPriority(strconv.Itoa(val))
 	}

@@ -106,6 +106,9 @@ func (c *Cell) Width() *shared.Length {
 	if !ok {
 		return nil
 	}
+	if w == 0 {
+		return nil
+	}
 	span := c.GridSpan()
 	if span > 1 && c.table != nil {
 		total := 0

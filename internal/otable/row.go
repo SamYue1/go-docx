@@ -139,6 +139,15 @@ func (r *Row) Height() *shared.Length {
 }
 
 func (r *Row) SetHeight(length shared.Length) {
+	if length == 0 {
+		if trPr := r.tr.TrPr(); trPr != nil {
+			h := trPr.TrHeight()
+			if h != nil {
+				trPr.Element.RemoveChild(h.Element)
+			}
+		}
+		return
+	}
 	trPr := r.tr.GetOrAddTrPr()
 	h := trPr.GetOrAddTrHeight()
 	h.SetVal(length.Twips())
