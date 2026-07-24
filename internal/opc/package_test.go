@@ -133,9 +133,7 @@ func TestDescribeOpcPackage(t *testing.T) {
 
 	t.Run("it_returns_nil_for_nonexistent_reltype", func(t *testing.T) {
 		pkg := NewOpcPackage()
-		assert.Panics(t, func() {
-			pkg.PartRelatedBy("nonexistent")
-		})
+		assert.Nil(t, pkg.PartRelatedBy("nonexistent"))
 	})
 
 	t.Run("it_provides_main_document_part", func(t *testing.T) {
@@ -149,9 +147,7 @@ func TestDescribeOpcPackage(t *testing.T) {
 
 	t.Run("it_returns_nil_main_document_part_when_not_present", func(t *testing.T) {
 		pkg := NewOpcPackage()
-		assert.Panics(t, func() {
-			pkg.MainDocumentPart()
-		})
+		assert.Nil(t, pkg.MainDocumentPart())
 	})
 
 	t.Run("it_creates_a_default_core_props_part_when_requested", func(t *testing.T) {

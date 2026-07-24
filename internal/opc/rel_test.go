@@ -63,11 +63,9 @@ func TestDescribeRelationships(t *testing.T) {
 		assert.Equal(t, part, found)
 	})
 
-	t.Run("it_panics_on_missing_reltype", func(t *testing.T) {
+	t.Run("it_returns_nil_on_missing_reltype", func(t *testing.T) {
 		rs := NewRelationships("/")
-		assert.Panics(t, func() {
-			rs.PartWithReltype("nonexistent")
-		})
+		assert.Nil(t, rs.PartWithReltype("nonexistent"))
 	})
 
 	t.Run("it_returns_related_parts", func(t *testing.T) {
