@@ -68,11 +68,11 @@ func TestDescribeSection(t *testing.T) {
 		s.sectPr.AddHeaderReference("default", "rId1")
 		s.sectPr.AddFooterReference("default", "rId2")
 
-		hf := s.Header(HeaderFooterDefault)
+		hf := s.HeaderByType(HeaderFooterDefault)
 		assert.NotNil(t, hf)
 		assert.Equal(t, "rId1", hf.RId())
 
-		ff := s.Footer(HeaderFooterDefault)
+		ff := s.FooterByType(HeaderFooterDefault)
 		assert.NotNil(t, ff)
 		assert.Equal(t, "rId2", ff.RId())
 	})
