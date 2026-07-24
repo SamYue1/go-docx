@@ -232,5 +232,17 @@ func (p *Paragraph) RenderedPageBreaks() []*RenderedPageBreak {
 			}
 		}
 	}
+	for _, h := range p.p.Hyperlink_lst() {
+		for _, r := range h.R_lst() {
+			for _, c := range r.Element.Children() {
+				if c.ClarkTag() == ns.Qn("w:lastRenderedPageBreak") {
+					result = append(result, &RenderedPageBreak{
+						el:     c,
+						parent: p,
+					})
+				}
+			}
+		}
+	}
 	return result
 }

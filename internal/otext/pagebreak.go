@@ -16,11 +16,21 @@ func NewRenderedPageBreak(el *dom.Element) *RenderedPageBreak {
 }
 
 func copyElement(el *dom.Element) *dom.Element {
-	parsed, err := dom.Parse([]byte(el.String()))
-	if err != nil {
+	if el == nil {
 		return nil
 	}
-	return parsed
+	n := dom.NewElement(el.URI(), el.Local())
+	n.SetText(el.Text())
+	for _, a := range el.Attrs() {
+		n.SetAttr(a.URI, a.Local, a.Value)
+	}
+	for _, c := range el.Children() {
+		child := copyElement(c)
+		if child != nil {
+			n.AddChild(child)
+		}
+	}
+	return n
 }
 
 // findBreakInRun returns true if the run element contains a lastRenderedPageBreak child.
@@ -46,33 +56,68 @@ func findBreakInHyperlink(el *dom.Element) bool {
 }
 
 // stripFromBreak removes the lastRenderedPageBreak element and all subsequent siblings from a cloned run element.
+// For hyperlink elements, it strips from the containing run and removes subsequent runs.
 func stripFromBreak(el *dom.Element) {
-	var toRemove []*dom.Element
-	found := false
-	for _, c := range el.Children() {
-		if c.ClarkTag() == ns.Qn("w:lastRenderedPageBreak") {
-			found = true
+	tag := el.ClarkTag()
+	if tag == ns.Qn("w:r") {
+		var toRemove []*dom.Element
+		found := false
+		for _, c := range el.Children() {
+			if c.ClarkTag() == ns.Qn("w:lastRenderedPageBreak") {
+				found = true
+			}
+			if found {
+				toRemove = append(toRemove, c)
+			}
 		}
-		if found {
-			toRemove = append(toRemove, c)
+		for _, c := range toRemove {
+			el.RemoveChild(c)
 		}
-	}
-	for _, c := range toRemove {
-		el.RemoveChild(c)
+	} else if tag == ns.Qn("w:hyperlink") {
+		var toRemove []*dom.Element
+		found := false
+		for _, c := range el.Children() {
+			if c.ClarkTag() == ns.Qn("w:r") && findBreakInRun(c) {
+				stripFromBreak(c)
+				found = true
+			} else if found {
+				toRemove = append(toRemove, c)
+			}
+		}
+		for _, c := range toRemove {
+			el.RemoveChild(c)
+		}
 	}
 }
 
 // stripBeforeBreak removes everything before and including the lastRenderedPageBreak from a cloned run element.
+// For hyperlink elements, it strips from the containing run and removes preceding runs.
 func stripBeforeBreak(el *dom.Element) {
-	var toRemove []*dom.Element
-	for _, c := range el.Children() {
-		toRemove = append(toRemove, c)
-		if c.ClarkTag() == ns.Qn("w:lastRenderedPageBreak") {
-			break
+	tag := el.ClarkTag()
+	if tag == ns.Qn("w:r") {
+		var toRemove []*dom.Element
+		for _, c := range el.Children() {
+			toRemove = append(toRemove, c)
+			if c.ClarkTag() == ns.Qn("w:lastRenderedPageBreak") {
+				break
+			}
 		}
-	}
-	for _, c := range toRemove {
-		el.RemoveChild(c)
+		for _, c := range toRemove {
+			el.RemoveChild(c)
+		}
+	} else if tag == ns.Qn("w:hyperlink") {
+		var toRemove []*dom.Element
+		for _, c := range el.Children() {
+			if c.ClarkTag() == ns.Qn("w:r") && findBreakInRun(c) {
+				stripBeforeBreak(c)
+				toRemove = append(toRemove, c)
+				break
+			}
+			toRemove = append(toRemove, c)
+		}
+		for _, c := range toRemove {
+			el.RemoveChild(c)
+		}
 	}
 }
 

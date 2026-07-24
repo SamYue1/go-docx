@@ -296,8 +296,20 @@ func (pf *ParagraphFormat) LineSpacingRule() (string, bool) {
 		return "", false
 	}
 	rule, ok := spacing.LineRule()
-	if !ok {
-		return "", false
+	if !ok || rule == "" {
+		line, lineOk := spacing.Line()
+		if !lineOk {
+			return "", false
+		}
+		switch line {
+		case 240:
+			return "single", true
+		case 360:
+			return "onePtFive", true
+		case 480:
+			return "double", true
+		}
+		return "auto", true
 	}
 	line, lineOk := spacing.Line()
 	if rule == "auto" && !lineOk {

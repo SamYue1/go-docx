@@ -122,6 +122,21 @@ func (rn *Run) SetStyle(name string) {
 	if rn == nil || rn.r == nil {
 		return
 	}
+	if name == "" {
+		rPr := rn.r.RPr()
+		if rPr != nil {
+			for _, c := range rPr.Element.Children() {
+				if c.ClarkTag() == ns.Qn("w:rStyle") {
+					rPr.Element.RemoveChild(c)
+					break
+				}
+			}
+			if len(rPr.Element.Children()) == 0 {
+				rn.r.Element.RemoveChild(rPr.Element)
+			}
+		}
+		return
+	}
 	rPr := rn.r.GetOrAddRPr()
 	rPr.GetOrAddRStyle().SetAttr(ns.NsMap["w"], "val", name)
 }

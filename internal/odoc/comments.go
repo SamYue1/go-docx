@@ -1,6 +1,8 @@
 package odoc
 
 import (
+	"time"
+
 	"github.com/SamYue1/go-docx/internal/otext"
 	"github.com/SamYue1/go-docx/internal/oxml"
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
@@ -52,6 +54,7 @@ func (c *Comments) Add() *Comment {
 	cm := &Comment{
 		commentID: len(c.items),
 	}
+	cm.SetTimestamp(time.Now().Format(time.RFC3339))
 	p := cm.AddParagraph()
 	p.SetStyle("CommentText")
 	c.items = append(c.items, cm)
@@ -64,6 +67,7 @@ func (c *Comments) AddWithParams(author, initials string) *Comment {
 		initials:  initials,
 		commentID: len(c.items),
 	}
+	cm.SetTimestamp(time.Now().Format(time.RFC3339))
 	p := cm.AddParagraph()
 	p.SetStyle("CommentText")
 	c.items = append(c.items, cm)
@@ -125,6 +129,7 @@ func (cm *Comment) Paragraphs() []*otext.Paragraph {
 
 func (cm *Comment) AddParagraph() *otext.Paragraph {
 	p := otext.NewParagraph(text.NewCT_P())
+	p.SetStyle("CommentText")
 	cm.paragraphs = append(cm.paragraphs, p)
 	return p
 }
@@ -132,6 +137,9 @@ func (cm *Comment) AddParagraph() *otext.Paragraph {
 func (cm *Comment) AddParagraphWithText(txt string) *otext.Paragraph {
 	p := otext.NewParagraph(text.NewCT_P())
 	p.AddRun(txt)
+	if txt != "" {
+		p.SetStyle("CommentText")
+	}
 	cm.paragraphs = append(cm.paragraphs, p)
 	return p
 }

@@ -46,6 +46,10 @@ func NewInlineShape(typ string, width, height shared.Length) *InlineShape {
 	return odoc.NewInlineShape(typ, width, height)
 }
 
+func NewInlineShapes() *InlineShapes {
+	return odoc.NewInlineShapes()
+}
+
 func NewComments() *Comments {
 	return odoc.NewComments()
 }
