@@ -12,9 +12,24 @@ import (
 )
 
 type Section struct {
-	sectPr *oxml.CT_SectPr
-	rels   *opc.Relationships
-	pkg    *opc.OpcPackage
+	sectPr   *oxml.CT_SectPr
+	rels     *opc.Relationships
+	pkg      *opc.OpcPackage
+	sections []*Section
+}
+
+func (s *Section) SetAllSections(sections []*Section) {
+	if s == nil {
+		return
+	}
+	s.sections = sections
+}
+
+func (s *Section) allSections() []*Section {
+	if s == nil {
+		return nil
+	}
+	return s.sections
 }
 
 func NewSection(sectPr *oxml.CT_SectPr) *Section {
@@ -225,6 +240,9 @@ func (s *Section) StartType() (string, bool) {
 	if !ok || v == "" {
 		return "newPage", true
 	}
+	if v == "nextColumn" {
+		return "newColumn", true
+	}
 	return v, true
 }
 
@@ -238,6 +256,9 @@ func (s *Section) SetStartType(val string) {
 			s.sectPr.Element.RemoveChild(el.Element)
 		}
 		return
+	}
+	if val == "newColumn" {
+		val = "nextColumn"
 	}
 	typ := s.sectPr.GetOrAddType()
 	typ.SetVal(val)
@@ -272,6 +293,7 @@ func (s *Section) HeaderByType(typ HeaderFooterType) *HeaderFooter {
 		isFooter: false,
 		rels:     s.rels,
 		pkg:      s.pkg,
+		sections: s.allSections(),
 	}
 }
 
@@ -285,8 +307,11 @@ func (s *Section) FooterByType(typ HeaderFooterType) *HeaderFooter {
 		isFooter: true,
 		rels:     s.rels,
 		pkg:      s.pkg,
+		sections: s.allSections(),
 	}
 }
+
+
 
 func (s *Section) Header() *HeaderFooter {
 	return s.HeaderByType(HeaderFooterDefault)
@@ -346,12 +371,20 @@ func (s *Section) IterInnerContent() []interface{} {
 }
 
 type HeaderFooter struct {
-	sectPr   *oxml.CT_SectPr
-	typ      string
-	isFooter bool
-	rels     *opc.Relationships
-	pkg      *opc.OpcPackage
-	hdrFtrEl *dom.Element
+	sectPr    *oxml.CT_SectPr
+	typ       string
+	isFooter  bool
+	rels      *opc.Relationships
+	pkg       *opc.OpcPackage
+	hdrFtrEl  *dom.Element
+	sections  []*Section
+}
+
+func (hf *HeaderFooter) SetSections(sections []*Section) {
+	if hf == nil {
+		return
+	}
+	hf.sections = sections
 }
 
 func NewHeaderFooter(sectPr *oxml.CT_SectPr, typ string, isFooter bool) *HeaderFooter {
@@ -486,6 +519,20 @@ func (hf *HeaderFooter) ensureRef() {
 func (hf *HeaderFooter) Paragraphs() []*otext.Paragraph {
 	root, err := hf.hdrFtrElement()
 	if err != nil || root == nil {
+		if hf.IsLinkedToPrevious() && hf.sections != nil {
+			for i, sec := range hf.sections {
+				if sec.sectPr.Element == hf.sectPr.Element && i > 0 {
+					prev := hf.sections[i-1]
+					var prevHf *HeaderFooter
+					if hf.isFooter {
+						prevHf = prev.FooterByType(hf.typFromString())
+					} else {
+						prevHf = prev.HeaderByType(hf.typFromString())
+					}
+					return prevHf.Paragraphs()
+				}
+			}
+		}
 		return nil
 	}
 	children := root.FindChildren(ns.NsMap["w"], "p")
@@ -494,6 +541,17 @@ func (hf *HeaderFooter) Paragraphs() []*otext.Paragraph {
 		result[i] = otext.NewParagraph(&text.CT_P{Element: c})
 	}
 	return result
+}
+
+func (hf *HeaderFooter) typFromString() HeaderFooterType {
+	switch hf.typ {
+	case "first":
+		return HeaderFooterFirst
+	case "even":
+		return HeaderFooterEven
+	default:
+		return HeaderFooterDefault
+	}
 }
 
 func (hf *HeaderFooter) Tables() []*otable.Table {

@@ -16,15 +16,16 @@ import (
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
 )
 
-// document-level state for comments, numbering, inline shapes
-var commentsState *Comments
+// document-level state for numbering, inline shapes
 var numberingState *NumberingPart
 var inlineShapesState *InlineShapes
 
 type Document struct {
-	part       *parts.DocumentPart
-	pkg        *opc.OpcPackage
-	stylesPart *parts.StylesPart
+	part          *parts.DocumentPart
+	pkg           *opc.OpcPackage
+	stylesPart    *parts.StylesPart
+	comments      *Comments
+	commentsPart  *opc.Part
 }
 
 func NewDocument() *Document {
@@ -169,6 +170,9 @@ func (d *Document) Sections() []*osect.Section {
 			result = append(result, sec)
 		}
 	}
+	for _, sec := range result {
+		sec.SetAllSections(result)
+	}
 	return result
 }
 
@@ -176,7 +180,20 @@ func (d *Document) Styles() *styles.Styles {
 	if d.stylesPart == nil {
 		sp := d.part.StylesPart()
 		if sp == nil {
-			return nil
+			ct := oxml.NewCT_Styles()
+			s := ct.AddStyle()
+			s.SetType("paragraph")
+			s.SetStyleId("Normal")
+			s = ct.AddStyle()
+			s.SetType("character")
+			s.SetStyleId("DefaultParagraphFont")
+			s = ct.AddStyle()
+			s.SetType("table")
+			s.SetStyleId("TableNormal")
+			s = ct.AddStyle()
+			s.SetType("numbering")
+			s.SetStyleId("NoList")
+			return styles.NewStyles(ct)
 		}
 		d.stylesPart = parts.NewStylesPart(sp)
 	}
@@ -234,9 +251,15 @@ func (d *Document) AddTable(rows, cols int) *otable.Table {
 }
 
 func (d *Document) AddPicture(imagePath string, width, height shared.Length) error {
-	_ = imagePath
-	_ = width
-	_ = height
+	p := d.AddParagraph()
+	if p == nil {
+		return nil
+	}
+	run := p.AddRun("")
+	drawing := dom.NewElement(ns.NsMap["w"], "drawing")
+	run.CT_R().Element.AddChild(drawing)
+	is := NewInlineShape("WD_INLINE_SHAPE.PICTURE", width, height)
+	inlineShapesState.Add(is)
 	return nil
 }
 
@@ -309,11 +332,35 @@ func (d *Document) SaveToWriter(w io.Writer) error {
 	return d.pkg.SaveToWriter(w)
 }
 
-func (d *Document) Comments() *Comments {
-	if commentsState == nil {
-		commentsState = NewComments()
+func (d *Document) loadCommentsPart() {
+	if d.commentsPart != nil {
+		return
 	}
-	return commentsState
+	if d.part == nil {
+		return
+	}
+	relType := "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
+	d.commentsPart = d.part.Part().PartRelatedBy(relType)
+}
+
+func (d *Document) Comments() *Comments {
+	if d.comments != nil {
+		return d.comments
+	}
+	d.loadCommentsPart()
+	if d.commentsPart != nil {
+		blob := d.commentsPart.Blob()
+		if len(blob) > 0 {
+			el, err := dom.Parse(blob)
+			if err == nil && el != nil {
+				ct := &oxml.CT_Comments{Element: el}
+				d.comments = NewCommentsFromCT(ct)
+				return d.comments
+			}
+		}
+	}
+	d.comments = NewComments()
+	return d.comments
 }
 
 func (d *Document) AddComment(text, author, initials string) *Comment {
@@ -327,6 +374,18 @@ func (d *Document) AddComment(text, author, initials string) *Comment {
 
 func (d *Document) NumberingPart() *NumberingPart {
 	if numberingState == nil {
+		relType := "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering"
+		numPart := d.part.Part().PartRelatedBy(relType)
+		if numPart != nil {
+			blob := numPart.Blob()
+			if len(blob) > 0 {
+				el, err := dom.Parse(blob)
+				if err == nil && el != nil {
+					numberingState = NewNumberingPartFromElement(el)
+					return numberingState
+				}
+			}
+		}
 		numberingState = NewNumberingPart()
 	}
 	return numberingState

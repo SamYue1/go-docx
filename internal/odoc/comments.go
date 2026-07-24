@@ -2,6 +2,7 @@ package odoc
 
 import (
 	"github.com/SamYue1/go-docx/internal/otext"
+	"github.com/SamYue1/go-docx/internal/oxml"
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
 )
 
@@ -19,6 +20,32 @@ type Comment struct {
 
 func NewComments() *Comments {
 	return &Comments{}
+}
+
+func NewCommentsFromCT(ct *oxml.CT_Comments) *Comments {
+	c := &Comments{}
+	for _, ctComment := range ct.Comment_lst() {
+		cm := &Comment{
+			commentID: 0,
+		}
+		if id, ok := ctComment.ID(); ok {
+			cm.commentID = id
+		}
+		if author, ok := ctComment.Author(); ok {
+			cm.author = author
+		}
+		if initials, ok := ctComment.Initials(); ok {
+			cm.initials = initials
+		}
+		if date, ok := ctComment.Date(); ok {
+			cm.timestamp = date
+		}
+		for _, p := range ctComment.P_lst() {
+			cm.paragraphs = append(cm.paragraphs, otext.NewParagraph(p))
+		}
+		c.items = append(c.items, cm)
+	}
+	return c
 }
 
 func (c *Comments) Add() *Comment {
