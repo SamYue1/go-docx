@@ -237,19 +237,56 @@ func (d *Document) AddTable(rows, cols int) *otable.Table {
 	}
 	tbl := body.AddTbl()
 	grid := tbl.GetOrAddTblGrid()
+
+	colWidth := colWidthFromSectPr(body.SectPr(), cols)
 	for i := 0; i < cols; i++ {
-		grid.AddGridCol()
+		gc := grid.AddGridCol()
+		if colWidth > 0 {
+			gc.SetW(colWidth)
+		}
 	}
 	for i := 0; i < rows; i++ {
 		tr := tbl.AddTr()
 		for j := 0; j < cols; j++ {
-			tr.AddTc()
+			tc := tr.AddTc()
+			if colWidth > 0 {
+				tcPr := tc.GetOrAddTcPr()
+				tcW := tcPr.GetOrAddTcW()
+				tcW.SetW(colWidth)
+				tcW.SetType("dxa")
+			}
 		}
 	}
-	_ = grid
 	t := otable.NewTable(tbl)
 	t.SetStyle("Normal Table")
 	return t
+}
+
+func colWidthFromSectPr(sectPr *oxml.CT_SectPr, cols int) int {
+	if sectPr == nil || cols == 0 {
+		return 0
+	}
+	pageW := 12240
+	leftM := 1800
+	rightM := 1800
+	if pgSz := sectPr.PgSz(); pgSz != nil {
+		if w, ok := pgSz.W(); ok {
+			pageW = w
+		}
+	}
+	if pgMar := sectPr.PgMar(); pgMar != nil {
+		if v, ok := pgMar.Left(); ok {
+			leftM = v
+		}
+		if v, ok := pgMar.Right(); ok {
+			rightM = v
+		}
+	}
+	blockW := pageW - leftM - rightM
+	if blockW <= 0 {
+		return 0
+	}
+	return blockW / cols
 }
 
 func (d *Document) AddPicture(imagePath string, width, height shared.Length) error {

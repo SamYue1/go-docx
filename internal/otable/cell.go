@@ -184,10 +184,10 @@ func (c *Cell) Merge(other *Cell) *Cell {
 				}
 			}
 			for offset := 0; offset < span; offset++ {
-				if tc.Element == c.tc.Element {
+				if tc.Element == c.tc.Element && cRowIdx < 0 {
 					cRowIdx, cColIdx = ri, gPos+offset
 				}
-				if tc.Element == other.tc.Element {
+				if tc.Element == other.tc.Element && oRowIdx < 0 {
 					oRowIdx, oColIdx = ri, gPos+offset
 				}
 			}
@@ -241,6 +241,50 @@ foundTopLeft:
 	gridWidth := rightCol - leftCol + 1
 	gridHeight := bottomRow - topRow + 1
 
+	var copyTree func(src, dst *dom.Element)
+	copyTree = func(src, dst *dom.Element) {
+		for _, child := range src.Children() {
+			clone := dom.NewElement(child.URI(), child.Local())
+			clone.SetText(child.Text())
+			for _, a := range child.Attrs() {
+				clone.SetAttr(a.URI, a.Local, a.Value)
+			}
+			dst.AddChild(clone)
+			copyTree(child, clone)
+		}
+	}
+
+	var hasContent func(el *dom.Element) bool
+	hasContent = func(el *dom.Element) bool {
+		for _, c := range el.Children() {
+			if c.Local() == "r" || c.Local() == "tbl" {
+				return true
+			}
+			if hasContent(c) {
+				return true
+			}
+		}
+		return false
+	}
+
+	copyContent := func(src *dom.Element) {
+		var toCopy []*dom.Element
+		for _, child := range src.Children() {
+			if (child.Local() == "p" || child.Local() == "tbl") && hasContent(child) {
+				toCopy = append(toCopy, child)
+			}
+		}
+		for _, child := range toCopy {
+			clone := dom.NewElement(child.URI(), child.Local())
+			clone.SetText(child.Text())
+			for _, a := range child.Attrs() {
+				clone.SetAttr(a.URI, a.Local, a.Value)
+			}
+			copyTree(child, clone)
+			topLeftPhysCell.AddChild(clone)
+		}
+	}
+
 	topLeftCell := &Cell{tc: topLeftPhysCell, table: c.table}
 	for r := topRow; r <= bottomRow; r++ {
 		row := rows[r]
@@ -256,22 +300,23 @@ foundTopLeft:
 			}
 			cellStart := gPos
 			cellEnd := gPos + span - 1
-			if cellStart >= leftCol && cellEnd <= rightCol && !(r == topRow && tc.Element == topLeftPhysCell.Element) {
+			shouldProcess := cellStart >= leftCol && cellEnd <= rightCol && !(r == topRow && tc.Element == topLeftPhysCell.Element)
+			if shouldProcess {
+				copyContent(tc.Element)
 				if r == topRow {
-					tcPr.RemoveChild(tc.Element)
-				} else {
+					parent := tc.Element.Parent()
+					if parent != nil {
+						parent.RemoveChild(tc.Element)
+					}
+				}
+				if r != topRow && tc.Element != topLeftPhysCell.Element {
 					tcPr := tc.GetOrAddTcPr()
-					vm := dom.NewElement(ns.NsMap["w"], "vMerge")
-					if tc.Element == topLeftPhysCell.Element {
-						vm.SetAttr(ns.NsMap["w"], "val", "restart")
-					} else {
-						vm.SetAttr(ns.NsMap["w"], "val", "continue")
+					vmEl := findChild(tcPr.Element, ns.Qn("w:vMerge"))
+					if vmEl == nil {
+						vmEl = dom.NewElement(ns.NsMap["w"], "vMerge")
+						tcPr.Element.AddChild(vmEl)
 					}
-					tcPr.Element.AddChild(vm)
-					childParent := tc.Element.Parent()
-					if childParent != nil {
-						childParent.RemoveChild(tc.Element)
-					}
+					vmEl.SetAttr(ns.NsMap["w"], "val", "continue")
 				}
 			}
 			gPos += span
@@ -306,9 +351,9 @@ foundTopLeft:
 					vmEl := findChild(tcPr.Element, ns.Qn("w:vMerge"))
 					if vmEl == nil {
 						vmEl = dom.NewElement(ns.NsMap["w"], "vMerge")
-						vmEl.SetAttr(ns.NsMap["w"], "val", "continue")
 						tcPr.Element.AddChild(vmEl)
 					}
+					vmEl.SetAttr(ns.NsMap["w"], "val", "continue")
 				}
 				gPos += span
 			}
@@ -317,9 +362,9 @@ foundTopLeft:
 		vmRootEl := findChild(vmRoot.Element, ns.Qn("w:vMerge"))
 		if vmRootEl == nil {
 			vmRootEl = dom.NewElement(ns.NsMap["w"], "vMerge")
-			vmRootEl.SetAttr(ns.NsMap["w"], "val", "restart")
 			vmRoot.Element.AddChild(vmRootEl)
 		}
+		vmRootEl.SetAttr(ns.NsMap["w"], "val", "restart")
 	}
 
 	return topLeftCell

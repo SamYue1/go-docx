@@ -1029,7 +1029,16 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		}
 		tables := extractTables(s)
 		if len(tables) > 0 {
-			s.table = tables[0]
+			switch spanState {
+			case "a horizontal span":
+				s.table = tables[1]
+			case "a vertical span":
+				s.table = tables[2]
+			case "a combined span":
+				s.table = tables[3]
+			default:
+				s.table = tables[0]
+			}
 		}
 		return nil
 	})
@@ -1080,11 +1089,25 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a column collection having two columns$`, func() error {
-		return openTestDoc(s, "blk-containing-table")
+		if err := openTestDoc(s, "blk-containing-table"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a row collection having two rows$`, func() error {
-		return openTestDoc(s, "blk-containing-table")
+		if err := openTestDoc(s, "blk-containing-table"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
 	})
 
 	ctx.Step(`^a table$`, func() error {
@@ -1850,13 +1873,14 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^the column cells text is ([^\s].*)$`, func(expectedText string) error {
-		if s.column == nil {
-			return fmt.Errorf("no column")
+		if s.table == nil {
+			return fmt.Errorf("no table")
 		}
-		cells := s.column.Cells()
 		var texts []string
-		for _, c := range cells {
-			texts = append(texts, c.Text())
+		for _, col := range s.table.Columns() {
+			for _, c := range col.Cells() {
+				texts = append(texts, c.Text())
+			}
 		}
 		actual := strings.Join(texts, " ")
 		if actual != expectedText {
@@ -3612,7 +3636,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no latent styles")
 		}
 		s.latentStyles = ls
-		s.latentStyleCount = 0
+		s.latentStyleCount = ls.Len()
 		ls.AddLatentStyle(name)
 		return nil
 	})
@@ -3803,6 +3827,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no latent styles")
 		}
 		s.latentStyles = ls
+		s.latentStyleCount = ls.Len()
 		ls.Delete("Colorful Shading")
 		return nil
 	})
@@ -6480,6 +6505,10 @@ var themeXMLMap = map[string]string{
 	"ACCENT_6":            "accent6",
 	"HYPERLINK":           "hyperlink",
 	"FOLLOWED_HYPERLINK":  "followedHyperlink",
+	"TEXT_1":              "text1",
+	"TEXT_2":              "text2",
+	"BACKGROUND_1":        "background1",
+	"BACKGROUND_2":        "background2",
 }
 
 func highlightStepToXML(key string) string {

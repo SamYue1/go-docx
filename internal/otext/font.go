@@ -130,6 +130,29 @@ func (f *Font) SetColor(color shared.RGBColor) {
 	c.SetVal(color.String())
 }
 
+func (f *Font) ThemeColor() (string, bool) {
+	if f == nil || f.rPr == nil {
+		return "", false
+	}
+	c := f.rPr.Color()
+	if c == nil {
+		return "", false
+	}
+	return c.ThemeColor()
+}
+
+func (f *Font) SetThemeColor(val string) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	c := f.rPr.GetOrAddColor()
+	if val == "" || val == "None" || val == "none" {
+		c.RemoveThemeColor()
+		return
+	}
+	c.SetThemeColor(val)
+}
+
 func (f *Font) Underline() string {
 	if f == nil || f.rPr == nil {
 		return ""
