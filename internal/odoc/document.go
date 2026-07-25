@@ -111,6 +111,25 @@ func (d *Document) Body() *oxml.CT_Body {
 	return d.part.Document().Body()
 }
 
+// _Body represents the document body as a block item container, providing
+// access to paragraphs and tables through the shared BlockItemContainer.
+type _Body struct {
+	BlockItemContainer
+	doc *Document
+}
+
+// newBody creates a _Body from the document's body element.
+func newBody(doc *Document) *_Body {
+	body := doc.Body()
+	if body == nil {
+		return nil
+	}
+	return &_Body{
+		BlockItemContainer: *NewBlockItemContainer(body.Element),
+		doc: doc,
+	}
+}
+
 // Paragraphs returns a slice of all top-level paragraphs in the document body,
 // preserving document order. Each Paragraph is initialized with its
 // relationships for hyperlink resolution. Equivalent to
