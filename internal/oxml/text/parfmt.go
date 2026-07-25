@@ -113,8 +113,8 @@ func (p *CT_PPr) PageBreakBefore() *dom.Element {
 	return findChild(p.Element, wqn("pageBreakBefore"))
 }
 
-// SectPrEl returns the w:sectPr child element, or nil if absent.
-func (p *CT_PPr) SectPrEl() *dom.Element {
+// SectPr returns the w:sectPr child element, or nil if absent.
+func (p *CT_PPr) SectPr() *dom.Element {
 	return findChild(p.Element, wqn("sectPr"))
 }
 

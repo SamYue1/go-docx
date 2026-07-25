@@ -176,7 +176,7 @@ func (d *Document) Sections() []*osect.Section {
 		if pPr == nil {
 			continue
 		}
-		el := pPr.SectPrEl()
+		el := pPr.SectPr()
 		if el == nil {
 			continue
 		}

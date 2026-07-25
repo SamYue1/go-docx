@@ -20,7 +20,11 @@ No Makefile, no CI, no golangci-lint config yet.
 
 ```
 docx.go              # public API — type aliases re-exporting internal types
-internal/oxml/       # low-level XML: dom/, ns/, xmodel/ (declarative registry), text/, table/, section/…
+internal/dml/        # DrawingML types (color format, etc.)
+internal/oxml/       # low-level XML: dom/, ns/, xmodel/ (declarative registry),
+                     #   comments/, coreprops/, document/, drawing/, numbering/,
+                     #   parser/, section/, settings/, shape/, styles/, stypes/,
+                     #   table/, text/
 internal/opc/        # OPC zip package read/write
 internal/odoc/       # Document open/save/paragraphs/tables/sections
 internal/otext/      # Paragraph/Run/Font/ParagraphFormat/Hyperlink/TabStops
@@ -66,10 +70,9 @@ All BDD step implementations are in the single file `test/features/steps/steps.g
 
 | Metric | Count |
 |--------|-------|
-| Unit test packages | 19 pass, 0 fail |
+| Unit test packages | 18 pass, 0 fail |
 | BDD feature files | 67 |
-| BDD scenarios pass/fail | ~201 / ~407 |
-| BDD undefined steps | ~52 |
-| Go files | 200+ throughout `internal/` |
+| BDD scenarios (total) | 239 (115 Scenario + 124 Scenario Outline) |
+| Go files | 119 in `internal/`, 123 total |
 
 If docs conflict with executable source, trust the executable source.
