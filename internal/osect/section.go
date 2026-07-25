@@ -367,7 +367,6 @@ func (s *Section) FooterByType(typ HeaderFooterType) *HeaderFooter {
 	}
 }
 
-
 // Header returns the default (odd page) header for this section.
 func (s *Section) Header() *HeaderFooter {
 	return s.HeaderByType(HeaderFooterDefault)
@@ -446,13 +445,13 @@ func (s *Section) IterInnerContent() []interface{} {
 // HeaderFooter methods are nil-safe: calling a method on a nil or partially
 // initialized HeaderFooter returns zero values rather than panicking.
 type HeaderFooter struct {
-	sectPr    *oxml.CT_SectPr
-	typ       string
-	isFooter  bool
-	rels      *opc.Relationships
-	pkg       *opc.OpcPackage
-	hdrFtrEl  *dom.Element
-	sections  []*Section
+	sectPr   *oxml.CT_SectPr
+	typ      string
+	isFooter bool
+	rels     *opc.Relationships
+	pkg      *opc.OpcPackage
+	hdrFtrEl *dom.Element
+	sections []*Section
 }
 
 // SetSections stores the full section list so linked headers/footers can

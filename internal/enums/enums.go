@@ -12,9 +12,9 @@ type XmlEnum interface {
 
 // xmlEntry pairs an integer value with its XML string and member of the enum type.
 type xmlEntry[T any] struct {
-	value   int
-	xmlVal  string
-	member  T
+	value  int
+	xmlVal string
+	member T
 }
 
 // FromXML looks up an enum member by its XML string representation. Returns an error if no match is found.

@@ -4,6 +4,7 @@ package tpl
 import "embed"
 
 // DefaultDocx is the embedded filesystem containing the default document template.
+//
 //go:embed default.docx
 var DefaultDocx embed.FS
 

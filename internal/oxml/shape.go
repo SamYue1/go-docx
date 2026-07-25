@@ -13,10 +13,10 @@ import (
 // for the drawingML (a:), picture (pic:), wordprocessing drawing (wp:), and
 // relationship (r:) namespaces.
 var (
-	aqn = func(local string) string { return ns.Qn("a:" + local) }
+	aqn   = func(local string) string { return ns.Qn("a:" + local) }
 	picqn = func(local string) string { return ns.Qn("pic:" + local) }
-	wpqn = func(local string) string { return ns.Qn("wp:" + local) }
-	rqn = func(local string) string { return ns.Qn("r:" + local) }
+	wpqn  = func(local string) string { return ns.Qn("wp:" + local) }
+	rqn   = func(local string) string { return ns.Qn("r:" + local) }
 )
 
 // CT_Inline maps to wp:inline — an inline (non-anchored) drawing object

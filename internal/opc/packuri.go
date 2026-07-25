@@ -10,7 +10,7 @@ import (
 
 const (
 	// PACKAGE_URI is the root pack URI ("/") representing the package itself.
-	PACKAGE_URI       PackURI = "/"
+	PACKAGE_URI PackURI = "/"
 	// CONTENT_TYPES_URI is the well-known URI for the [Content_Types].xml part.
 	CONTENT_TYPES_URI PackURI = "/[Content_Types].xml"
 )

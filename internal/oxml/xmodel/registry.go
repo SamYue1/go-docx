@@ -8,10 +8,10 @@ package xmodel
 type Kind int
 
 const (
-	ZeroOrOne    Kind = iota // 0 or 1 occurrences
-	ZeroOrMore               // 0 or more (unbounded)
-	OneAndOnlyOne            // exactly 1 occurrence
-	OneOrMore                // 1 or more (unbounded)
+	ZeroOrOne     Kind = iota // 0 or 1 occurrences
+	ZeroOrMore                // 0 or more (unbounded)
+	OneAndOnlyOne             // exactly 1 occurrence
+	OneOrMore                 // 1 or more (unbounded)
 )
 
 // ChildDef describes one permitted child element for a parent: its tag name,

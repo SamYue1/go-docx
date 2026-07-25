@@ -8,11 +8,11 @@ import (
 
 // XML namespace URIs used in the core properties XML document.
 const (
-	nsCP      = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
-	nsDC      = "http://purl.org/dc/elements/1.1/"
-	nsDCTerms = "http://purl.org/dc/terms/"
+	nsCP       = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+	nsDC       = "http://purl.org/dc/elements/1.1/"
+	nsDCTerms  = "http://purl.org/dc/terms/"
 	nsDCMITYPE = "http://purl.org/dc/dcmitype/"
-	nsXSI     = "http://www.w3.org/2001/XMLSchema-instance"
+	nsXSI      = "http://www.w3.org/2001/XMLSchema-instance"
 )
 
 // CoreProperties provides typed access to the OPC package metadata (author,
