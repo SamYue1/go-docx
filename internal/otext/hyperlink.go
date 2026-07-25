@@ -1,3 +1,6 @@
+// Package otext provides high-level text formatting objects (Paragraph, Run, Font,
+// Hyperlink, TabStops, etc.) that wrap oxml proxy types, analogous to the
+// python-docx text layer.
 package otext
 
 import (
@@ -6,20 +9,26 @@ import (
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
 )
 
+// Hyperlink wraps a CT_Hyperlink element providing access to hyperlink address,
+// text content, runs, fragments, and page breaks within a paragraph.
 type Hyperlink struct {
 	h      *text.CT_Hyperlink
 	parent *Paragraph
 	rels   *opc.Relationships
 }
 
+// NewHyperlink creates a Hyperlink wrapping the given CT_Hyperlink.
 func NewHyperlink(h *text.CT_Hyperlink) *Hyperlink {
 	return &Hyperlink{h: h}
 }
 
+// CT_Hyperlink returns the underlying oxml CT_Hyperlink element.
 func (hl *Hyperlink) CT_Hyperlink() *text.CT_Hyperlink {
 	return hl.h
 }
 
+// Address returns the external target URL of the hyperlink by resolving its
+// relationship ID, or empty string if unresolved.
 func (hl *Hyperlink) Address() string {
 	if hl == nil || hl.h == nil {
 		return ""
@@ -38,6 +47,7 @@ func (hl *Hyperlink) Address() string {
 	return rel.TargetRef()
 }
 
+// Text returns the concatenated text of all runs within the hyperlink.
 func (hl *Hyperlink) Text() string {
 	if hl == nil || hl.h == nil {
 		return ""
@@ -51,6 +61,7 @@ func (hl *Hyperlink) Text() string {
 	return result
 }
 
+// Runs returns all runs within the hyperlink in document order.
 func (hl *Hyperlink) Runs() []*Run {
 	runs := hl.h.R_lst()
 	result := make([]*Run, len(runs))
@@ -60,6 +71,8 @@ func (hl *Hyperlink) Runs() []*Run {
 	return result
 }
 
+// ContainsPageBreak returns true if any run within the hyperlink contains a page
+// break (w:br[@type='page'] or w:lastRenderedPageBreak).
 func (hl *Hyperlink) ContainsPageBreak() bool {
 	if hl == nil || hl.h == nil {
 		return false
@@ -80,6 +93,7 @@ func (hl *Hyperlink) ContainsPageBreak() bool {
 	return false
 }
 
+// Fragment returns the anchor fragment (internal bookmark target) of the hyperlink.
 func (hl *Hyperlink) Fragment() string {
 	if hl == nil || hl.h == nil {
 		return ""
@@ -91,6 +105,8 @@ func (hl *Hyperlink) Fragment() string {
 	return anchor
 }
 
+// RenderedPageBreaks returns all w:lastRenderedPageBreak elements found in runs
+// within this hyperlink.
 func (hl *Hyperlink) RenderedPageBreaks() []*RenderedPageBreak {
 	if hl == nil || hl.h == nil {
 		return nil

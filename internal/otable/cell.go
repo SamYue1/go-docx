@@ -9,19 +9,26 @@ import (
 	"github.com/SamYue1/go-docx/internal/shared"
 )
 
+// Cell represents a single cell in a table row, providing access to its
+// content (paragraphs, nested tables), formatting (width, alignment), and
+// merge operations.
 type Cell struct {
 	tc    *oxml.CT_Tc
 	table *Table
 }
 
+// NewCell creates a new Cell wrapping the given oxml CT_Tc and parent Table.
 func NewCell(tc *oxml.CT_Tc, table *Table) *Cell {
 	return &Cell{tc: tc, table: table}
 }
 
+// CT_Tc returns the underlying oxml CT_Tc.
 func (c *Cell) CT_Tc() *oxml.CT_Tc {
 	return c.tc
 }
 
+// Text returns the concatenated text of all paragraphs in the cell,
+// separated by newlines.
 func (c *Cell) Text() string {
 	if c == nil || c.tc == nil {
 		return ""
@@ -36,6 +43,8 @@ func (c *Cell) Text() string {
 	return result
 }
 
+// SetText replaces all cell content with a single paragraph containing the
+// given text.
 func (c *Cell) SetText(textStr string) {
 	c.tc.Element.ReplaceChildren(nil)
 	pEl := text.NewCT_P()
@@ -43,6 +52,7 @@ func (c *Cell) SetText(textStr string) {
 	c.tc.Element.AddChild(pEl.Element)
 }
 
+// Paragraphs returns all Paragraph objects in the cell.
 func (c *Cell) Paragraphs() []*otext.Paragraph {
 	if c == nil || c.tc == nil {
 		return nil
@@ -55,11 +65,14 @@ func (c *Cell) Paragraphs() []*otext.Paragraph {
 	return result
 }
 
+// AddParagraph appends a new empty paragraph to the cell and returns it.
 func (c *Cell) AddParagraph() *otext.Paragraph {
 	p := c.tc.AddP()
 	return otext.NewParagraphWithParent(p, c.tc.Element)
 }
 
+// AddTable creates and returns a new 2x2 nested table inside the cell.
+// The nested table columns are sized to fit the cell width.
 func (c *Cell) AddTable() *Table {
 	cellWidth := shared.Inches(1)
 	if w := c.Width(); w != nil {
@@ -90,6 +103,8 @@ func (c *Cell) AddTable() *Table {
 	return &Table{tbl: tbl}
 }
 
+// Width returns the cell width. For cells spanning multiple grid columns,
+// the total width of those columns is returned.
 func (c *Cell) Width() *shared.Length {
 	if c == nil || c.tc == nil {
 		return nil
@@ -127,6 +142,7 @@ func (c *Cell) Width() *shared.Length {
 	return &l
 }
 
+// SetWidth sets the cell width in twips ("dxa" type).
 func (c *Cell) SetWidth(width shared.Length) {
 	tcPr := c.tc.GetOrAddTcPr()
 	tcW := tcPr.GetOrAddTcW()
@@ -134,6 +150,8 @@ func (c *Cell) SetWidth(width shared.Length) {
 	tcW.SetType("dxa")
 }
 
+// VerticalAlignment returns the cell vertical alignment value and whether
+// it was present.
 func (c *Cell) VerticalAlignment() (string, bool) {
 	if c == nil || c.tc == nil {
 		return "", false
@@ -149,6 +167,7 @@ func (c *Cell) VerticalAlignment() (string, bool) {
 	return vAlign.Val()
 }
 
+// SetVerticalAlignment sets the cell vertical alignment.
 func (c *Cell) SetVerticalAlignment(val string) {
 	tcPr := c.tc.GetOrAddTcPr()
 	vAlign := tcPr.VAlign()
@@ -160,6 +179,9 @@ func (c *Cell) SetVerticalAlignment(val string) {
 	}
 }
 
+// Merge merges this cell with another cell (which may be in a different row
+// or column) and returns the resulting top-left cell. Content from merged
+// cells is copied into the top-left cell.
 func (c *Cell) Merge(other *Cell) *Cell {
 	if c == nil || other == nil || c.table == nil || other.table == nil {
 		return nil
@@ -370,6 +392,8 @@ foundTopLeft:
 	return topLeftCell
 }
 
+// GridSpan returns the number of grid columns this cell spans. Returns 1
+// if not set.
 func (c *Cell) GridSpan() int {
 	if c == nil || c.tc == nil {
 		return 1
@@ -382,10 +406,12 @@ func (c *Cell) GridSpan() int {
 	return span
 }
 
+// Table returns the parent Table that contains this cell.
 func (c *Cell) Table() *Table {
 	return c.table
 }
 
+// Tables returns all nested tables within this cell.
 func (c *Cell) Tables() []*Table {
 	if c == nil || c.tc == nil {
 		return nil
@@ -398,6 +424,8 @@ func (c *Cell) Tables() []*Table {
 	return result
 }
 
+// IterInnerContent returns a slice of Paragraph and Table objects
+// representing the direct child content of this cell, in document order.
 func (c *Cell) IterInnerContent() []interface{} {
 	if c == nil || c.tc == nil {
 		return nil

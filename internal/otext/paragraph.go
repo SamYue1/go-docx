@@ -1,3 +1,6 @@
+// Package otext provides high-level text formatting objects (Paragraph, Run, Font,
+// Hyperlink, TabStops, etc.) that wrap oxml proxy types, analogous to the
+// python-docx text layer.
 package otext
 
 import (
@@ -7,24 +10,31 @@ import (
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
 )
 
+// Paragraph wraps a CT_P element providing high-level access to paragraph content,
+// formatting, runs, hyperlinks, and page breaks.
 type Paragraph struct {
 	p      *text.CT_P
 	parent *dom.Element
 	rels   *opc.Relationships
 }
 
+// NewParagraph creates a Paragraph wrapping the given CT_P.
 func NewParagraph(p *text.CT_P) *Paragraph {
 	return &Paragraph{p: p}
 }
 
+// NewParagraphWithParent creates a Paragraph wrapping the given CT_P with a known
+// parent DOM element, enabling operations like InsertParagraphBefore.
 func NewParagraphWithParent(p *text.CT_P, parent *dom.Element) *Paragraph {
 	return &Paragraph{p: p, parent: parent}
 }
 
+// CT_P returns the underlying oxml CT_P element.
 func (p *Paragraph) CT_P() *text.CT_P {
 	return p.p
 }
 
+// Text returns the concatenated text of all runs and hyperlinks in the paragraph.
 func (p *Paragraph) Text() string {
 	if p == nil || p.p == nil {
 		return ""
@@ -52,6 +62,7 @@ func (p *Paragraph) Text() string {
 	return result
 }
 
+// AddRun appends a new run containing the given text to the paragraph and returns it.
 func (p *Paragraph) AddRun(textStr string) *Run {
 	if p == nil || p.p == nil {
 		return nil
@@ -64,6 +75,7 @@ func (p *Paragraph) AddRun(textStr string) *Run {
 	return run
 }
 
+// Style returns the paragraph style ID and true if set, or empty string and false otherwise.
 func (p *Paragraph) Style() (string, bool) {
 	if p == nil || p.p == nil {
 		return "", false
@@ -79,6 +91,7 @@ func (p *Paragraph) Style() (string, bool) {
 	return pStyle.Val()
 }
 
+// SetStyle sets the paragraph style by style ID.
 func (p *Paragraph) SetStyle(name string) {
 	if p == nil || p.p == nil {
 		return
@@ -88,6 +101,7 @@ func (p *Paragraph) SetStyle(name string) {
 	pStyle.SetVal(name)
 }
 
+// Alignment returns the paragraph alignment value (e.g. "left", "center", "right") and true if set.
 func (p *Paragraph) Alignment() (string, bool) {
 	if p == nil || p.p == nil {
 		return "", false
@@ -103,12 +117,15 @@ func (p *Paragraph) Alignment() (string, bool) {
 	return jc.Val()
 }
 
+// SetAlignment sets the paragraph alignment (e.g. "left", "center", "right", "both").
 func (p *Paragraph) SetAlignment(val string) {
 	pPr := p.p.GetOrAddPPr()
 	jc := pPr.GetOrAddJc()
 	jc.SetVal(val)
 }
 
+// ParagraphFormat returns the ParagraphFormat object for this paragraph, creating
+// a pPr element if none exists.
 func (p *Paragraph) ParagraphFormat() *ParagraphFormat {
 	if p == nil || p.p == nil {
 		return NewParagraphFormat(text.NewCT_PPr())
@@ -117,6 +134,7 @@ func (p *Paragraph) ParagraphFormat() *ParagraphFormat {
 	return NewParagraphFormat(pPr)
 }
 
+// Clear removes all child elements from the paragraph except the paragraph properties (pPr).
 func (p *Paragraph) Clear() {
 	if p == nil || p.p == nil {
 		return
@@ -133,6 +151,8 @@ func (p *Paragraph) Clear() {
 	}
 }
 
+// InsertParagraphBefore inserts a new empty paragraph before this one in the parent
+// element and returns it. Returns nil if this paragraph has no parent.
 func (p *Paragraph) InsertParagraphBefore() *Paragraph {
 	if p.parent == nil {
 		return nil
@@ -142,6 +162,7 @@ func (p *Paragraph) InsertParagraphBefore() *Paragraph {
 	return &Paragraph{p: &text.CT_P{Element: newEl}, parent: p.parent}
 }
 
+// IterInnerContent returns a slice of the paragraph's children as Run or *Hyperlink values.
 func (p *Paragraph) IterInnerContent() []interface{} {
 	if p == nil || p.p == nil {
 		return nil
@@ -158,6 +179,7 @@ func (p *Paragraph) IterInnerContent() []interface{} {
 	return items
 }
 
+// Runs returns all runs in the paragraph in document order.
 func (p *Paragraph) Runs() []*Run {
 	if p == nil || p.p == nil {
 		return nil
@@ -170,6 +192,7 @@ func (p *Paragraph) Runs() []*Run {
 	return result
 }
 
+// Hyperlinks returns all hyperlinks in the paragraph.
 func (p *Paragraph) Hyperlinks() []*Hyperlink {
 	if p == nil || p.p == nil {
 		return nil
@@ -182,6 +205,8 @@ func (p *Paragraph) Hyperlinks() []*Hyperlink {
 	return result
 }
 
+// ContainsPageBreak returns true if any run or hyperlink in the paragraph contains
+// a page break (w:br[@type='page'] or w:lastRenderedPageBreak).
 func (p *Paragraph) ContainsPageBreak() bool {
 	if p == nil || p.p == nil {
 		return false
@@ -213,10 +238,13 @@ func (p *Paragraph) ContainsPageBreak() bool {
 	return false
 }
 
+// SetRels sets the OPC relationships for this paragraph, used to resolve hyperlink targets.
 func (p *Paragraph) SetRels(rels *opc.Relationships) {
 	p.rels = rels
 }
 
+// RenderedPageBreaks returns all w:lastRenderedPageBreak elements found in runs
+// and hyperlinks within this paragraph.
 func (p *Paragraph) RenderedPageBreaks() []*RenderedPageBreak {
 	if p == nil || p.p == nil {
 		return nil

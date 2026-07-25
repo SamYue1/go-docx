@@ -1,18 +1,30 @@
+// Package image provides image decoding and DPI extraction for formats supported by OOXML.
 package image
 
 const (
+	// FormatPNG identifies PNG image format.
 	FormatPNG  = "png"
+	// FormatJPEG identifies JPEG image format.
 	FormatJPEG = "jpeg"
+	// FormatGIF identifies GIF image format.
 	FormatGIF  = "gif"
+	// FormatBMP identifies BMP image format.
 	FormatBMP  = "bmp"
+	// FormatTIFF identifies TIFF image format.
 	FormatTIFF = "tiff"
 
+	// MimeTypePNG is the MIME type for PNG images.
 	MimeTypePNG  = "image/png"
+	// MimeTypeJPEG is the MIME type for JPEG images.
 	MimeTypeJPEG = "image/jpeg"
+	// MimeTypeGIF is the MIME type for GIF images.
 	MimeTypeGIF  = "image/gif"
+	// MimeTypeBMP is the MIME type for BMP images.
 	MimeTypeBMP  = "image/bmp"
+	// MimeTypeTIFF is the MIME type for TIFF images.
 	MimeTypeTIFF = "image/tiff"
 
+	// DefaultDPI is the default DPI value assumed when image DPI metadata is unavailable.
 	DefaultDPI = 72
 )
 

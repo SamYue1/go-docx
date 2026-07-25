@@ -1,3 +1,6 @@
+// Package otext provides high-level text formatting objects (Paragraph, Run, Font,
+// Hyperlink, TabStops, etc.) that wrap oxml proxy types, analogous to the
+// python-docx text layer.
 package otext
 
 import (
@@ -8,15 +11,21 @@ import (
 	"github.com/SamYue1/go-docx/internal/shared"
 )
 
+// TabStops wraps a CT_TabStops element providing a collection of TabStop entries
+// for a paragraph, with sorted insertion, lookup, and removal.
 type TabStops struct {
 	tabs *text.CT_TabStops
 	pPr  *text.CT_PPr
 }
 
+// NewTabStops creates a TabStops wrapping the given CT_TabStops with a reference
+// to the parent CT_PPr for clean removal.
 func NewTabStops(tabs *text.CT_TabStops, pPr *text.CT_PPr) *TabStops {
 	return &TabStops{tabs: tabs, pPr: pPr}
 }
 
+// AddTabStop adds a tab stop at the given position with the specified alignment
+// and leader style, inserting it in position-sorted order. Returns the new TabStop.
 func (ts *TabStops) AddTabStop(position shared.Length, alignment, leader string) *TabStop {
 	tab := text.NewCT_TabStop()
 	pos := position.Twips()
@@ -51,6 +60,7 @@ func (ts *TabStops) AddTabStop(position shared.Length, alignment, leader string)
 	return &TabStop{tab: tab}
 }
 
+// ClearAll removes all tab stop elements from the collection.
 func (ts *TabStops) ClearAll() {
 	var toRemove []*dom.Element
 	for _, c := range ts.tabs.Element.Children() {
@@ -63,10 +73,12 @@ func (ts *TabStops) ClearAll() {
 	}
 }
 
+// Len returns the number of tab stops in the collection.
 func (ts *TabStops) Len() int {
 	return len(ts.tabs.Tab_lst())
 }
 
+// Get returns the TabStop at the given index, or nil if out of range.
 func (ts *TabStops) Get(idx int) *TabStop {
 	tabs := ts.tabs.Tab_lst()
 	if idx < 0 || idx >= len(tabs) {
@@ -75,6 +87,8 @@ func (ts *TabStops) Get(idx int) *TabStop {
 	return &TabStop{tab: tabs[idx]}
 }
 
+// Remove removes the tab stop at the given index. If the collection becomes empty,
+// the parent tabs element is also removed from pPr.
 func (ts *TabStops) Remove(idx int) {
 	tabs := ts.tabs.Tab_lst()
 	if idx < 0 || idx >= len(tabs) {
@@ -86,32 +100,40 @@ func (ts *TabStops) Remove(idx int) {
 	}
 }
 
+// TabStop wraps a CT_TabStop element providing access to tab position, alignment,
+// and leader settings.
 type TabStop struct {
 	tab *text.CT_TabStop
 }
 
+// NewTabStop creates a TabStop wrapping the given CT_TabStop.
 func NewTabStop(tab *text.CT_TabStop) *TabStop {
 	return &TabStop{tab: tab}
 }
 
+// Alignment returns the tab stop alignment (e.g. "left", "center", "right", "decimal").
 func (t *TabStop) Alignment() string {
 	v, _ := t.tab.Val()
 	return v
 }
 
+// SetAlignment sets the tab stop alignment.
 func (t *TabStop) SetAlignment(val string) {
 	t.tab.SetVal(val)
 }
 
+// Leader returns the tab leader character style (e.g. "dot", "underscore", "hyphen").
 func (t *TabStop) Leader() string {
 	v, _ := t.tab.Leader()
 	return v
 }
 
+// SetLeader sets the tab leader character style.
 func (t *TabStop) SetLeader(val string) {
 	t.tab.SetLeader(val)
 }
 
+// Position returns the tab stop position as a Length, or nil if not set.
 func (t *TabStop) Position() *shared.Length {
 	v, ok := t.tab.Pos()
 	if !ok {
@@ -121,10 +143,12 @@ func (t *TabStop) Position() *shared.Length {
 	return &l
 }
 
+// SetPosition sets the tab stop position. The value is converted from EMU (val) to twips internally.
 func (t *TabStop) SetPosition(val int) {
 	t.tab.SetPos(val / 635)
 }
 
+// tabStopPosition returns the raw twip position of a TabStop for internal sorting.
 func tabStopPosition(t *TabStop) int {
 	v, _ := t.tab.Pos()
 	return v

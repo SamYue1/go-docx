@@ -1,3 +1,4 @@
+// Package image provides image decoding and DPI extraction for formats supported by OOXML.
 package image
 
 import (

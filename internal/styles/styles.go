@@ -1,3 +1,5 @@
+// Package styles provides types for working with Word document styles,
+// including Style, LatentStyles, and LatentStyle.
 package styles
 
 import (
@@ -11,18 +13,23 @@ import (
 	"github.com/SamYue1/go-docx/internal/otext"
 )
 
+// Styles represents the collection of styles in a Word document.
 type Styles struct {
 	styles *oxml.CT_Styles
 }
 
+// NewStyles creates a new Styles wrapper around the given CT_Styles element.
 func NewStyles(styles *oxml.CT_Styles) *Styles {
 	return &Styles{styles: styles}
 }
 
+// CT_Styles returns the underlying CT_Styles XML element.
 func (s *Styles) CT_Styles() *oxml.CT_Styles {
 	return s.styles
 }
 
+// Style looks up a style by its style ID or name. It tries exact match,
+// name match, case-insensitive ID match, and case-insensitive name match.
 func (s *Styles) Style(name string) *Style {
 	for _, st := range s.styles.Style_lst() {
 		sid, ok := st.StyleId()
@@ -57,6 +64,7 @@ func (s *Styles) Style(name string) *Style {
 	return nil
 }
 
+// AddStyle creates and returns a new style of the given type and name, marking it as a custom style.
 func (s *Styles) AddStyle(typ, name string) *Style {
 	st := s.styles.AddStyle()
 	st.SetType(typ)
@@ -72,6 +80,7 @@ func (s *Styles) AddStyle(typ, name string) *Style {
 	return &Style{style: st}
 }
 
+// DeleteStyle removes a style with the given name from the collection.
 func (s *Styles) DeleteStyle(name string) {
 	for _, st := range s.styles.Style_lst() {
 		n := st.Name()
@@ -85,6 +94,7 @@ func (s *Styles) DeleteStyle(name string) {
 	}
 }
 
+// LatentStyles returns the latent styles configuration, or nil if not present.
 func (s *Styles) LatentStyles() *LatentStyles {
 	ls := s.styles.LatentStyles()
 	if ls == nil {
@@ -93,6 +103,7 @@ func (s *Styles) LatentStyles() *LatentStyles {
 	return &LatentStyles{latent: ls}
 }
 
+// List returns all styles in the collection.
 func (s *Styles) List() []*Style {
 	oxmlStyles := s.styles.Style_lst()
 	result := make([]*Style, len(oxmlStyles))
@@ -102,18 +113,22 @@ func (s *Styles) List() []*Style {
 	return result
 }
 
+// Style represents a single style definition (paragraph, character, table, or list style).
 type Style struct {
 	style *oxml.CT_Style
 }
 
+// NewStyle creates a new Style wrapper around the given CT_Style element.
 func NewStyle(style *oxml.CT_Style) *Style {
 	return &Style{style: style}
 }
 
+// CT_Style returns the underlying CT_Style XML element.
 func (s *Style) CT_Style() *oxml.CT_Style {
 	return s.style
 }
 
+// Name returns the display name of the style and whether it was set.
 func (s *Style) Name() (string, bool) {
 	n := s.style.Name()
 	if n == nil {
@@ -122,6 +137,7 @@ func (s *Style) Name() (string, bool) {
 	return n.Val()
 }
 
+// SetName sets the display name of the style.
 func (s *Style) SetName(name string) {
 	n := s.style.Name()
 	if n == nil {
@@ -133,18 +149,22 @@ func (s *Style) SetName(name string) {
 	}
 }
 
+// Type returns the style type (e.g. "paragraph", "character") and whether it was set.
 func (s *Style) Type() (string, bool) {
 	return s.style.Type()
 }
 
+// StyleID returns the internal style identifier and whether it was set.
 func (s *Style) StyleID() (string, bool) {
 	return s.style.StyleId()
 }
 
+// SetStyleID sets the internal style identifier.
 func (s *Style) SetStyleID(id string) {
 	s.style.SetStyleId(id)
 }
 
+// Font returns the Font settings for this style, creating them if needed.
 func (s *Style) Font() *otext.Font {
 	rPr := s.style.RPr()
 	if rPr == nil {
@@ -154,6 +174,7 @@ func (s *Style) Font() *otext.Font {
 	return otext.NewFont(rPr)
 }
 
+// ParagraphFormat returns the paragraph formatting for this style, creating it if needed.
 func (s *Style) ParagraphFormat() *otext.ParagraphFormat {
 	pPr := s.style.PPr()
 	if pPr == nil {
@@ -163,6 +184,7 @@ func (s *Style) ParagraphFormat() *otext.ParagraphFormat {
 	return otext.NewParagraphFormat(pPr)
 }
 
+// BaseStyle returns the name of the style this style is based on, and whether it was set.
 func (s *Style) BaseStyle() (string, bool) {
 	b := s.style.BasedOn()
 	if b == nil {
@@ -171,6 +193,7 @@ func (s *Style) BaseStyle() (string, bool) {
 	return b.Val()
 }
 
+// SetBaseStyle sets the name of the style this style is based on.
 func (s *Style) SetBaseStyle(name string) {
 	b := s.style.BasedOn()
 	if b == nil {
@@ -182,6 +205,7 @@ func (s *Style) SetBaseStyle(name string) {
 	}
 }
 
+// NextStyle returns the name of the next (following) paragraph style, and whether it was set.
 func (s *Style) NextStyle() (string, bool) {
 	n := s.style.Next()
 	if n == nil {
@@ -190,6 +214,7 @@ func (s *Style) NextStyle() (string, bool) {
 	return n.Val()
 }
 
+// SetNextStyle sets the name of the next paragraph style to apply after this one.
 func (s *Style) SetNextStyle(name string) {
 	n := s.style.Next()
 	if n == nil {
@@ -201,6 +226,7 @@ func (s *Style) SetNextStyle(name string) {
 	}
 }
 
+// BuiltIn returns true if this is a built-in style (not a custom style).
 func (s *Style) BuiltIn() bool {
 	v, ok := s.style.CustomStyle()
 	if !ok {
@@ -214,6 +240,7 @@ func (s *Style) BuiltIn() bool {
 	}
 }
 
+// Hidden returns true if the style is semi-hidden from the UI.
 func (s *Style) Hidden() bool {
 	el := s.style.SemiHidden()
 	if el == nil {
@@ -231,6 +258,7 @@ func (s *Style) Hidden() bool {
 	}
 }
 
+// SetHidden sets whether the style should be semi-hidden from the UI.
 func (s *Style) SetHidden(val bool) {
 	if val {
 		el := s.style.GetOrAddHidden()
@@ -240,6 +268,7 @@ func (s *Style) SetHidden(val bool) {
 	}
 }
 
+// Locked returns true if the style is locked and cannot be applied.
 func (s *Style) Locked() bool {
 	el := s.style.Locked()
 	if el == nil {
@@ -257,6 +286,7 @@ func (s *Style) Locked() bool {
 	}
 }
 
+// SetLocked sets whether the style is locked and cannot be applied.
 func (s *Style) SetLocked(val bool) {
 	if val {
 		el := s.style.GetOrAddLocked()
@@ -266,6 +296,7 @@ func (s *Style) SetLocked(val bool) {
 	}
 }
 
+// Priority returns the UI sort priority of the style, or nil if not set.
 func (s *Style) Priority() *int {
 	val, ok := s.style.UiPriorityVal()
 	if !ok {
@@ -274,6 +305,7 @@ func (s *Style) Priority() *int {
 	return &val
 }
 
+// SetPriority sets the UI sort priority of the style. Pass nil to remove the priority.
 func (s *Style) SetPriority(val *int) {
 	if val == nil {
 		s.style.RemoveUiPriority()
@@ -282,6 +314,7 @@ func (s *Style) SetPriority(val *int) {
 	}
 }
 
+// QuickStyle returns true if the style appears in the Quick Styles gallery.
 func (s *Style) QuickStyle() bool {
 	qf := s.style.QFormat()
 	if qf == nil {
@@ -294,6 +327,7 @@ func (s *Style) QuickStyle() bool {
 	return v != "0" && v != "false" && v != "off"
 }
 
+// SetQuickStyle sets whether the style appears in the Quick Styles gallery.
 func (s *Style) SetQuickStyle(val bool) {
 	if val {
 		s.style.GetOrAddQFormat()
@@ -302,6 +336,7 @@ func (s *Style) SetQuickStyle(val bool) {
 	}
 }
 
+// UnhideWhenUsed returns true if the style should become visible when used in the document.
 func (s *Style) UnhideWhenUsed() bool {
 	el := s.style.UnhideWhenUsed()
 	if el == nil {
@@ -319,6 +354,7 @@ func (s *Style) UnhideWhenUsed() bool {
 	}
 }
 
+// SetUnhideWhenUsed sets whether the style unhides when used in the document.
 func (s *Style) SetUnhideWhenUsed(val bool) {
 	if val {
 		el := s.style.GetOrAddUnhideWhenUsed()
@@ -328,6 +364,8 @@ func (s *Style) SetUnhideWhenUsed(val bool) {
 	}
 }
 
+// SetBuiltIn marks the style as built-in (remove customStyle attribute)
+// or custom (set customStyle to "true").
 func (s *Style) SetBuiltIn(val bool) {
 	if val {
 		s.style.Element.RemoveAttr(ns.NsMap["w"], "customStyle")
@@ -336,14 +374,17 @@ func (s *Style) SetBuiltIn(val bool) {
 	}
 }
 
+// LatentStyles represents the collection of latent (pre-defined but not yet instantiated) style settings.
 type LatentStyles struct {
 	latent *oxml.CT_LatentStyles
 }
 
+// NewLatentStyles creates a new LatentStyles wrapper around the given CT_LatentStyles element.
 func NewLatentStyles(latent *oxml.CT_LatentStyles) *LatentStyles {
 	return &LatentStyles{latent: latent}
 }
 
+// All returns all latent style entries.
 func (ls *LatentStyles) All() []*LatentStyle {
 	oxmlLsdExceptions := ls.latent.LsdException_lst()
 	result := make([]*LatentStyle, len(oxmlLsdExceptions))
@@ -353,10 +394,12 @@ func (ls *LatentStyles) All() []*LatentStyle {
 	return result
 }
 
+// Len returns the number of latent style entries.
 func (ls *LatentStyles) Len() int {
 	return len(ls.latent.LsdException_lst())
 }
 
+// Delete removes a latent style entry by name.
 func (ls *LatentStyles) Delete(name string) {
 	for _, l := range ls.latent.LsdException_lst() {
 		n, ok := l.Name()
@@ -367,6 +410,7 @@ func (ls *LatentStyles) Delete(name string) {
 	}
 }
 
+// LatentStyle returns a specific latent style entry by name, or nil if not found.
 func (ls *LatentStyles) LatentStyle(name string) *LatentStyle {
 	for _, l := range ls.latent.LsdException_lst() {
 		n, ok := l.Name()
@@ -377,17 +421,20 @@ func (ls *LatentStyles) LatentStyle(name string) *LatentStyle {
 	return nil
 }
 
+// AddLatentStyle creates and returns a new latent style entry with the given name.
 func (ls *LatentStyles) AddLatentStyle(name string) *LatentStyle {
 	l := oxml.NewCT_LsdException(name)
 	ls.latent.Element.AddChild(l.Element)
 	return &LatentStyle{lsd: l}
 }
 
+// DefLockedState returns the default locked state for latent styles.
 func (ls *LatentStyles) DefLockedState() bool {
 	v, ok := ls.latent.GetAttr(ns.NsMap["w"], "defLockedState")
 	return ok && (v == "true" || v == "1" || v == "on")
 }
 
+// SetDefLockedState sets the default locked state for latent styles.
 func (ls *LatentStyles) SetDefLockedState(val bool) {
 	if val {
 		ls.latent.SetAttr(ns.NsMap["w"], "defLockedState", "1")
@@ -396,6 +443,7 @@ func (ls *LatentStyles) SetDefLockedState(val bool) {
 	}
 }
 
+// DefUIPriority returns the default UI priority for latent styles and whether it was set.
 func (ls *LatentStyles) DefUIPriority() (int, bool) {
 	v, ok := ls.latent.GetAttr(ns.NsMap["w"], "defUIPriority")
 	if !ok {
@@ -408,15 +456,18 @@ func (ls *LatentStyles) DefUIPriority() (int, bool) {
 	return n, true
 }
 
+// SetDefUIPriority sets the default UI priority for latent styles.
 func (ls *LatentStyles) SetDefUIPriority(val int) {
 	ls.latent.SetAttr(ns.NsMap["w"], "defUIPriority", strconv.Itoa(val))
 }
 
+// DefSemiHidden returns the default semi-hidden state for latent styles.
 func (ls *LatentStyles) DefSemiHidden() bool {
 	v, ok := ls.latent.GetAttr(ns.NsMap["w"], "defSemiHidden")
 	return ok && (v == "true" || v == "1" || v == "on")
 }
 
+// SetDefSemiHidden sets the default semi-hidden state for latent styles.
 func (ls *LatentStyles) SetDefSemiHidden(val bool) {
 	if val {
 		ls.latent.SetAttr(ns.NsMap["w"], "defSemiHidden", "1")
@@ -425,11 +476,13 @@ func (ls *LatentStyles) SetDefSemiHidden(val bool) {
 	}
 }
 
+// DefUnhideWhenUsed returns the default "unhide when used" state for latent styles.
 func (ls *LatentStyles) DefUnhideWhenUsed() bool {
 	v, ok := ls.latent.GetAttr(ns.NsMap["w"], "defUnhideWhenUsed")
 	return ok && (v == "true" || v == "1" || v == "on")
 }
 
+// SetDefUnhideWhenUsed sets the default "unhide when used" state for latent styles.
 func (ls *LatentStyles) SetDefUnhideWhenUsed(val bool) {
 	if val {
 		ls.latent.SetAttr(ns.NsMap["w"], "defUnhideWhenUsed", "1")
@@ -438,11 +491,13 @@ func (ls *LatentStyles) SetDefUnhideWhenUsed(val bool) {
 	}
 }
 
+// DefQFormat returns the default Quick Format state for latent styles.
 func (ls *LatentStyles) DefQFormat() bool {
 	v, ok := ls.latent.GetAttr(ns.NsMap["w"], "defQFormat")
 	return ok && (v == "true" || v == "1" || v == "on")
 }
 
+// SetDefQFormat sets the default Quick Format state for latent styles.
 func (ls *LatentStyles) SetDefQFormat(val bool) {
 	if val {
 		ls.latent.SetAttr(ns.NsMap["w"], "defQFormat", "1")
@@ -451,6 +506,7 @@ func (ls *LatentStyles) SetDefQFormat(val bool) {
 	}
 }
 
+// Count returns the latent style count attribute and whether it was set.
 func (ls *LatentStyles) Count() (int, bool) {
 	v, ok := ls.latent.GetAttr(ns.NsMap["w"], "count")
 	if !ok {
@@ -463,22 +519,27 @@ func (ls *LatentStyles) Count() (int, bool) {
 	return n, true
 }
 
+// SetCount sets the latent style count attribute.
 func (ls *LatentStyles) SetCount(val int) {
 	ls.latent.SetAttr(ns.NsMap["w"], "count", strconv.Itoa(val))
 }
 
+// LatentStyle represents a single latent style exception (pre-defined style that may be instantiated on use).
 type LatentStyle struct {
 	lsd *oxml.CT_LsdException
 }
 
+// NewLatentStyle creates a new LatentStyle wrapper around the given CT_LsdException element.
 func NewLatentStyle(lsd *oxml.CT_LsdException) *LatentStyle {
 	return &LatentStyle{lsd: lsd}
 }
 
+// Name returns the name of the latent style and whether it was set.
 func (ls *LatentStyle) Name() (string, bool) {
 	return ls.lsd.Name()
 }
 
+// Priority returns the UI priority of the latent style and whether it was set.
 func (ls *LatentStyle) Priority() (int, bool) {
 	v, ok := ls.lsd.UiPriority()
 	if !ok {
@@ -494,6 +555,7 @@ func (ls *LatentStyle) Priority() (int, bool) {
 	return n, true
 }
 
+// SetPriority sets the UI priority of the latent style. A value of 0 removes the priority.
 func (ls *LatentStyle) SetPriority(val int) {
 	if val == 0 {
 		ls.lsd.RemoveUiPriority()
@@ -502,6 +564,7 @@ func (ls *LatentStyle) SetPriority(val int) {
 	}
 }
 
+// Hidden returns the tri-state semi-hidden value: nil for unset, &true for hidden, &false for not hidden.
 func (ls *LatentStyle) Hidden() *bool {
 	v, ok := ls.lsd.SemiHidden()
 	if !ok {
@@ -511,6 +574,7 @@ func (ls *LatentStyle) Hidden() *bool {
 	return &b
 }
 
+// SetHidden sets the tri-state semi-hidden value. Pass nil to unset.
 func (ls *LatentStyle) SetHidden(val *bool) {
 	if val == nil {
 		ls.lsd.Element.RemoveAttr(ns.NsMap["w"], "semiHidden")
@@ -521,6 +585,7 @@ func (ls *LatentStyle) SetHidden(val *bool) {
 	}
 }
 
+// Locked returns the tri-state locked value: nil for unset, &true for locked, &false for not locked.
 func (ls *LatentStyle) Locked() *bool {
 	v, ok := ls.lsd.Locked()
 	if !ok {
@@ -530,6 +595,7 @@ func (ls *LatentStyle) Locked() *bool {
 	return &b
 }
 
+// SetLocked sets the tri-state locked value. Pass nil to unset.
 func (ls *LatentStyle) SetLocked(val *bool) {
 	if val == nil {
 		ls.lsd.Element.RemoveAttr(ns.NsMap["w"], "locked")
@@ -540,6 +606,7 @@ func (ls *LatentStyle) SetLocked(val *bool) {
 	}
 }
 
+// QuickStyle returns the tri-state Quick Format value: nil for unset, &true for on, &false for off.
 func (ls *LatentStyle) QuickStyle() *bool {
 	v, ok := ls.lsd.QFormat()
 	if !ok {
@@ -549,6 +616,7 @@ func (ls *LatentStyle) QuickStyle() *bool {
 	return &b
 }
 
+// SetQuickStyle sets the tri-state Quick Format value. Pass nil to unset.
 func (ls *LatentStyle) SetQuickStyle(val *bool) {
 	if val == nil {
 		ls.lsd.Element.RemoveAttr(ns.NsMap["w"], "qFormat")
@@ -559,6 +627,7 @@ func (ls *LatentStyle) SetQuickStyle(val *bool) {
 	}
 }
 
+// UnhideWhenUsed returns the tri-state "unhide when used" value: nil for unset, &true for on, &false for off.
 func (ls *LatentStyle) UnhideWhenUsed() *bool {
 	v, ok := ls.lsd.UnhideWhenUsed()
 	if !ok {
@@ -568,6 +637,7 @@ func (ls *LatentStyle) UnhideWhenUsed() *bool {
 	return &b
 }
 
+// SetUnhideWhenUsed sets the tri-state "unhide when used" value. Pass nil to unset.
 func (ls *LatentStyle) SetUnhideWhenUsed(val *bool) {
 	if val == nil {
 		ls.lsd.Element.RemoveAttr(ns.NsMap["w"], "unhideWhenUsed")

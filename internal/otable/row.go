@@ -6,6 +6,9 @@ import (
 	"github.com/SamYue1/go-docx/internal/shared"
 )
 
+// Cells returns the list of Cell objects in the row, accounting for
+// horizontal (gridSpan) and vertical (vMerge) merged cells by scanning
+// previous rows for merge origins.
 func (r *Row) Cells() []*Cell {
 	if r == nil || r.tr == nil {
 		return nil
@@ -121,6 +124,7 @@ func (r *Row) Cells() []*Cell {
 	return result
 }
 
+// Height returns the row height, or nil if not set.
 func (r *Row) Height() *shared.Length {
 	trPr := r.tr.TrPr()
 	if trPr == nil {
@@ -138,6 +142,7 @@ func (r *Row) Height() *shared.Length {
 	return &l
 }
 
+// SetHeight sets the row height. A zero length removes the height setting.
 func (r *Row) SetHeight(length shared.Length) {
 	if length == 0 {
 		if trPr := r.tr.TrPr(); trPr != nil {
@@ -153,6 +158,8 @@ func (r *Row) SetHeight(length shared.Length) {
 	h.SetVal(length.Twips())
 }
 
+// HeightRule returns the row height rule (e.g. "atLeast", "exactly") and
+// whether the value was present.
 func (r *Row) HeightRule() (string, bool) {
 	if r == nil || r.tr == nil {
 		return "", false
@@ -168,6 +175,7 @@ func (r *Row) HeightRule() (string, bool) {
 	return h.HRule()
 }
 
+// SetHeightRule sets the row height rule. An empty string removes the rule.
 func (r *Row) SetHeightRule(val string) {
 	if r == nil || r.tr == nil {
 		return
@@ -181,6 +189,8 @@ func (r *Row) SetHeightRule(val string) {
 	}
 }
 
+// MergeCells merges the cells from startCell to endCell (inclusive) within
+// this row into a single cell and returns it.
 func (r *Row) MergeCells(startCell, endCell *Cell) *Cell {
 	if r == nil || r.tr == nil || startCell == nil || endCell == nil {
 		return nil
@@ -201,11 +211,13 @@ func (r *Row) MergeCells(startCell, endCell *Cell) *Cell {
 	return mergeCells(r, startIdx, endIdx)
 }
 
+// AddCell appends a new empty cell to the row and returns it.
 func (r *Row) AddCell() *Cell {
 	tc := r.tr.AddTc()
 	return &Cell{tc: tc, table: r.table}
 }
 
+// index returns the zero-based index of this row within its parent table.
 func (r *Row) index() int {
 	for i, row := range r.table.Rows() {
 		if row.tr.Element == r.tr.Element {
@@ -215,6 +227,8 @@ func (r *Row) index() int {
 	return -1
 }
 
+// mergeCells merges the physical cells from index start to end (inclusive)
+// in the given row into a single cell and returns it.
 func mergeCells(r *Row, start, end int) *Cell {
 	physCells := r.tr.Tc_lst()
 	if start < 0 || end >= len(physCells) || start > end {

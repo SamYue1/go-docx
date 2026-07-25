@@ -4,8 +4,12 @@ import (
 	"sort"
 )
 
+// PackageWriter serialises an in-memory OpcPackage (its relationships and
+// parts) into a physical OPC zip archive via a PhysPkgWriter.
 type PackageWriter struct{}
 
+// Write writes the complete OPC package: content types stream, package-level
+// relationships, and all parts with their per-part relationships.
 func (pw *PackageWriter) Write(physWriter PhysPkgWriter, pkgRels *Relationships, parts []*Part) error {
 	if err := writeContentTypesStream(physWriter, parts); err != nil {
 		return err
@@ -19,15 +23,21 @@ func (pw *PackageWriter) Write(physWriter PhysPkgWriter, pkgRels *Relationships,
 	return nil
 }
 
+// writeContentTypesStream builds the [Content_Types].xml from the given
+// parts and writes it to the physical package.
 func writeContentTypesStream(physWriter PhysPkgWriter, parts []*Part) error {
 	cti := newContentTypesItemFromParts(parts)
 	return physWriter.Write(CONTENT_TYPES_URI, cti.blob())
 }
 
+// writePkgRels serialises the package-level relationships to XML and writes
+// it to the physical package at /_rels/.rels.
 func writePkgRels(physWriter PhysPkgWriter, pkgRels *Relationships) error {
 	return physWriter.Write(PACKAGE_URI.RelsURI(), pkgRels.XML())
 }
 
+// writeParts writes every part's blob and (if non-empty) its relationships
+// XML to the physical package.
 func writeParts(physWriter PhysPkgWriter, parts []*Part) error {
 	for _, part := range parts {
 		if err := physWriter.Write(part.Partname(), part.Blob()); err != nil {
@@ -42,11 +52,14 @@ func writeParts(physWriter PhysPkgWriter, parts []*Part) error {
 	return nil
 }
 
+// ContentTypesItem builds the [Content_Types].xml content: a collection of
+// Default and Override entries derived from the parts in the package.
 type ContentTypesItem struct {
 	defaults  CaseInsensitiveDict
 	overrides map[string]string
 }
 
+// newContentTypesItem creates an empty ContentTypesItem.
 func newContentTypesItem() *ContentTypesItem {
 	return &ContentTypesItem{
 		defaults:  NewCaseInsensitiveDict(),
@@ -54,6 +67,8 @@ func newContentTypesItem() *ContentTypesItem {
 	}
 }
 
+// newContentTypesItemFromParts creates a ContentTypesItem and populates it
+// with Default entries for .rels and .xml, then adds each part's content type.
 func newContentTypesItemFromParts(parts []*Part) *ContentTypesItem {
 	cti := newContentTypesItem()
 	cti.defaults.Set("rels", CT_OPC_RELATIONSHIPS)
@@ -64,6 +79,9 @@ func newContentTypesItemFromParts(parts []*Part) *ContentTypesItem {
 	return cti
 }
 
+// addContentType registers the content type for a part. If the extension
+// and content type match a known default, it is stored as a Default entry;
+// otherwise it is stored as an Override.
 func (cti *ContentTypesItem) addContentType(partname PackURI, contentType string) {
 	ext := partname.Ext()
 	if IsDefaultContentType(ext, contentType) {
@@ -73,6 +91,8 @@ func (cti *ContentTypesItem) addContentType(partname PackURI, contentType string
 	}
 }
 
+// blob serialises the content types data into a [Content_Types].xml byte
+// slice, with Default and Override elements sorted alphabetically.
 func (cti *ContentTypesItem) blob() []byte {
 	typesEl := NewTypesElement()
 	exts := make([]string, 0, len(cti.defaults))

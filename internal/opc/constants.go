@@ -1,7 +1,10 @@
 package opc
 
+// CONTENT_TYPE is a marker type used to namespace OPC content type constants.
 type CONTENT_TYPE struct{}
 
+// ContentType is the sole instance of CONTENT_TYPE, providing access to the
+// content type constant namespace in Go notation (e.g. opc.ContentType.WML_DOCUMENT).
 var ContentType CONTENT_TYPE
 
 const (
@@ -94,8 +97,10 @@ const (
 	CT_X_WMF                        = "image/x-wmf"
 )
 
+// NAMESPACE is a marker type used to namespace XML namespace constants.
 type NAMESPACE struct{}
 
+// Namespace is the sole instance of NAMESPACE for accessing XML namespace URIs.
 var Namespace NAMESPACE
 
 const (
@@ -106,17 +111,23 @@ const (
 	NS_WML_MAIN                    = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 )
 
+// RELATIONSHIP_TARGET_MODE is a marker type for relationship target mode constants.
 type RELATIONSHIP_TARGET_MODE struct{}
 
+// RelationshipTargetMode provides access to relationship target mode constants.
 var RelationshipTargetMode RELATIONSHIP_TARGET_MODE
 
 const (
+	// RTM_EXTERNAL indicates a relationship targets an external resource.
 	RTM_EXTERNAL = "External"
+	// RTM_INTERNAL indicates a relationship targets a part inside the package.
 	RTM_INTERNAL = "Internal"
 )
 
+// RELATIONSHIP_TYPE is a marker type for relationship type URI constants.
 type RELATIONSHIP_TYPE struct{}
 
+// RelationshipType provides access to relationship type URI constants.
 var RelationshipType RELATIONSHIP_TYPE
 
 const (

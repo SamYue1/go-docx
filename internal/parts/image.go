@@ -9,11 +9,14 @@ import (
 	"github.com/SamYue1/go-docx/internal/opc"
 )
 
+// ImagePart wraps an OPC Part and provides image-specific functionality such as
+// dimension computation in EMU, content type detection, and hash computation.
 type ImagePart struct {
 	*opc.Part
 	img *image.Image
 }
 
+// NewImagePart creates a new ImagePart with the given partname, content type, blob, and optional pre-parsed image metadata.
 func NewImagePart(partname opc.PackURI, contentType string, blob []byte, img *image.Image) *ImagePart {
 	return &ImagePart{
 		Part: opc.NewPart(partname, contentType, blob, nil),
@@ -21,6 +24,7 @@ func NewImagePart(partname opc.PackURI, contentType string, blob []byte, img *im
 	}
 }
 
+// Image returns the parsed image metadata, lazily extracting it from the blob if not yet loaded.
 func (ip *ImagePart) Image() *image.Image {
 	if ip.img == nil {
 		img, err := image.FromBytes(ip.Part.Blob())
@@ -31,6 +35,7 @@ func (ip *ImagePart) Image() *image.Image {
 	return ip.img
 }
 
+// DefaultCx returns the default width of the image in EMU, computed from pixel width and horizontal DPI.
 func (ip *ImagePart) DefaultCx() int64 {
 	img := ip.Image()
 	if img == nil {
@@ -45,6 +50,7 @@ func (ip *ImagePart) DefaultCx() int64 {
 	return int64(math.Round(widthInInches * 914400))
 }
 
+// DefaultCy returns the default height of the image in EMU, computed from pixel height and vertical DPI.
 func (ip *ImagePart) DefaultCy() int64 {
 	img := ip.Image()
 	if img == nil {
@@ -59,6 +65,7 @@ func (ip *ImagePart) DefaultCy() int64 {
 	return int64(math.Round(heightInEMU))
 }
 
+// Filename returns a filename for the image including its file extension.
 func (ip *ImagePart) Filename() string {
 	if ip.img != nil {
 		return fmt.Sprintf("image.%s", ip.img.Ext)
@@ -66,10 +73,12 @@ func (ip *ImagePart) Filename() string {
 	return fmt.Sprintf("image.%s", ip.Part.Partname().Ext())
 }
 
+// SHA1 returns the SHA-1 hash of the image blob as a hex string.
 func (ip *ImagePart) SHA1() string {
 	return fmt.Sprintf("%x", sha1.Sum(ip.Part.Blob()))
 }
 
+// ContentType returns the MIME content type based on the detected image format, falling back to the stored content type.
 func (ip *ImagePart) ContentType() string {
 	img := ip.Image()
 	if img != nil {
@@ -89,6 +98,7 @@ func (ip *ImagePart) ContentType() string {
 	return ip.Part.ContentType()
 }
 
+// ImagePartFromImage creates an ImagePart from pre-parsed image metadata and a target partname.
 func ImagePartFromImage(img *image.Image, partname opc.PackURI) *ImagePart {
 	ext := img.Ext
 	if ext == "jpeg" {
@@ -98,6 +108,7 @@ func ImagePartFromImage(img *image.Image, partname opc.PackURI) *ImagePart {
 	return NewImagePart(partname, contentType, img.Blob, img)
 }
 
+// contentTypeForExt maps a file extension to its corresponding MIME content type string.
 func contentTypeForExt(ext string) string {
 	switch ext {
 	case "png":
@@ -115,6 +126,7 @@ func contentTypeForExt(ext string) string {
 	}
 }
 
+// LoadImagePart creates an ImagePart when loading from an existing OPC package, without pre-parsed image metadata.
 func LoadImagePart(partname opc.PackURI, contentType string, blob []byte, pkg *opc.OpcPackage) *ImagePart {
 	return NewImagePart(partname, contentType, blob, nil)
 }

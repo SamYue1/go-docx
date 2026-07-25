@@ -1,3 +1,6 @@
+// Package otext provides high-level text formatting objects (Paragraph, Run, Font,
+// Hyperlink, TabStops, etc.) that wrap oxml proxy types, analogous to the
+// python-docx text layer.
 package otext
 
 import (
@@ -6,15 +9,19 @@ import (
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
 )
 
+// RenderedPageBreak represents a w:lastRenderedPageBreak element within a paragraph,
+// used to split paragraph content around page breaks.
 type RenderedPageBreak struct {
 	el     *dom.Element
 	parent *Paragraph
 }
 
+// NewRenderedPageBreak creates a RenderedPageBreak wrapping the given DOM element.
 func NewRenderedPageBreak(el *dom.Element) *RenderedPageBreak {
 	return &RenderedPageBreak{el: el}
 }
 
+// copyElement creates a deep copy of a DOM element, including attributes and all children.
 func copyElement(el *dom.Element) *dom.Element {
 	if el == nil {
 		return nil
@@ -121,6 +128,8 @@ func stripBeforeBreak(el *dom.Element) {
 	}
 }
 
+// PrecedingParagraphFragment returns a new Paragraph containing all content before
+// the lastRenderedPageBreak in the parent paragraph, or nil if the break is not found.
 func (rpb *RenderedPageBreak) PrecedingParagraphFragment() *Paragraph {
 	if rpb.parent == nil || rpb.parent.p == nil {
 		return nil
@@ -158,6 +167,9 @@ func (rpb *RenderedPageBreak) PrecedingParagraphFragment() *Paragraph {
 	return NewParagraph(newP)
 }
 
+// FollowingParagraphFragment returns a new Paragraph containing all content after
+// the lastRenderedPageBreak in the parent paragraph, or nil if no content follows
+// the break.
 func (rpb *RenderedPageBreak) FollowingParagraphFragment() *Paragraph {
 	if rpb.parent == nil || rpb.parent.p == nil {
 		return nil

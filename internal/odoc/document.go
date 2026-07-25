@@ -1,3 +1,6 @@
+// Package odoc provides the core document implementation for opening, creating,
+// saving, and manipulating WordprocessingML documents. It wraps the lower-level
+// OPC package and OOXML types to present a Document-centric API.
 package odoc
 
 import (
@@ -16,6 +19,12 @@ import (
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
 )
 
+// Document represents a WordprocessingML (docx) document. It provides methods
+// for accessing and modifying paragraphs, tables, sections, styles, comments,
+// inline shapes, numbering, and core properties. A Document is backed by an
+// OPC package and a document part (main document.xml).
+// See python-docx's Document class for conceptual alignment.
+
 type Document struct {
 	part              *parts.DocumentPart
 	pkg               *opc.OpcPackage
@@ -26,6 +35,9 @@ type Document struct {
 	inlineShapesState *InlineShapes
 }
 
+// NewDocument creates a new empty Document with a default single-section body,
+// core properties, and minimal styles. This is the equivalent of python-docx's
+// Document() constructor.
 func NewDocument() *Document {
 	pkg := opc.NewOpcPackage()
 	doc := oxml.NewCT_Document()
@@ -46,6 +58,9 @@ func NewDocument() *Document {
 	return &Document{part: dp, pkg: pkg}
 }
 
+// ensureCoreProps creates a core-properties part (/docProps/core.xml) with
+// default values and relates it to the package. The core properties part
+// stores document metadata such as title, creator, and modification dates.
 func ensureCoreProps(pkg *opc.OpcPackage) {
 	cpEl := opc.NewDefaultCorePropertiesElement()
 	blob := []byte(cpEl.String())
@@ -58,6 +73,8 @@ func ensureCoreProps(pkg *opc.OpcPackage) {
 	_ = pkg.RelateTo(cpPart, "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties")
 }
 
+// openFromPkg constructs a Document from an already-opened OPC package by
+// locating the main document part. Returns nil if no main document part exists.
 func openFromPkg(pkg *opc.OpcPackage) (*Document, error) {
 	mainPart := pkg.MainDocumentPart()
 	if mainPart == nil {
@@ -67,6 +84,9 @@ func openFromPkg(pkg *opc.OpcPackage) (*Document, error) {
 	return &Document{part: dp, pkg: pkg}, nil
 }
 
+// Open opens a docx file from an io.ReaderAt with the given byte size and
+// returns the parsed Document. Equivalent to python-docx's Document() when
+// passed a file-like object.
 func Open(r io.ReaderAt, size int64) (*Document, error) {
 	pkg, err := opc.Open(r, size)
 	if err != nil {
@@ -75,6 +95,8 @@ func Open(r io.ReaderAt, size int64) (*Document, error) {
 	return openFromPkg(pkg)
 }
 
+// OpenPath opens a docx file from a file system path and returns the parsed
+// Document. Equivalent to python-docx's Document(path).
 func OpenPath(path string) (*Document, error) {
 	pkg, err := opc.OpenFromPath(path)
 	if err != nil {
@@ -83,22 +105,31 @@ func OpenPath(path string) (*Document, error) {
 	return openFromPkg(pkg)
 }
 
+// Package returns the underlying OPC package of the document.
 func (d *Document) Package() *opc.OpcPackage {
 	return d.pkg
 }
 
+// DocumentPart returns the document part (/word/document.xml) wrapper.
 func (d *Document) DocumentPart() *parts.DocumentPart {
 	return d.part
 }
 
+// CT_Document returns the underlying CT_Document XML element tree.
 func (d *Document) CT_Document() *oxml.CT_Document {
 	return d.part.Document()
 }
 
+// Body returns the document body element (w:body). Returns nil if the document
+// has no body.
 func (d *Document) Body() *oxml.CT_Body {
 	return d.part.Document().Body()
 }
 
+// Paragraphs returns a slice of all top-level paragraphs in the document body,
+// preserving document order. Each Paragraph is initialized with its
+// relationships for hyperlink resolution. Equivalent to
+// python-docx Document.paragraphs.
 func (d *Document) Paragraphs() []*otext.Paragraph {
 	body := d.Body()
 	if body == nil {
@@ -114,6 +145,8 @@ func (d *Document) Paragraphs() []*otext.Paragraph {
 	return result
 }
 
+// Tables returns a slice of all top-level tables in the document body,
+// preserving document order. Equivalent to python-docx Document.tables.
 func (d *Document) Tables() []*otable.Table {
 	body := d.Body()
 	if body == nil {
@@ -127,12 +160,22 @@ func (d *Document) Tables() []*otable.Table {
 	return result
 }
 
+// Sections returns the page-layout sections defined in the document. Sections
+// may be embedded in paragraph properties (pPr/sectPr), table properties
+// (tblPr/sectPr), or as top-level body children (w:sectPr). Each Section is
+// given the full section list so it can traverse linked headers/footers.
+// Equivalent to python-docx Document.sections.
 func (d *Document) Sections() []*osect.Section {
 	body := d.Body()
 	if body == nil {
 		return nil
 	}
 	var result []*osect.Section
+	// Walk the body's children looking for sectPr elements.
+	// A sectPr can appear:
+	//   - inside a paragraph's pPr element (last paragraph of a section)
+	//   - inside a table's tblPr element (last table of a section)
+	//   - as a direct child of the body (the final section)
 	for _, child := range body.Element.Children() {
 		switch child.Local() {
 		case "p":
@@ -168,12 +211,17 @@ func (d *Document) Sections() []*osect.Section {
 			result = append(result, sec)
 		}
 	}
+	// Provide each section with the full list so linked headers/footers
+	// can walk back to previous sections.
 	for _, sec := range result {
 		sec.SetAllSections(result)
 	}
 	return result
 }
 
+// Styles returns the document's Styles collection. If no styles part exists
+// (e.g., in a new document), a default set of styles (Normal, DefaultParagraphFont,
+// TableNormal, NoList) is created. Equivalent to python-docx Document.styles.
 func (d *Document) Styles() *styles.Styles {
 	if d.stylesPart == nil {
 		sp := d.part.StylesPart()
@@ -200,6 +248,9 @@ func (d *Document) Styles() *styles.Styles {
 	return d.stylesPart.Styles()
 }
 
+// Settings returns the document-level settings (w:settings element).
+// If no settings part exists, a default empty Settings object is returned.
+// Equivalent to python-docx Document.settings.
 func (d *Document) Settings() *osect.Settings {
 	sp := d.part.SettingsPart()
 	if sp == nil {
@@ -219,6 +270,8 @@ func (d *Document) Settings() *osect.Settings {
 	return osect.NewSettings(ct)
 }
 
+// AddParagraph appends a new empty paragraph to the document body and returns it.
+// Equivalent to python-docx Document.add_paragraph().
 func (d *Document) AddParagraph() *otext.Paragraph {
 	body := d.Body()
 	if body == nil {
@@ -228,6 +281,10 @@ func (d *Document) AddParagraph() *otext.Paragraph {
 	return otext.NewParagraphWithParent(p, body.Element)
 }
 
+// AddTable appends a new table to the document body with the given number of
+// rows and columns. Each cell is assigned the default column width derived from
+// the section's page width minus margins. Equivalent to python-docx
+// Document.add_table(rows, cols).
 func (d *Document) AddTable(rows, cols int) *otable.Table {
 	body := d.Body()
 	if body == nil {
@@ -260,6 +317,10 @@ func (d *Document) AddTable(rows, cols int) *otable.Table {
 	return t
 }
 
+// colWidthFromSectPr computes a uniform column width by dividing the available
+// page width (page width minus left and right margins) by the number of columns.
+// Returns 0 if the section's page width cannot be determined. Default values
+// assume US Letter size (12240 twips wide, 1800 twip margins).
 func colWidthFromSectPr(sectPr *oxml.CT_SectPr, cols int) int {
 	if sectPr == nil || cols == 0 {
 		return 0
@@ -287,6 +348,9 @@ func colWidthFromSectPr(sectPr *oxml.CT_SectPr, cols int) int {
 	return blockW / cols
 }
 
+// AddPicture adds a paragraph with an inline drawing element referencing an
+// image at the given path. The width and height control the display size.
+// Equivalent to python-docx Document.add_picture().
 func (d *Document) AddPicture(imagePath string, width, height shared.Length) error {
 	p := d.AddParagraph()
 	if p == nil {
@@ -300,6 +364,10 @@ func (d *Document) AddPicture(imagePath string, width, height shared.Length) err
 	return nil
 }
 
+// AddSection appends a new section to the document body. Every document must
+// end with a section properties element that defines the final section's layout;
+// this method adds that element as a child of the body. Equivalent to
+// python-docx Document.add_section().
 func (d *Document) AddSection() *osect.Section {
 	body := d.Body()
 	if body == nil {
@@ -313,6 +381,9 @@ func (d *Document) AddSection() *osect.Section {
 	return sec
 }
 
+// AddHeading adds a heading paragraph with the given text and heading level
+// (1-9). Level 0 is treated as "Title". Returns nil if level is out of range.
+// Equivalent to python-docx Document.add_heading().
 func (d *Document) AddHeading(textStr string, level int) *otext.Paragraph {
 	if level < 0 || level > 9 {
 		return nil
@@ -348,6 +419,8 @@ func (d *Document) AddHeading(textStr string, level int) *otext.Paragraph {
 	return p
 }
 
+// AddPageBreak adds a paragraph containing a page break and returns it.
+// Equivalent to python-docx adding a run with a page break.
 func (d *Document) AddPageBreak() *otext.Paragraph {
 	p := d.AddParagraph()
 	run := p.AddRun("")
@@ -355,20 +428,28 @@ func (d *Document) AddPageBreak() *otext.Paragraph {
 	return p
 }
 
+// CoreProperties returns the document's core properties (title, creator,
+// created date, etc.) from the /docProps/core.xml part.
 func (d *Document) CoreProperties() *opc.CoreProperties {
 	return d.pkg.CoreProperties()
 }
 
+// Save writes the document to the given file path. All in-memory changes are
+// serialized to the OPC package before writing.
 func (d *Document) Save(path string) error {
 	d.part.Save()
 	return d.pkg.SaveToPath(path)
 }
 
+// SaveToWriter writes the document to the given io.Writer. All in-memory
+// changes are serialized to the OPC package before writing.
 func (d *Document) SaveToWriter(w io.Writer) error {
 	d.part.Save()
 	return d.pkg.SaveToWriter(w)
 }
 
+// loadCommentsPart locates and caches the comments relationship part
+// (/word/comments.xml) from the document part's relationships.
 func (d *Document) loadCommentsPart() {
 	if d.commentsPart != nil {
 		return
@@ -380,6 +461,9 @@ func (d *Document) loadCommentsPart() {
 	d.commentsPart = d.part.Part().PartRelatedBy(relType)
 }
 
+// Comments returns the document's Comments collection. If a comments part
+// exists, it is parsed; otherwise an empty Comments collection is created.
+// Equivalent to python-docx document.comments.
 func (d *Document) Comments() *Comments {
 	if d.comments != nil {
 		return d.comments
@@ -400,6 +484,9 @@ func (d *Document) Comments() *Comments {
 	return d.comments
 }
 
+// AddComment adds a new comment to the document with the given text, author,
+// and initials. The comment's first paragraph is populated with the text.
+// Equivalent to python-docx adding a comment via the Comments collection.
 func (d *Document) AddComment(text, author, initials string) *Comment {
 	c := d.Comments()
 	cm := c.AddWithParams(author, initials)
@@ -409,6 +496,10 @@ func (d *Document) AddComment(text, author, initials string) *Comment {
 	return cm
 }
 
+// NumberingPart returns the document's numbering part, which manages numbered
+// list definitions and numbering instance overrides. If no numbering part
+// exists, a new empty one is created. Equivalent to python-docx
+// document.part.numbering_part.
 func (d *Document) NumberingPart() *NumberingPart {
 	if d.numberingState == nil {
 		relType := "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering"
@@ -428,6 +519,9 @@ func (d *Document) NumberingPart() *NumberingPart {
 	return d.numberingState
 }
 
+// InlineShapes returns the document's inline shapes collection (pictures,
+// drawings inserted inline with text). Equivalent to python-docx
+// Document.inline_shapes.
 func (d *Document) InlineShapes() *InlineShapes {
 	if d.inlineShapesState == nil {
 		d.inlineShapesState = NewInlineShapes()

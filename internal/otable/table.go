@@ -1,3 +1,5 @@
+// Package otable provides high-level table objects (Table, Row, Cell, Column)
+// wrapping oxml table proxy types, analogous to python-docx's table layer.
 package otable
 
 import (
@@ -7,14 +9,18 @@ import (
 	"github.com/SamYue1/go-docx/internal/shared"
 )
 
+// Table wraps an oxml CT_Tbl and provides high-level access to table
+// properties, rows, columns, and cells.
 type Table struct {
 	tbl *oxml.CT_Tbl
 }
 
+// NewTable creates a new Table wrapping the given oxml CT_Tbl.
 func NewTable(tbl *oxml.CT_Tbl) *Table {
 	return &Table{tbl: tbl}
 }
 
+// CT_Tbl returns the underlying oxml CT_Tbl.
 func (t *Table) CT_Tbl() *oxml.CT_Tbl {
 	if t == nil {
 		return nil
@@ -22,6 +28,7 @@ func (t *Table) CT_Tbl() *oxml.CT_Tbl {
 	return t.tbl
 }
 
+// Rows returns all Row objects in the table.
 func (t *Table) Rows() []*Row {
 	if t == nil || t.tbl == nil {
 		return nil
@@ -34,6 +41,7 @@ func (t *Table) Rows() []*Row {
 	return result
 }
 
+// Columns returns all Column objects in the table grid.
 func (t *Table) Columns() []*Column {
 	if t == nil || t.tbl == nil {
 		return nil
@@ -50,6 +58,8 @@ func (t *Table) Columns() []*Column {
 	return result
 }
 
+// Cell returns the cell at the given row and column indices.
+// Returns nil if either index is out of range.
 func (t *Table) Cell(rowIdx, colIdx int) *Cell {
 	if t == nil {
 		return nil
@@ -65,6 +75,8 @@ func (t *Table) Cell(rowIdx, colIdx int) *Cell {
 	return cells[colIdx]
 }
 
+// AddRow appends a new empty row to the table and returns it.
+// Each cell in the new row inherits the width from the corresponding grid column.
 func (t *Table) AddRow() *Row {
 	if t == nil || t.tbl == nil {
 		return nil
@@ -83,6 +95,8 @@ func (t *Table) AddRow() *Row {
 	return &Row{tr: tr, table: t}
 }
 
+// AddColumn appends a new column with the given width to the table grid
+// and adds a corresponding cell to every existing row.
 func (t *Table) AddColumn(width shared.Length) *Column {
 	if t == nil || t.tbl == nil {
 		return nil
@@ -100,6 +114,7 @@ func (t *Table) AddColumn(width shared.Length) *Column {
 	return &Column{gridCol: gc, table: t}
 }
 
+// Style returns the table style name, or "Normal Table" if none is set.
 func (t *Table) Style() string {
 	if t == nil || t.tbl == nil {
 		return ""
@@ -119,6 +134,7 @@ func (t *Table) Style() string {
 	return val
 }
 
+// SetStyle sets the table style by name.
 func (t *Table) SetStyle(name string) {
 	if t == nil || t.tbl == nil {
 		return
@@ -132,6 +148,8 @@ func (t *Table) SetStyle(name string) {
 	el.SetAttr(ns.NsMap["w"], "val", name)
 }
 
+// findChild returns the first child element with the given Clark tag,
+// or nil if not found.
 func findChild(parent *dom.Element, tag string) *dom.Element {
 	for _, c := range parent.Children() {
 		if c.ClarkTag() == tag {
@@ -141,6 +159,8 @@ func findChild(parent *dom.Element, tag string) *dom.Element {
 	return nil
 }
 
+// Alignment returns the table alignment value, with a boolean indicating
+// whether the value was present.
 func (t *Table) Alignment() (string, bool) {
 	if t == nil || t.tbl == nil {
 		return "", false
@@ -156,6 +176,7 @@ func (t *Table) Alignment() (string, bool) {
 	return jc.Val()
 }
 
+// SetAlignment sets the table alignment (e.g. "left", "center", "right").
 func (t *Table) SetAlignment(val string) {
 	if t == nil || t.tbl == nil {
 		return
@@ -171,6 +192,8 @@ func (t *Table) SetAlignment(val string) {
 	}
 }
 
+// Autofit returns whether autofit is enabled and whether the setting exists.
+// Defaults to true, true when no tblLayout element is present.
 func (t *Table) Autofit() (bool, bool) {
 	if t == nil || t.tbl == nil {
 		return false, false
@@ -190,6 +213,7 @@ func (t *Table) Autofit() (bool, bool) {
 	return val != "fixed", true
 }
 
+// SetAutofit enables or disables table autofit behavior.
 func (t *Table) SetAutofit(val bool) {
 	if t == nil || t.tbl == nil {
 		return
@@ -207,6 +231,8 @@ func (t *Table) SetAutofit(val bool) {
 	}
 }
 
+// TableDirection returns the table direction ("rtl" or "ltr") and whether
+// a bidiVisual setting was found. Defaults to "rtl" when val is true/1.
 func (t *Table) TableDirection() (string, bool) {
 	if t == nil || t.tbl == nil {
 		return "", false
@@ -226,6 +252,8 @@ func (t *Table) TableDirection() (string, bool) {
 	return "ltr", true
 }
 
+// SetTableDirection sets the table direction to "rtl", "ltr", or removes
+// the bidiVisual element for any other value.
 func (t *Table) SetTableDirection(val string) {
 	if t == nil || t.tbl == nil {
 		return
@@ -243,11 +271,14 @@ func (t *Table) SetTableDirection(val string) {
 	}
 }
 
+// Column represents a single column in the table grid, providing access
+// to its width and the cells that belong to it.
 type Column struct {
 	gridCol *oxml.CT_TblGridCol
 	table   *Table
 }
 
+// Width returns the column width as a shared.Length.
 func (c *Column) Width() shared.Length {
 	if c == nil || c.gridCol == nil {
 		return 0
@@ -259,6 +290,7 @@ func (c *Column) Width() shared.Length {
 	return shared.Twips(float64(w))
 }
 
+// SetWidth sets the column width.
 func (c *Column) SetWidth(width shared.Length) {
 	if c == nil || c.gridCol == nil {
 		return
@@ -266,6 +298,7 @@ func (c *Column) SetWidth(width shared.Length) {
 	c.gridCol.SetW(width.Twips())
 }
 
+// Cells returns all Cell objects in this column, one per row.
 func (c *Column) Cells() []*Cell {
 	if c == nil || c.table == nil {
 		return nil
@@ -281,6 +314,7 @@ func (c *Column) Cells() []*Cell {
 	return cells
 }
 
+// index returns the zero-based index of this column within the table grid.
 func (c *Column) index() int {
 	for i, col := range c.table.Columns() {
 		if col.gridCol.Element == c.gridCol.Element {
@@ -290,15 +324,19 @@ func (c *Column) index() int {
 	return -1
 }
 
+// Row represents a single row in the table, providing access to cells
+// and row-level formatting properties.
 type Row struct {
 	tr    *oxml.CT_Row
 	table *Table
 }
 
+// NewRow creates a new Row wrapping the given oxml CT_Row and parent Table.
 func NewRow(tr *oxml.CT_Row, table *Table) *Row {
 	return &Row{tr: tr, table: table}
 }
 
+// CT_Row returns the underlying oxml CT_Row.
 func (r *Row) CT_Row() *oxml.CT_Row {
 	return r.tr
 }

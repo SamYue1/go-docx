@@ -1,5 +1,9 @@
 package opc
 
+// DefaultContentTypes maps file extensions to their default OPC content
+// types, as defined by the OPC specification. These are used to determine
+// whether a part's content type can be expressed as a Default mapping in
+// [Content_Types].xml or requires an Override.
 var DefaultContentTypes = []struct {
 	Ext         string
 	ContentType string
@@ -24,6 +28,8 @@ var DefaultContentTypes = []struct {
 	{"xml", CT_XML},
 }
 
+// IsDefaultContentType reports whether the given extension and content type
+// pair matches one of the default content type entries in the OPC spec.
 func IsDefaultContentType(ext, contentType string) bool {
 	for _, d := range DefaultContentTypes {
 		if d.Ext == ext && d.ContentType == contentType {

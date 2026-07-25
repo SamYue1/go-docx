@@ -1,3 +1,5 @@
+// Package image provides image decoding and DPI extraction for formats supported by OOXML
+// (PNG, JPEG, GIF, BMP, TIFF).
 package image
 
 import (
@@ -13,6 +15,7 @@ import (
 	"math"
 )
 
+// Image represents a decoded image with its dimensions, DPI, format extension, SHA1 hash, and raw bytes.
 type Image struct {
 	Width  int
 	Height int
@@ -22,10 +25,12 @@ type Image struct {
 	Blob   []byte
 }
 
+// DPI holds horizontal and vertical dots-per-inch values for an image.
 type DPI struct {
 	Horizontal, Vertical int
 }
 
+// FromStream reads an image from a ReadSeeker, decodes its config, extracts DPI, and returns an Image.
 func FromStream(r io.ReadSeeker) (*Image, error) {
 	blob, err := io.ReadAll(r)
 	if err != nil {
@@ -112,6 +117,7 @@ func decodeTIFFDimensions(data []byte) (int, int, error) {
 	return width, height, nil
 }
 
+// FromBytes decodes an image from raw bytes, extracting dimensions, DPI, format, and SHA1 hash.
 func FromBytes(data []byte) (*Image, error) {
 	format := detectFormat(data)
 	if format == "" {

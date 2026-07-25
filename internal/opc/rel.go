@@ -5,6 +5,9 @@ import (
 	"sort"
 )
 
+// Relationship represents a single OPC relationship: a directed, typed link
+// from a source part (or the package itself) to a target part or external
+// resource, identified by a relationship ID (e.g. "rId1").
 type Relationship struct {
 	rID        string
 	relType    string
@@ -13,11 +16,16 @@ type Relationship struct {
 	targetPart *Part
 }
 
+// Relationships is a collection of Relationship objects owned by a single
+// source (a Part or the package root). It provides lookup, addition,
+// deletion, and XML serialisation of the relationship items.
 type Relationships struct {
 	baseURI string
 	rels    map[string]*Relationship
 }
 
+// NewRelationships creates an empty Relationships collection with the given
+// base URI (used to compute relative target references).
 func NewRelationships(baseURI string) *Relationships {
 	return &Relationships{
 		baseURI: baseURI,
@@ -25,6 +33,10 @@ func NewRelationships(baseURI string) *Relationships {
 	}
 }
 
+// AddRelationship creates a new Relationship with the given parameters and
+// adds it to the collection. For internal relationships, the target must be
+// a *Part and the targetRef is computed as a relative path from baseURI.
+// For external relationships, the target must be a string (the external URI).
 func (rs *Relationships) AddRelationship(relType string, target interface{}, rID string, isExternal bool) *Relationship {
 	var rel *Relationship
 	if isExternal {
@@ -55,6 +67,9 @@ func (rs *Relationships) AddRelationship(relType string, target interface{}, rID
 	return rel
 }
 
+// GetOrAdd returns the existing relationship matching the given type and
+// target part, or creates a new one with the next available RID if none
+// matches.
 func (rs *Relationships) GetOrAdd(relType string, targetPart *Part) *Relationship {
 	rel := rs.findMatching(relType, targetPart, false)
 	if rel != nil {
@@ -64,6 +79,9 @@ func (rs *Relationships) GetOrAdd(relType string, targetPart *Part) *Relationshi
 	return rs.AddRelationship(relType, targetPart, rID, false)
 }
 
+// GetOrAddExtRel returns the RID of an existing external relationship
+// matching the given type and target ref, or creates a new one and returns
+// its RID.
 func (rs *Relationships) GetOrAddExtRel(relType string, targetRef string) string {
 	rel := rs.findMatching(relType, targetRef, true)
 	if rel != nil {
@@ -74,6 +92,8 @@ func (rs *Relationships) GetOrAddExtRel(relType string, targetRef string) string
 	return rID
 }
 
+// PartWithReltype returns the first internal target part whose relationship
+// has the given type, or nil if none matches.
 func (rs *Relationships) PartWithReltype(relType string) *Part {
 	rel := rs.getRelOfType(relType)
 	if rel == nil {
@@ -85,6 +105,8 @@ func (rs *Relationships) PartWithReltype(relType string) *Part {
 	return rel.targetPart
 }
 
+// RelatedParts returns a map of RID to *Part for every internal (non-external)
+// relationship in the collection.
 func (rs *Relationships) RelatedParts() map[string]*Part {
 	result := make(map[string]*Part)
 	for rID, rel := range rs.rels {
@@ -95,6 +117,8 @@ func (rs *Relationships) RelatedParts() map[string]*Part {
 	return result
 }
 
+// XML serialises the relationships collection into an OPC relationships XML
+// document. Items are sorted by RID for deterministic output.
 func (rs *Relationships) XML() []byte {
 	relsEl := NewRelationshipsElement()
 
@@ -117,18 +141,25 @@ func (rs *Relationships) XML() []byte {
 	return serializePartXML(relsEl)
 }
 
+// Len returns the number of relationships in the collection.
 func (rs *Relationships) Len() int {
 	return len(rs.rels)
 }
 
+// Get returns the relationship with the given RID, or nil if not found.
 func (rs *Relationships) Get(rID string) *Relationship {
 	return rs.rels[rID]
 }
 
+// Delete removes the relationship identified by the given RID from the
+// collection.
 func (rs *Relationships) Delete(rID string) {
 	delete(rs.rels, rID)
 }
 
+// findMatching searches the collection for a relationship matching the given
+// type, target, and external flag. For internal relationships it compares
+// the *Part pointer; for external it compares the target string.
 func (rs *Relationships) findMatching(relType string, target interface{}, isExternal bool) *Relationship {
 	for _, rel := range rs.rels {
 		if rel.relType != relType {
@@ -152,6 +183,8 @@ func (rs *Relationships) findMatching(relType string, target interface{}, isExte
 	return nil
 }
 
+// getRelOfType returns the first relationship with the given type, or nil if
+// none exists. If multiple match, the first one (iteration order) is returned.
 func (rs *Relationships) getRelOfType(relType string) *Relationship {
 	var matching []*Relationship
 	for _, rel := range rs.rels {
@@ -168,6 +201,8 @@ func (rs *Relationships) getRelOfType(relType string) *Relationship {
 	return matching[0]
 }
 
+// NextRID returns the next available relationship ID in the sequence
+// "rId1", "rId2", ..., skipping any already in use.
 func (rs *Relationships) NextRID() string {
 	for n := 1; n <= len(rs.rels)+1; n++ {
 		candidate := fmt.Sprintf("rId%d", n)
@@ -178,22 +213,30 @@ func (rs *Relationships) NextRID() string {
 	return fmt.Sprintf("rId%d", len(rs.rels)+1)
 }
 
+// RID returns the relationship ID (e.g. "rId1").
 func (rel *Relationship) RID() string {
 	return rel.rID
 }
 
+// RelType returns the relationship type URI.
 func (rel *Relationship) RelType() string {
 	return rel.relType
 }
 
+// TargetRef returns the target reference string (a relative path for internal
+// relationships, or an absolute URI for external ones).
 func (rel *Relationship) TargetRef() string {
 	return rel.targetRef
 }
 
+// IsExternal returns true if this relationship points to an external resource
+// outside the package.
 func (rel *Relationship) IsExternal() bool {
 	return rel.isExternal
 }
 
+// TargetPart returns the target *Part for internal relationships. Panics if
+// called on an external relationship.
 func (rel *Relationship) TargetPart() *Part {
 	if rel.isExternal {
 		panic("opc: target_part is undefined for external relationships")
@@ -201,6 +244,7 @@ func (rel *Relationship) TargetPart() *Part {
 	return rel.targetPart
 }
 
+// SetTargetRef updates the target reference string for this relationship.
 func (rel *Relationship) SetTargetRef(ref string) {
 	rel.targetRef = ref
 }

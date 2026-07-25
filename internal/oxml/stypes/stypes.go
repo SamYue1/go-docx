@@ -1,3 +1,7 @@
+// Package stypes provides simple-type converters for OOXML schema types
+// (ST_OnOff, ST_DecimalNumber, ST_String, ST_HexColor, ST_HpsMeasure).
+// Each type implements the Simple interface for XML-to-Go and Go-to-XML
+// conversion with validation, mirroring the python-docx oxml.simpletypes layer.
 package stypes
 
 import (
@@ -8,12 +12,15 @@ import (
 	"github.com/SamYue1/go-docx/internal/shared"
 )
 
+// Simple is the interface for OOXML simple-type converters. Each implementation
+// handles XML string serialization, deserialization, and Go value validation.
 type Simple interface {
 	FromXML(string) (any, error)
 	ToXML(any) (string, error)
 	Validate(any) error
 }
 
+// BaseIntType provides a Validate method that checks whether a value is an int.
 type BaseIntType struct{}
 
 func (BaseIntType) Validate(v any) error {
@@ -25,6 +32,7 @@ func (BaseIntType) Validate(v any) error {
 	}
 }
 
+// BaseStringType provides a Validate method that checks whether a value is a string.
 type BaseStringType struct{}
 
 func (BaseStringType) Validate(v any) error {
@@ -36,6 +44,8 @@ func (BaseStringType) Validate(v any) error {
 	}
 }
 
+// STOnOff converts OOXML ST_OnOff values ("true"/"false"/"1"/"0"/"on"/"off")
+// to and from Go bool.
 type STOnOff struct{}
 
 func (STOnOff) FromXML(s string) (bool, error) {
@@ -67,6 +77,7 @@ func (STOnOff) Validate(v any) error {
 	return nil
 }
 
+// STDecimalNumber converts OOXML ST_DecimalNumber (integer) values to and from Go int.
 type STDecimalNumber struct {
 	BaseIntType
 }
@@ -82,6 +93,7 @@ func (STDecimalNumber) ToXML(v any) (string, error) {
 	return strconv.Itoa(v.(int)), nil
 }
 
+// STString is a pass-through converter for OOXML ST_String values.
 type STString struct {
 	BaseStringType
 }
@@ -97,6 +109,8 @@ func (STString) ToXML(v any) (string, error) {
 	return v.(string), nil
 }
 
+// STHexColor converts OOXML ST_HexColor values (6-digit hex, or "auto") to
+// and from shared.RGBColor. A value of "auto" maps to nil.
 type STHexColor struct{}
 
 func (STHexColor) FromXML(s string) (any, error) {
@@ -125,6 +139,8 @@ func (STHexColor) Validate(v any) error {
 	}
 }
 
+// STHpsMeasure converts OOXML ST_HpsMeasure (half-point measurement) values
+// to and from Go int.
 type STHpsMeasure struct{}
 
 func (STHpsMeasure) FromXML(s string) (int, error) {

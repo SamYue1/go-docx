@@ -9,14 +9,23 @@ import (
 )
 
 const (
+	// PACKAGE_URI is the root pack URI ("/") representing the package itself.
 	PACKAGE_URI       PackURI = "/"
+	// CONTENT_TYPES_URI is the well-known URI for the [Content_Types].xml part.
 	CONTENT_TYPES_URI PackURI = "/[Content_Types].xml"
 )
 
+// packURIFilenameRe matches a filename pattern like "document" or "chapter2"
+// extracting the basename and an optional numeric suffix.
 var packURIFilenameRe = regexp.MustCompile(`([a-zA-Z]+)([1-9][0-9]*)?`)
 
+// PackURI represents a part name within an OPC package, always starting with
+// "/" (e.g. "/word/document.xml"). It is a typed string with helper methods
+// for path manipulation.
 type PackURI string
 
+// NewPackURI creates a PackURI from a string, returning an error if the
+// string is empty or does not start with "/".
 func NewPackURI(s string) (PackURI, error) {
 	if s == "" || s[0] != '/' {
 		return "", fmt.Errorf("PackURI must begin with '/', got '%s'", s)
@@ -24,6 +33,8 @@ func NewPackURI(s string) (PackURI, error) {
 	return PackURI(s), nil
 }
 
+// FromRelRef resolves a relative reference against a base URI to produce an
+// absolute PackURI. It uses path.Clean to normalise the result.
 func FromRelRef(baseURI, relativeRef string) PackURI {
 	joined := path.Join(baseURI, relativeRef)
 	cleaned := path.Clean(joined)
@@ -33,6 +44,8 @@ func FromRelRef(baseURI, relativeRef string) PackURI {
 	return PackURI(cleaned)
 }
 
+// BaseURI returns the parent directory of this pack URI. For "/" it returns
+// "/"; for "/word/document.xml" it returns "/word".
 func (u PackURI) BaseURI() string {
 	if u == "/" {
 		return "/"
@@ -44,6 +57,8 @@ func (u PackURI) BaseURI() string {
 	return dir
 }
 
+// Ext returns the file extension of the URI's filename part (without the
+// leading dot), or an empty string if there is no extension.
 func (u PackURI) Ext() string {
 	ext := path.Ext(string(u))
 	if ext == "" {
@@ -52,11 +67,15 @@ func (u PackURI) Ext() string {
 	return ext[1:]
 }
 
+// Filename returns the file name portion of the pack URI (e.g. "document.xml"
+// for "/word/document.xml").
 func (u PackURI) Filename() string {
 	_, file := path.Split(string(u))
 	return file
 }
 
+// Idx extracts the numeric suffix from the filename (e.g. 2 from "chapter2.xml").
+// Returns false if the filename has no numeric suffix.
 func (u PackURI) Idx() (int, bool) {
 	filename := u.Filename()
 	if filename == "" {
@@ -78,10 +97,14 @@ func (u PackURI) Idx() (int, bool) {
 	return idx, true
 }
 
+// Membername returns the zip member name by stripping the leading "/"
+// (e.g. "word/document.xml" for "/word/document.xml").
 func (u PackURI) Membername() string {
 	return strings.TrimPrefix(string(u), "/")
 }
 
+// RelsURI returns the pack URI of the relationships part for this part
+// (e.g. "/word/_rels/document.xml.rels" for "/word/document.xml").
 func (u PackURI) RelsURI() PackURI {
 	filename := u.Filename()
 	relsFilename := filename + ".rels"
@@ -92,6 +115,8 @@ func (u PackURI) RelsURI() PackURI {
 	return PackURI(result)
 }
 
+// RelativeRef computes the relative path from baseURI to this pack URI,
+// suitable for use as the Target attribute of an OPC Relationship element.
 func (u PackURI) RelativeRef(baseURI string) string {
 	if baseURI == "/" {
 		return string(u)[1:]
@@ -100,6 +125,7 @@ func (u PackURI) RelativeRef(baseURI string) string {
 	return rel
 }
 
+// relPath computes a relative filesystem path from base to target.
 func relPath(base, target string) string {
 	baseParts := splitPath(base)
 	targetParts := splitPath(target)
@@ -124,6 +150,7 @@ func relPath(base, target string) string {
 	return strings.Join(result, "/")
 }
 
+// splitPath splits a cleaned, slash-prefixed path into its component parts.
 func splitPath(p string) []string {
 	p = path.Clean(p)
 	p = strings.TrimPrefix(p, "/")

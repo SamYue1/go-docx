@@ -1,3 +1,6 @@
+// Package otext provides high-level text formatting objects (Paragraph, Run, Font,
+// Hyperlink, TabStops, etc.) that wrap oxml proxy types, analogous to the
+// python-docx text layer.
 package otext
 
 import (
@@ -8,14 +11,18 @@ import (
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
 )
 
+// Run wraps a CT_R element providing high-level access to run content, text, breaks,
+// font formatting, and drawing elements.
 type Run struct {
 	r *text.CT_R
 }
 
+// NewRun creates a Run wrapping the given CT_R.
 func NewRun(r *text.CT_R) *Run {
 	return &Run{r: r}
 }
 
+// CT_R returns the underlying oxml CT_R element.
 func (rn *Run) CT_R() *text.CT_R {
 	if rn == nil {
 		return nil
@@ -23,6 +30,8 @@ func (rn *Run) CT_R() *text.CT_R {
 	return rn.r
 }
 
+// Text returns the concatenated text of all w:t elements in the run, with line
+// breaks (w:br) converted to newline characters.
 func (rn *Run) Text() string {
 	if rn == nil || rn.r == nil {
 		return ""
@@ -37,6 +46,8 @@ func (rn *Run) Text() string {
 	return result
 }
 
+// AddText appends a w:t text element to the run. Carriage returns (\r) are
+// converted to newlines (\n).
 func (rn *Run) AddText(s string) {
 	if rn == nil || rn.r == nil {
 		return
@@ -45,6 +56,7 @@ func (rn *Run) AddText(s string) {
 	rn.r.AddT(s)
 }
 
+// AddTab appends a w:tab element to the run.
 func (rn *Run) AddTab() {
 	if rn == nil || rn.r == nil {
 		return
@@ -52,6 +64,7 @@ func (rn *Run) AddTab() {
 	rn.r.AddTab()
 }
 
+// AddBreak appends a break element of the given BreakType to the run.
 func (rn *Run) AddBreak(breakType BreakType) {
 	if rn == nil || rn.r == nil {
 		return
@@ -75,6 +88,7 @@ func (rn *Run) AddBreak(breakType BreakType) {
 	}
 }
 
+// Font returns the Font object for this run, creating the rPr element if it does not exist.
 func (rn *Run) Font() *Font {
 	if rn == nil || rn.r == nil {
 		return NewFont(text.NewCT_RPr())
@@ -83,22 +97,27 @@ func (rn *Run) Font() *Font {
 	return NewFont(rPr)
 }
 
+// Bold returns true if the run has bold formatting enabled (w:b element exists).
 func (rn *Run) Bold() bool {
 	return rn.Font().Bold()
 }
 
+// BoldSet enables or disables bold formatting on the run.
 func (rn *Run) BoldSet(val bool) {
 	rn.Font().SetBold(val)
 }
 
+// Italic returns true if the run has italic formatting enabled (w:i element exists).
 func (rn *Run) Italic() bool {
 	return rn.Font().Italic()
 }
 
+// ItalicSet enables or disables italic formatting on the run.
 func (rn *Run) ItalicSet(val bool) {
 	rn.Font().SetItalic(val)
 }
 
+// Style returns the run style ID and true if set, or empty string and false otherwise.
 func (rn *Run) Style() (string, bool) {
 	if rn == nil || rn.r == nil {
 		return "", false
@@ -118,6 +137,7 @@ func (rn *Run) Style() (string, bool) {
 	return "", false
 }
 
+// SetStyle sets the run style by style ID. If name is empty, the style element is removed.
 func (rn *Run) SetStyle(name string) {
 	if rn == nil || rn.r == nil {
 		return
@@ -141,6 +161,7 @@ func (rn *Run) SetStyle(name string) {
 	rPr.GetOrAddRStyle().SetAttr(ns.NsMap["w"], "val", name)
 }
 
+// Clear removes all child content from the run.
 func (rn *Run) Clear() {
 	if rn == nil || rn.r == nil {
 		return
@@ -148,6 +169,8 @@ func (rn *Run) Clear() {
 	rn.r.ClearContent()
 }
 
+// IterInnerContent returns a slice of the run's children as string, *RenderedPageBreak,
+// or *dom.Element (for drawing) values.
 func (rn *Run) IterInnerContent() []interface{} {
 	if rn == nil || rn.r == nil {
 		return nil
@@ -167,6 +190,8 @@ func (rn *Run) IterInnerContent() []interface{} {
 	return items
 }
 
+// LastChildLocal returns the local tag name of the last child element, or empty string
+// if the run has no children.
 func (rn *Run) LastChildLocal() string {
 	if rn == nil || rn.r == nil {
 		return ""
@@ -178,6 +203,7 @@ func (rn *Run) LastChildLocal() string {
 	return children[len(children)-1].Local()
 }
 
+// AddDrawing appends an empty w:drawing element to the run.
 func (rn *Run) AddDrawing() {
 	if rn == nil || rn.r == nil {
 		return
@@ -186,6 +212,8 @@ func (rn *Run) AddDrawing() {
 	rn.r.Element.AddChild(drawing)
 }
 
+// ContainsPageBreak returns true if the run contains a page break
+// (w:br[@type='page'] or w:lastRenderedPageBreak).
 func (rn *Run) ContainsPageBreak() bool {
 	if rn == nil || rn.r == nil {
 		return false

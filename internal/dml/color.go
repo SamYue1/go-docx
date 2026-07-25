@@ -1,3 +1,4 @@
+// Package dml provides DrawingML types for working with Office Open XML drawing and color constructs.
 package dml
 
 import (
@@ -8,29 +9,31 @@ import (
 	"github.com/SamYue1/go-docx/internal/shared"
 )
 
+// MsoColorType represents the type of a color specification (auto, RGB, or theme-based).
 type MsoColorType int
 
 const (
-	MsoColorTypeAuto  MsoColorType = 1
-	MsoColorTypeRGB   MsoColorType = 2
-	MsoColorTypeTheme MsoColorType = 3
+	MsoColorTypeAuto  MsoColorType = 1 // Automatic color (typically black/white based on background)
+	MsoColorTypeRGB   MsoColorType = 2 // Explicit RGB color
+	MsoColorTypeTheme MsoColorType = 3 // Theme color reference
 )
 
+// MsoThemeColor represents a theme color slot in the Office color scheme.
 type MsoThemeColor int
 
 const (
-	MsoThemeColorDark1              MsoThemeColor = 1
-	MsoThemeColorLight1             MsoThemeColor = 2
-	MsoThemeColorDark2              MsoThemeColor = 3
-	MsoThemeColorLight2             MsoThemeColor = 4
-	MsoThemeColorAccent1            MsoThemeColor = 5
-	MsoThemeColorAccent2            MsoThemeColor = 6
-	MsoThemeColorAccent3            MsoThemeColor = 7
-	MsoThemeColorAccent4            MsoThemeColor = 8
-	MsoThemeColorAccent5            MsoThemeColor = 9
-	MsoThemeColorAccent6            MsoThemeColor = 10
-	MsoThemeColorHyperlink          MsoThemeColor = 11
-	MsoThemeColorFollowedHyperlink  MsoThemeColor = 12
+	MsoThemeColorDark1             MsoThemeColor = 1  // Dark1 theme color
+	MsoThemeColorLight1            MsoThemeColor = 2  // Light1 theme color
+	MsoThemeColorDark2             MsoThemeColor = 3  // Dark2 theme color
+	MsoThemeColorLight2            MsoThemeColor = 4  // Light2 theme color
+	MsoThemeColorAccent1           MsoThemeColor = 5  // Accent1 theme color
+	MsoThemeColorAccent2           MsoThemeColor = 6  // Accent2 theme color
+	MsoThemeColorAccent3           MsoThemeColor = 7  // Accent3 theme color
+	MsoThemeColorAccent4           MsoThemeColor = 8  // Accent4 theme color
+	MsoThemeColorAccent5           MsoThemeColor = 9  // Accent5 theme color
+	MsoThemeColorAccent6           MsoThemeColor = 10 // Accent6 theme color
+	MsoThemeColorHyperlink         MsoThemeColor = 11 // Hyperlink theme color
+	MsoThemeColorFollowedHyperlink MsoThemeColor = 12 // Followed hyperlink theme color
 )
 
 var themeColorNames = map[MsoThemeColor]string{
@@ -56,14 +59,17 @@ var themeColorFromName = func() map[string]MsoThemeColor {
 	return m
 }()
 
+// ColorFormat represents a color specification in OOXML, which can be auto, RGB, or theme-based.
 type ColorFormat struct {
 	element *dom.Element
 }
 
+// NewColorFormat creates a new ColorFormat wrapper around the given DOM element.
 func NewColorFormat(el *dom.Element) *ColorFormat {
 	return &ColorFormat{element: el}
 }
 
+// Type returns the type of color specification (auto, RGB, or theme).
 func (c *ColorFormat) Type() MsoColorType {
 	clr := c.colorElement()
 	if clr == nil {
@@ -83,6 +89,7 @@ func (c *ColorFormat) Type() MsoColorType {
 	return 0
 }
 
+// RGB returns the RGB color value, or nil if the color is not RGB or is set to auto.
 func (c *ColorFormat) RGB() *shared.RGBColor {
 	clr := c.colorElement()
 	if clr == nil {
@@ -99,6 +106,7 @@ func (c *ColorFormat) RGB() *shared.RGBColor {
 	return &rgb
 }
 
+// SetRGB sets the color to an RGB value. Pass nil to remove the color element.
 func (c *ColorFormat) SetRGB(v *shared.RGBColor) {
 	if v == nil {
 		c.removeColorElement()
@@ -109,6 +117,7 @@ func (c *ColorFormat) SetRGB(v *shared.RGBColor) {
 	clr.RemoveAttr(ns.NsMap["w"], "themeColor")
 }
 
+// ThemeColor returns the theme color, or 0 if no theme color is set.
 func (c *ColorFormat) ThemeColor() MsoThemeColor {
 	clr := c.colorElement()
 	if clr == nil {
@@ -124,6 +133,7 @@ func (c *ColorFormat) ThemeColor() MsoThemeColor {
 	return 0
 }
 
+// SetThemeColor sets the theme color. Pass 0 to remove the color element.
 func (c *ColorFormat) SetThemeColor(v MsoThemeColor) {
 	if v == 0 {
 		c.removeColorElement()
