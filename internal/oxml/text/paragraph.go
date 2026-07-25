@@ -40,6 +40,24 @@ func init() {
 	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:i", Kind: xmodel.ZeroOrOne, Successors: nil})
 	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:u", Kind: xmodel.ZeroOrOne, Successors: nil})
 	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:position", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:strike", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:dstrike", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:smallCaps", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:caps", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:shadow", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:outline", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:emboss", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:imprint", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:vanish", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:specVanish", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:webHidden", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:complexScript", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:csBold", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:csItalic", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:noProof", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:snapToGrid", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:math", Kind: xmodel.ZeroOrOne, Successors: nil})
+	textRegistry.Add("w:rPr", xmodel.ChildDef{Tag: "w:rtl", Kind: xmodel.ZeroOrOne, Successors: nil})
 	textRegistry.Add("w:pPr", xmodel.ChildDef{Tag: "w:pStyle", Kind: xmodel.ZeroOrOne, Successors: nil})
 	textRegistry.Add("w:pPr", xmodel.ChildDef{Tag: "w:jc", Kind: xmodel.ZeroOrOne, Successors: nil})
 	textRegistry.Add("w:pPr", xmodel.ChildDef{Tag: "w:spacing", Kind: xmodel.ZeroOrOne, Successors: nil})
@@ -60,6 +78,9 @@ func init() {
 // findChild returns the first child element of parent whose Clark-tag
 // matches tag, or nil if no such child exists.
 func findChild(parent *dom.Element, tag string) *dom.Element {
+	if parent == nil {
+		return nil
+	}
 	for _, c := range parent.Children() {
 		if c.ClarkTag() == tag {
 			return c
@@ -71,6 +92,9 @@ func findChild(parent *dom.Element, tag string) *dom.Element {
 // findChildren returns all child elements of parent whose Clark-tag
 // matches tag, preserving document order.
 func findChildren(parent *dom.Element, tag string) []*dom.Element {
+	if parent == nil {
+		return nil
+	}
 	var result []*dom.Element
 	for _, c := range parent.Children() {
 		if c.ClarkTag() == tag {

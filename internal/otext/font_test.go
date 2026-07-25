@@ -8,6 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 func TestDescribeFont(t *testing.T) {
 	t.Run("it_sets_and_gets_name", func(t *testing.T) {
 		f := NewFont(text.NewCT_RPr())
@@ -86,26 +90,56 @@ func TestDescribeFont(t *testing.T) {
 	})
 
 	t.Run("it_knows_its_strike_state", func(t *testing.T) {
-		t.Skip("Font.Strike() not yet implemented")
+		f := NewFont(text.NewCT_RPr())
+		assert.False(t, f.Strike())
+		f.SetStrike(true)
+		assert.True(t, f.Strike())
+		f.SetStrike(false)
+		assert.False(t, f.Strike())
 	})
 
 	t.Run("it_knows_its_subscript_state", func(t *testing.T) {
-		t.Skip("Font.Subscript() not yet implemented")
+		f := NewFont(text.NewCT_RPr())
+		assert.Nil(t, f.Subscript())
+		f.SetSubscript(boolPtr(true))
+		assert.True(t, *f.Subscript())
+		f.SetSubscript(nil)
+		assert.Nil(t, f.Subscript())
 	})
 
 	t.Run("it_knows_its_superscript_state", func(t *testing.T) {
-		t.Skip("Font.Superscript() not yet implemented")
+		f := NewFont(text.NewCT_RPr())
+		assert.Nil(t, f.Superscript())
+		f.SetSuperscript(boolPtr(true))
+		assert.True(t, *f.Superscript())
+		f.SetSuperscript(nil)
+		assert.Nil(t, f.Superscript())
 	})
 
 	t.Run("it_knows_its_highlight_color", func(t *testing.T) {
-		t.Skip("Font.HighlightColor() not yet implemented")
+		f := NewFont(text.NewCT_RPr())
+		assert.Equal(t, "", f.HighlightColor())
+		f.SetHighlightColor("yellow")
+		assert.Equal(t, "yellow", f.HighlightColor())
+		f.SetHighlightColor("")
+		assert.Equal(t, "", f.HighlightColor())
 	})
 
 	t.Run("it_knows_its_small_caps_state", func(t *testing.T) {
-		t.Skip("Font.SmallCaps() not yet implemented")
+		f := NewFont(text.NewCT_RPr())
+		assert.False(t, f.SmallCaps())
+		f.SetSmallCaps(true)
+		assert.True(t, f.SmallCaps())
+		f.SetSmallCaps(false)
+		assert.False(t, f.SmallCaps())
 	})
 
 	t.Run("it_knows_its_all_caps_state", func(t *testing.T) {
-		t.Skip("Font.AllCaps() not yet implemented")
+		f := NewFont(text.NewCT_RPr())
+		assert.False(t, f.AllCaps())
+		f.SetAllCaps(true)
+		assert.True(t, f.AllCaps())
+		f.SetAllCaps(false)
+		assert.False(t, f.AllCaps())
 	})
 }

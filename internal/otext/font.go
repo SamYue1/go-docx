@@ -416,3 +416,455 @@ func (f *Font) SetUnderline(val string) {
 	}
 	u.SetVal(val)
 }
+
+// Strike returns true if the w:strike element exists (strikethrough is enabled).
+func (f *Font) Strike() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.Strike() != nil
+}
+
+// SetStrike enables or disables strikethrough by adding or removing the w:strike element.
+func (f *Font) SetStrike(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "strike")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:strike") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// DoubleStrike returns true if the w:dstrike element exists (double strikethrough is enabled).
+func (f *Font) DoubleStrike() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.Dstrike() != nil
+}
+
+// SetDoubleStrike enables or disables double strikethrough by adding or removing the w:dstrike element.
+func (f *Font) SetDoubleStrike(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "dstrike")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:dstrike") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// SmallCaps returns true if the w:smallCaps element exists (small caps is enabled).
+func (f *Font) SmallCaps() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.SmallCaps() != nil
+}
+
+// SetSmallCaps enables or disables small caps by adding or removing the w:smallCaps element.
+func (f *Font) SetSmallCaps(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "smallCaps")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:smallCaps") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// AllCaps returns true if the w:caps element exists (all capitals is enabled).
+func (f *Font) AllCaps() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.Caps() != nil
+}
+
+// SetAllCaps enables or disables all capitals by adding or removing the w:caps element.
+func (f *Font) SetAllCaps(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "caps")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:caps") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// Shadow returns true if the w:shadow element exists.
+func (f *Font) Shadow() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.Shadow() != nil
+}
+
+// SetShadow enables or disables shadow by adding or removing the w:shadow element.
+func (f *Font) SetShadow(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "shadow")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:shadow") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// Outline returns true if the w:outline element exists.
+func (f *Font) Outline() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.Outline() != nil
+}
+
+// SetOutline enables or disables outline by adding or removing the w:outline element.
+func (f *Font) SetOutline(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "outline")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:outline") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// Emboss returns true if the w:emboss element exists.
+func (f *Font) Emboss() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.Emboss() != nil
+}
+
+// SetEmboss enables or disables emboss by adding or removing the w:emboss element.
+func (f *Font) SetEmboss(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "emboss")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:emboss") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// Imprint returns true if the w:imprint element exists.
+func (f *Font) Imprint() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.Imprint() != nil
+}
+
+// SetImprint enables or disables imprint by adding or removing the w:imprint element.
+func (f *Font) SetImprint(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "imprint")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:imprint") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// Hidden returns true if the w:vanish element exists (hidden text is enabled).
+// Note: the XML element is w:vanish but is exposed as Hidden for python-docx compatibility.
+func (f *Font) Hidden() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.Vanish() != nil
+}
+
+// SetHidden enables or disables hidden text by adding or removing the w:vanish element.
+// Note: the XML element is w:vanish but is exposed as Hidden for python-docx compatibility.
+func (f *Font) SetHidden(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "vanish")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:vanish") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// SpecVanish returns true if the w:specVanish element exists.
+func (f *Font) SpecVanish() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.SpecVanish() != nil
+}
+
+// SetSpecVanish enables or disables specVanish by adding or removing the w:specVanish element.
+func (f *Font) SetSpecVanish(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "specVanish")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:specVanish") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// WebHidden returns true if the w:webHidden element exists.
+func (f *Font) WebHidden() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.WebHidden() != nil
+}
+
+// SetWebHidden enables or disables webHidden by adding or removing the w:webHidden element.
+func (f *Font) SetWebHidden(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "webHidden")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:webHidden") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// ComplexScript returns true if the w:complexScript element exists.
+func (f *Font) ComplexScript() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.ComplexScript() != nil
+}
+
+// SetComplexScript enables or disables complexScript by adding or removing the w:complexScript element.
+func (f *Font) SetComplexScript(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "complexScript")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:complexScript") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// CsBold returns true if the w:csBold element exists (complex script bold is enabled).
+func (f *Font) CsBold() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.CsBold() != nil
+}
+
+// SetCsBold enables or disables complex script bold by adding or removing the w:csBold element.
+func (f *Font) SetCsBold(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "csBold")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:csBold") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// CsItalic returns true if the w:csItalic element exists (complex script italic is enabled).
+func (f *Font) CsItalic() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.CsItalic() != nil
+}
+
+// SetCsItalic enables or disables complex script italic by adding or removing the w:csItalic element.
+func (f *Font) SetCsItalic(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "csItalic")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:csItalic") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// NoProof returns true if the w:noProof element exists (no proofing is enabled).
+func (f *Font) NoProof() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.NoProof() != nil
+}
+
+// SetNoProof enables or disables no proofing by adding or removing the w:noProof element.
+func (f *Font) SetNoProof(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "noProof")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:noProof") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// SnapToGrid returns true if the w:snapToGrid element exists.
+func (f *Font) SnapToGrid() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.SnapToGrid() != nil
+}
+
+// SetSnapToGrid enables or disables snapToGrid by adding or removing the w:snapToGrid element.
+func (f *Font) SetSnapToGrid(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "snapToGrid")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:snapToGrid") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// Math returns true if the w:math element exists.
+func (f *Font) Math() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.Math() != nil
+}
+
+// SetMath enables or disables math by adding or removing the w:math element.
+func (f *Font) SetMath(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "math")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:math") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}
+
+// Rtl returns true if the w:rtl element exists (right-to-left is enabled).
+func (f *Font) Rtl() bool {
+	if f == nil || f.rPr == nil {
+		return false
+	}
+	return f.rPr.Rtl() != nil
+}
+
+// SetRtl enables or disables right-to-left by adding or removing the w:rtl element.
+func (f *Font) SetRtl(val bool) {
+	if f == nil || f.rPr == nil {
+		return
+	}
+	if val {
+		el := dom.NewElement(ns.NsMap["w"], "rtl")
+		f.rPr.Element.AddChild(el)
+	} else {
+		for _, c := range f.rPr.Element.Children() {
+			if c.ClarkTag() == ns.Qn("w:rtl") {
+				f.rPr.Element.RemoveChild(c)
+			}
+		}
+	}
+}

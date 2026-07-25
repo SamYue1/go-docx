@@ -213,6 +213,334 @@ func (r *CT_RPr) GetOrAddVertAlign() *CT_VerticalAlignRun {
 	return &CT_VerticalAlignRun{Element: el}
 }
 
+// --- Boolean toggle accessors ---
+
+// Shadow returns the w:shadow child element, or nil if absent.
+func (r *CT_RPr) Shadow() *dom.Element {
+	return findChild(r.Element, wqn("shadow"))
+}
+
+// Outline returns the w:outline child element, or nil if absent.
+func (r *CT_RPr) Outline() *dom.Element {
+	return findChild(r.Element, wqn("outline"))
+}
+
+// Emboss returns the w:emboss child element, or nil if absent.
+func (r *CT_RPr) Emboss() *dom.Element {
+	return findChild(r.Element, wqn("emboss"))
+}
+
+// Imprint returns the w:imprint child element, or nil if absent.
+func (r *CT_RPr) Imprint() *dom.Element {
+	return findChild(r.Element, wqn("imprint"))
+}
+
+// Vanish returns the w:vanish (hidden text) child element, or nil if absent.
+func (r *CT_RPr) Vanish() *dom.Element {
+	return findChild(r.Element, wqn("vanish"))
+}
+
+// SpecVanish returns the w:specVanish child element, or nil if absent.
+func (r *CT_RPr) SpecVanish() *dom.Element {
+	return findChild(r.Element, wqn("specVanish"))
+}
+
+// WebHidden returns the w:webHidden child element, or nil if absent.
+func (r *CT_RPr) WebHidden() *dom.Element {
+	return findChild(r.Element, wqn("webHidden"))
+}
+
+// ComplexScript returns the w:complexScript child element, or nil if absent.
+func (r *CT_RPr) ComplexScript() *dom.Element {
+	return findChild(r.Element, wqn("complexScript"))
+}
+
+// CsBold returns the w:csBold child element, or nil if absent.
+func (r *CT_RPr) CsBold() *dom.Element {
+	return findChild(r.Element, wqn("csBold"))
+}
+
+// CsItalic returns the w:csItalic child element, or nil if absent.
+func (r *CT_RPr) CsItalic() *dom.Element {
+	return findChild(r.Element, wqn("csItalic"))
+}
+
+// NoProof returns the w:noProof child element, or nil if absent.
+func (r *CT_RPr) NoProof() *dom.Element {
+	return findChild(r.Element, wqn("noProof"))
+}
+
+// SnapToGrid returns the w:snapToGrid child element, or nil if absent.
+func (r *CT_RPr) SnapToGrid() *dom.Element {
+	return findChild(r.Element, wqn("snapToGrid"))
+}
+
+// Math returns the w:math child element, or nil if absent.
+func (r *CT_RPr) Math() *dom.Element {
+	return findChild(r.Element, wqn("math"))
+}
+
+// Rtl returns the w:rtl child element, or nil if absent.
+func (r *CT_RPr) Rtl() *dom.Element {
+	return findChild(r.Element, wqn("rtl"))
+}
+
+// --- GetOrAdd methods ---
+
+// GetOrAddStrike returns the existing w:strike child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddStrike() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:strike")
+}
+
+// GetOrAddDstrike returns the existing w:dstrike child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddDstrike() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:dstrike")
+}
+
+// GetOrAddSmallCaps returns the existing w:smallCaps child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddSmallCaps() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:smallCaps")
+}
+
+// GetOrAddCaps returns the existing w:caps child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddCaps() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:caps")
+}
+
+// GetOrAddShadow returns the existing w:shadow child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddShadow() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:shadow")
+}
+
+// GetOrAddOutline returns the existing w:outline child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddOutline() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:outline")
+}
+
+// GetOrAddEmboss returns the existing w:emboss child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddEmboss() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:emboss")
+}
+
+// GetOrAddImprint returns the existing w:imprint child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddImprint() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:imprint")
+}
+
+// GetOrAddVanish returns the existing w:vanish child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddVanish() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:vanish")
+}
+
+// GetOrAddSpecVanish returns the existing w:specVanish child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddSpecVanish() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:specVanish")
+}
+
+// GetOrAddWebHidden returns the existing w:webHidden child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddWebHidden() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:webHidden")
+}
+
+// GetOrAddComplexScript returns the existing w:complexScript child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddComplexScript() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:complexScript")
+}
+
+// GetOrAddCsBold returns the existing w:csBold child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddCsBold() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:csBold")
+}
+
+// GetOrAddCsItalic returns the existing w:csItalic child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddCsItalic() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:csItalic")
+}
+
+// GetOrAddNoProof returns the existing w:noProof child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddNoProof() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:noProof")
+}
+
+// GetOrAddSnapToGrid returns the existing w:snapToGrid child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddSnapToGrid() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:snapToGrid")
+}
+
+// GetOrAddMath returns the existing w:math child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddMath() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:math")
+}
+
+// GetOrAddRtl returns the existing w:rtl child, or creates and inserts one.
+func (r *CT_RPr) GetOrAddRtl() *dom.Element {
+	return xmodel.GetOrAddChild(r.Element, textRegistry, "w:rPr", "w:rtl")
+}
+
+// --- Remove methods ---
+
+// RemoveStrike removes the w:strike child if present.
+func (r *CT_RPr) RemoveStrike() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("strike") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveDstrike removes the w:dstrike child if present.
+func (r *CT_RPr) RemoveDstrike() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("dstrike") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveSmallCaps removes the w:smallCaps child if present.
+func (r *CT_RPr) RemoveSmallCaps() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("smallCaps") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveCaps removes the w:caps child if present.
+func (r *CT_RPr) RemoveCaps() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("caps") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveShadow removes the w:shadow child if present.
+func (r *CT_RPr) RemoveShadow() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("shadow") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveOutline removes the w:outline child if present.
+func (r *CT_RPr) RemoveOutline() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("outline") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveEmboss removes the w:emboss child if present.
+func (r *CT_RPr) RemoveEmboss() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("emboss") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveImprint removes the w:imprint child if present.
+func (r *CT_RPr) RemoveImprint() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("imprint") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveVanish removes the w:vanish child if present.
+func (r *CT_RPr) RemoveVanish() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("vanish") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveSpecVanish removes the w:specVanish child if present.
+func (r *CT_RPr) RemoveSpecVanish() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("specVanish") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveWebHidden removes the w:webHidden child if present.
+func (r *CT_RPr) RemoveWebHidden() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("webHidden") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveComplexScript removes the w:complexScript child if present.
+func (r *CT_RPr) RemoveComplexScript() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("complexScript") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveCsBold removes the w:csBold child if present.
+func (r *CT_RPr) RemoveCsBold() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("csBold") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveCsItalic removes the w:csItalic child if present.
+func (r *CT_RPr) RemoveCsItalic() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("csItalic") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveNoProof removes the w:noProof child if present.
+func (r *CT_RPr) RemoveNoProof() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("noProof") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveSnapToGrid removes the w:snapToGrid child if present.
+func (r *CT_RPr) RemoveSnapToGrid() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("snapToGrid") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveMath removes the w:math child if present.
+func (r *CT_RPr) RemoveMath() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("math") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
+// RemoveRtl removes the w:rtl child if present.
+func (r *CT_RPr) RemoveRtl() {
+	for _, c := range r.Element.Children() {
+		if c.ClarkTag() == wqn("rtl") {
+			r.Element.RemoveChild(c)
+		}
+	}
+}
+
 // CT_Fonts wraps a w:rFonts element — font face selections for different
 // character sets (ASCII, East Asian, complex script, etc.).
 type CT_Fonts struct {
