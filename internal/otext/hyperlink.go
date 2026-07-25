@@ -15,6 +15,7 @@ type Hyperlink struct {
 	h      *text.CT_Hyperlink
 	parent *Paragraph
 	rels   *opc.Relationships
+	part   interface{}
 }
 
 // NewHyperlink creates a Hyperlink wrapping the given CT_Hyperlink.
@@ -91,6 +92,14 @@ func (hl *Hyperlink) ContainsPageBreak() bool {
 		}
 	}
 	return false
+}
+
+// SetPart sets the DocumentPart provider for this hyperlink.
+func (hl *Hyperlink) SetPart(provider interface{}) {
+	if hl == nil {
+		return
+	}
+	hl.part = provider
 }
 
 // Fragment returns the anchor fragment (internal bookmark target) of the hyperlink.

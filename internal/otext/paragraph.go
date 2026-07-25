@@ -16,6 +16,7 @@ type Paragraph struct {
 	p      *text.CT_P
 	parent *dom.Element
 	rels   *opc.Relationships
+	part   interface{}
 }
 
 // NewParagraph creates a Paragraph wrapping the given CT_P.
@@ -236,6 +237,22 @@ func (p *Paragraph) ContainsPageBreak() bool {
 		}
 	}
 	return false
+}
+
+// SetPart sets the DocumentPart provider for this paragraph.
+func (p *Paragraph) SetPart(provider interface{}) {
+	if p == nil {
+		return
+	}
+	p.part = provider
+}
+
+// Part returns the DocumentPart provider, or nil if not set.
+func (p *Paragraph) Part() interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.part
 }
 
 // SetRels sets the OPC relationships for this paragraph, used to resolve hyperlink targets.

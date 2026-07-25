@@ -140,6 +140,7 @@ func (d *Document) Paragraphs() []*otext.Paragraph {
 	result := make([]*otext.Paragraph, len(ps))
 	for i, p := range ps {
 		result[i] = otext.NewParagraphWithParent(p, body.Element)
+		result[i].SetPart(d.part)
 		result[i].SetRels(rels)
 	}
 	return result
@@ -156,6 +157,7 @@ func (d *Document) Tables() []*otable.Table {
 	result := make([]*otable.Table, len(tbls))
 	for i, tbl := range tbls {
 		result[i] = otable.NewTable(tbl)
+		result[i].SetPart(d.part)
 	}
 	return result
 }
@@ -274,7 +276,9 @@ func (d *Document) AddParagraph() *otext.Paragraph {
 		return nil
 	}
 	p := body.AddP()
-	return otext.NewParagraphWithParent(p, body.Element)
+	para := otext.NewParagraphWithParent(p, body.Element)
+	para.SetPart(d.part)
+	return para
 }
 
 // AddTable appends a new table to the document body with the given number of
@@ -309,6 +313,7 @@ func (d *Document) AddTable(rows, cols int) *otable.Table {
 		}
 	}
 	t := otable.NewTable(tbl)
+	t.SetPart(d.part)
 	t.SetStyle("Normal Table")
 	return t
 }
@@ -530,10 +535,13 @@ func (d *Document) IterInnerContent() []interface{} {
 		switch child.Local() {
 		case "p":
 			p := otext.NewParagraphWithParent(&text.CT_P{Element: child}, body.Element)
+			p.SetPart(d.part)
 			p.SetRels(rels)
 			items = append(items, p)
 		case "tbl":
-			items = append(items, otable.NewTable(&oxml.CT_Tbl{Element: child}))
+			t := otable.NewTable(&oxml.CT_Tbl{Element: child})
+			t.SetPart(d.part)
+			items = append(items, t)
 		}
 	}
 	return items

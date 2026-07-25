@@ -6,6 +6,7 @@ import (
 	"github.com/SamYue1/go-docx/internal/oxml/dom"
 	"github.com/SamYue1/go-docx/internal/oxml/ns"
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
+	"github.com/SamYue1/go-docx/internal/parts"
 	"github.com/SamYue1/go-docx/internal/shared"
 )
 
@@ -404,6 +405,16 @@ func (c *Cell) GridSpan() int {
 	}
 	span, _ := tcPr.GridSpan()
 	return span
+}
+
+// SetPart sets the DocumentPart provider by delegating to the parent table.
+func (c *Cell) SetPart(provider *parts.DocumentPart) {
+	if c == nil {
+		return
+	}
+	if c.table != nil {
+		c.table.SetPart(provider)
+	}
 }
 
 // Table returns the parent Table that contains this cell.

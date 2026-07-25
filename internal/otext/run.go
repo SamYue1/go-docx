@@ -14,7 +14,8 @@ import (
 // Run wraps a CT_R element providing high-level access to run content, text, breaks,
 // font formatting, and drawing elements.
 type Run struct {
-	r *text.CT_R
+	r    *text.CT_R
+	part interface{}
 }
 
 // NewRun creates a Run wrapping the given CT_R.
@@ -159,6 +160,14 @@ func (rn *Run) SetStyle(name string) {
 	}
 	rPr := rn.r.GetOrAddRPr()
 	rPr.GetOrAddRStyle().SetAttr(ns.NsMap["w"], "val", name)
+}
+
+// SetPart sets the DocumentPart provider for this run.
+func (rn *Run) SetPart(provider interface{}) {
+	if rn == nil {
+		return
+	}
+	rn.part = provider
 }
 
 // Clear removes all child content from the run.

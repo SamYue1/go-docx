@@ -6,13 +6,15 @@ import (
 	"github.com/SamYue1/go-docx/internal/oxml"
 	"github.com/SamYue1/go-docx/internal/oxml/dom"
 	"github.com/SamYue1/go-docx/internal/oxml/ns"
+	"github.com/SamYue1/go-docx/internal/parts"
 	"github.com/SamYue1/go-docx/internal/shared"
 )
 
 // Table wraps an oxml CT_Tbl and provides high-level access to table
 // properties, rows, columns, and cells.
 type Table struct {
-	tbl *oxml.CT_Tbl
+	tbl  *oxml.CT_Tbl
+	part *parts.DocumentPart
 }
 
 // NewTable creates a new Table wrapping the given oxml CT_Tbl.
@@ -112,6 +114,14 @@ func (t *Table) AddColumn(width shared.Length) *Column {
 		tcW.SetType("dxa")
 	}
 	return &Column{gridCol: gc, table: t}
+}
+
+// SetPart sets the DocumentPart provider for this table.
+func (t *Table) SetPart(provider *parts.DocumentPart) {
+	if t == nil {
+		return
+	}
+	t.part = provider
 }
 
 // Style returns the table style name, or "Normal Table" if none is set.

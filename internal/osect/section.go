@@ -29,6 +29,12 @@ type Section struct {
 	sections []*Section
 }
 
+// SetPart sets the DocumentPart provider. Section maintains its own references
+// (rels, pkg), so this is a no-op for consistency with the PartHolder interface.
+func (s *Section) SetPart(provider interface{}) {
+	// Section has its own rels and pkg references set via SetRels and SetPackage.
+}
+
 // SetAllSections stores the complete section list on this section so that
 // linked (empty) headers/footers can traverse back to previous sections.
 func (s *Section) SetAllSections(sections []*Section) {
