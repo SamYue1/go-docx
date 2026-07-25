@@ -186,19 +186,12 @@ func (rs *Relationships) findMatching(relType string, target interface{}, isExte
 // getRelOfType returns the first relationship with the given type, or nil if
 // none exists. If multiple match, the first one (iteration order) is returned.
 func (rs *Relationships) getRelOfType(relType string) *Relationship {
-	var matching []*Relationship
 	for _, rel := range rs.rels {
 		if rel.relType == relType {
-			matching = append(matching, rel)
+			return rel
 		}
 	}
-	if len(matching) == 0 {
-		return nil
-	}
-	if len(matching) > 1 {
-		return matching[0]
-	}
-	return matching[0]
+	return nil
 }
 
 // NextRID returns the next available relationship ID in the sequence

@@ -96,69 +96,18 @@ func parseExifAPP1(seg []byte) DPI {
 	}
 
 	tiffData := seg[8:]
-	if len(tiffData) < 8 {
+	xResolution, yResolution, resolutionUnit, err := parseTIFFIFD(tiffData)
+	if err != nil || xResolution == 0 || yResolution == 0 {
 		return dpi
 	}
-
-	var bo binary.ByteOrder
-	switch string(tiffData[0:2]) {
-	case "II":
-		bo = binary.LittleEndian
-	case "MM":
-		bo = binary.BigEndian
-	default:
-		return dpi
+	switch resolutionUnit {
+	case 2:
+		dpi.Horizontal = int(math.Round(xResolution))
+		dpi.Vertical = int(math.Round(yResolution))
+	case 3:
+		dpi.Horizontal = int(math.Round(xResolution * 2.54))
+		dpi.Vertical = int(math.Round(yResolution * 2.54))
 	}
-
-	if bo.Uint16(tiffData[2:4]) != 0x002A {
-		return dpi
-	}
-
-	ifdOffset := int(bo.Uint32(tiffData[4:8]))
-	if ifdOffset+2 > len(tiffData) {
-		return dpi
-	}
-
-	numEntries := int(bo.Uint16(tiffData[ifdOffset : ifdOffset+2]))
-	ifdOffset += 2
-
-	var xResolution, yResolution float64
-	resolutionUnit := 2
-
-	for i := 0; i < numEntries; i++ {
-		entryOff := ifdOffset + i*12
-		if entryOff+12 > len(tiffData) {
-			break
-		}
-
-		tag := bo.Uint16(tiffData[entryOff : entryOff+2])
-		fieldType := bo.Uint16(tiffData[entryOff+2 : entryOff+4])
-		_ = bo.Uint32(tiffData[entryOff+4 : entryOff+8])
-		valueOffset := bo.Uint32(tiffData[entryOff+8 : entryOff+12])
-
-		switch tag {
-		case 0x011A:
-			xResolution = parseTiffRational(bo, tiffData, int(valueOffset))
-		case 0x011B:
-			yResolution = parseTiffRational(bo, tiffData, int(valueOffset))
-		case 0x0128:
-			if fieldType == 3 {
-				resolutionUnit = int(valueOffset)
-			}
-		}
-	}
-
-	if xResolution > 0 && yResolution > 0 {
-		switch resolutionUnit {
-		case 2:
-			dpi.Horizontal = int(math.Round(xResolution))
-			dpi.Vertical = int(math.Round(yResolution))
-		case 3:
-			dpi.Horizontal = int(math.Round(xResolution * 2.54))
-			dpi.Vertical = int(math.Round(yResolution * 2.54))
-		}
-	}
-
 	return dpi
 }
 

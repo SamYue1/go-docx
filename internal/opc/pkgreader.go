@@ -36,46 +36,6 @@ func (pr *PackageReader) IterSparts() []*SerializedPart {
 	return pr.sparts
 }
 
-// IterSrels returns a new SRELIterator that yields items for the package
-// and every serialised part, allowing traversal of all relationship sources.
-func (pr *PackageReader) IterSrels() *SRELIterator {
-	return &SRELIterator{
-		pkgRels: pr.pkgRels,
-		sparts:  pr.sparts,
-	}
-}
-
-// SRELIterator iterates over all relationship sources in a PackageReader:
-// first the package root, then each serialised part.
-type SRELIterator struct {
-	pkgRels *SerializedRelationships
-	sparts  []*SerializedPart
-	pkgDone bool
-	partIdx int
-}
-
-// SRELItem represents a single relationship source yielded by SRELIterator:
-// the source part's URI and (currently unused) serialised relationship.
-type SRELItem struct {
-	SourceURI PackURI
-	Srel      *SerializedRelationship
-}
-
-// Next returns the next relationship source, or nil when all sources have
-// been yielded. It first emits the package root, then iterates through parts.
-func (it *SRELIterator) Next() *SRELItem {
-	if !it.pkgDone {
-		it.pkgDone = true
-		return &SRELItem{SourceURI: PACKAGE_URI, Srel: nil}
-	}
-	for it.partIdx < len(it.sparts) {
-		spart := it.sparts[it.partIdx]
-		it.partIdx++
-		return &SRELItem{SourceURI: spart.partname, Srel: nil}
-	}
-	return nil
-}
-
 // ContentTypeMap maps part URIs (via Override) and file extensions (via
 // Default) to their OPC content types, as declared in [Content_Types].xml.
 type ContentTypeMap struct {
