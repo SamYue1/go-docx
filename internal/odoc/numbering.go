@@ -18,7 +18,9 @@ type NumberingPart struct {
 // that serves as a template for list formatting. See python-docx's
 // NumberingPart and related classes.
 type NumberingDefinition struct {
-	name string
+	name        string
+	abstractNum *oxml.CT_AbstractNum
+	num         *oxml.CT_Num
 }
 
 // NewNumberingPart creates a new empty NumberingPart with no definitions.
@@ -32,8 +34,8 @@ func NewNumberingPartFromElement(el *dom.Element) *NumberingPart {
 	ct := &oxml.CT_Numbering{Element: el}
 	numLst := ct.Num_lst()
 	defs := make([]*NumberingDefinition, len(numLst))
-	for i := range numLst {
-		defs[i] = &NumberingDefinition{name: ""}
+	for i, n := range numLst {
+		defs[i] = &NumberingDefinition{name: "", num: n}
 	}
 	return &NumberingPart{
 		definitions: defs,
@@ -48,9 +50,16 @@ func (np *NumberingPart) Definitions() []*NumberingDefinition {
 }
 
 // AddDefinition appends a new numbering definition with the given name and
-// returns it.
+// returns it. Creates the corresponding w:abstractNum and w:num XML elements.
 func (np *NumberingPart) AddDefinition(name string) *NumberingDefinition {
-	d := &NumberingDefinition{name: name}
+	if np.element == nil {
+		np.element = oxml.NewCT_Numbering()
+	}
+	abstractNum := np.element.AddAbstractNum()
+	abstractNum.SetAbstractNumId(len(np.definitions))
+	num := np.element.AddNum(len(np.definitions)+1, len(np.definitions))
+	d := &NumberingDefinition{name: name, abstractNum: abstractNum, num: num}
 	np.definitions = append(np.definitions, d)
+	np.numLst = append(np.numLst, num)
 	return d
 }

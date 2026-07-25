@@ -58,6 +58,26 @@ func NewCommentsFromCT(ct *oxml.CT_Comments) *Comments {
 	return c
 }
 
+// CT_Comments serializes the in-memory comments back into an oxml CT_Comments
+// XML element tree, suitable for writing to the comments part.
+func (c *Comments) CT_Comments() *oxml.CT_Comments {
+	ct := oxml.NewCT_Comments()
+	for _, cm := range c.items {
+		cmt := oxml.NewCT_Comment(cm.commentID, cm.author)
+		if cm.initials != "" {
+			cmt.SetInitials(cm.initials)
+		}
+		if cm.timestamp != "" {
+			cmt.SetDate(cm.timestamp)
+		}
+		for _, p := range cm.paragraphs {
+			cmt.Element.AddChild(p.CT_P().Element)
+		}
+		ct.Element.AddChild(cmt.Element)
+	}
+	return ct
+}
+
 // Add creates a new empty comment and appends it to the collection. The
 // comment is assigned an auto-incrementing ID and a paragraph with the
 // "CommentText" style.

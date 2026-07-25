@@ -42,6 +42,26 @@ func (n *CT_Numbering) AddNum(numId, abstractNumId int) *CT_Num {
 	return num
 }
 
+// CT_AbstractNum maps to w:abstractNum — a numbering definition template
+// that specifies list formatting for all levels. Referenced by w:num via w:abstractNumId.
+type CT_AbstractNum struct {
+	*dom.Element
+}
+
+// SetAbstractNumId sets the w:abstractNumId attribute on the abstractNum element.
+func (a *CT_AbstractNum) SetAbstractNumId(id int) {
+	a.Element.SetAttr(ns.NsMap["w"], "abstractNumId", strconv.Itoa(id))
+}
+
+// AddAbstractNum creates a new w:abstractNum element and appends it to the
+// numbering element, returning the new CT_AbstractNum.
+func (n *CT_Numbering) AddAbstractNum() *CT_AbstractNum {
+	el := dom.NewElement(ns.NsMap["w"], "abstractNum")
+	a := &CT_AbstractNum{Element: el}
+	n.Element.AddChild(el)
+	return a
+}
+
 // CT_Num maps to w:num — a concrete numbering instance referencing an abstract
 // numbering definition via w:abstractNumId.
 type CT_Num struct {

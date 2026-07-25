@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 
 	"github.com/SamYue1/go-docx/internal/image"
 	"github.com/SamYue1/go-docx/internal/opc"
@@ -109,6 +110,7 @@ type Document struct {
 	commentsLazy     lazy[*Comments]
 	numberingLazy    lazy[*NumberingPart]
 	inlineShapesLazy lazy[*InlineShapes]
+	commentsChanged  bool
 }
 
 // NewDocument creates a new empty Document with a default single-section body,
@@ -135,11 +137,11 @@ func NewDocument() *Document {
 }
 
 // openFromPkg constructs a Document from an already-opened OPC package by
-// locating the main document part. Returns nil if no main document part exists.
+// locating the main document part. Returns an error if no main document part exists.
 func openFromPkg(pkg *Package) (*Document, error) {
 	mainPart := pkg.MainDocumentPart()
 	if mainPart == nil {
-		return nil, nil
+		return nil, fmt.Errorf("odoc: no main document part found in package")
 	}
 	dp := parts.NewDocumentPart(mainPart)
 	return &Document{part: dp, pkg: pkg}, nil
@@ -604,6 +606,9 @@ func (d *Document) CoreProperties() *opc.CoreProperties {
 // Save writes the document to the given file path. All in-memory changes are
 // serialized to the OPC package before writing.
 func (d *Document) Save(path string) error {
+	if err := d.saveComments(); err != nil {
+		return err
+	}
 	d.part.Save()
 	return d.pkg.SaveToPath(path)
 }
@@ -611,8 +616,37 @@ func (d *Document) Save(path string) error {
 // SaveToWriter writes the document to the given io.Writer. All in-memory
 // changes are serialized to the OPC package before writing.
 func (d *Document) SaveToWriter(w io.Writer) error {
+	if err := d.saveComments(); err != nil {
+		return err
+	}
 	d.part.Save()
 	return d.pkg.SaveToWriter(w)
+}
+
+// saveComments serializes comments to XML and writes them to the comments part.
+// If no comments part exists, one is created and related to the document part.
+func (d *Document) saveComments() error {
+	if !d.commentsChanged {
+		return nil
+	}
+	comments := d.Comments()
+	if comments == nil || comments.Len() == 0 {
+		return nil
+	}
+	ct := comments.CT_Comments()
+	blob := []byte(ct.String())
+	if d.commentsPart == nil {
+		partname, err := opc.NewPackURI("/word/comments.xml")
+		if err != nil {
+			return err
+		}
+		contentType := "application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"
+		d.commentsPart = opc.NewPart(partname, contentType, blob, d.pkg.OpcPackage)
+		d.part.Part().RelateTo(d.commentsPart, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments", false)
+	} else {
+		d.commentsPart.SetBlob(blob)
+	}
+	return nil
 }
 
 // loadCommentsPart locates and caches the comments relationship part
@@ -656,6 +690,7 @@ func (d *Document) AddComment(text, author, initials string) *Comment {
 	if text != "" {
 		cm.paragraphs[0].AddRun(text)
 	}
+	d.commentsChanged = true
 	return cm
 }
 
@@ -685,8 +720,43 @@ func (d *Document) NumberingPart() *NumberingPart {
 // Document.inline_shapes.
 func (d *Document) InlineShapes() *InlineShapes {
 	return d.inlineShapesLazy.Get(func() *InlineShapes {
-		return NewInlineShapes()
+		return newInlineShapesFromDocument(d)
 	})
+}
+
+// newInlineShapesFromDocument scans the document body for w:drawing elements
+// within existing runs and returns the discovered InlineShapes collection.
+func newInlineShapesFromDocument(d *Document) *InlineShapes {
+	is := NewInlineShapes()
+	for _, p := range d.Paragraphs() {
+		for _, r := range p.Runs() {
+			for _, child := range r.CT_R().Element.Children() {
+				if child.ClarkTag() == ns.Qn("w:drawing") {
+					shp := NewInlineShape("WD_INLINE_SHAPE.PICTURE", 0, 0)
+					for _, inline := range child.Children() {
+						if inline.ClarkTag() == ns.Qn("wp:inline") {
+							for _, ext := range inline.Children() {
+								if ext.ClarkTag() == ns.Qn("wp:extent") {
+									if cxStr, hasCX := ext.GetAttr("", "cx"); hasCX {
+										if cx, err := strconv.ParseInt(cxStr, 10, 64); err == nil {
+											shp.width = shared.Length(cx)
+										}
+									}
+									if cyStr, hasCY := ext.GetAttr("", "cy"); hasCY {
+										if cy, err := strconv.ParseInt(cyStr, 10, 64); err == nil {
+											shp.height = shared.Length(cy)
+										}
+									}
+								}
+							}
+						}
+					}
+					is.Add(shp)
+				}
+			}
+		}
+	}
+	return is
 }
 
 // IterInnerContent returns paragraphs and tables in document order.
