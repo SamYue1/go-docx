@@ -26,13 +26,13 @@ import (
 // See python-docx's Document class for conceptual alignment.
 
 type Document struct {
-	part              *parts.DocumentPart
-	pkg               *opc.OpcPackage
-	stylesPart        *parts.StylesPart
-	comments          *Comments
-	commentsPart      *opc.Part
-	numberingState    *NumberingPart
-	inlineShapesState *InlineShapes
+	part             *parts.DocumentPart
+	pkg              *opc.OpcPackage
+	commentsPart     *opc.Part
+	stylesLazy       lazy[*parts.StylesPart]
+	commentsLazy     lazy[*Comments]
+	numberingLazy    lazy[*NumberingPart]
+	inlineShapesLazy lazy[*InlineShapes]
 }
 
 // NewDocument creates a new empty Document with a default single-section body,
@@ -215,29 +215,33 @@ func (d *Document) Sections() []*osect.Section {
 // (e.g., in a new document), a default set of styles (Normal, DefaultParagraphFont,
 // TableNormal, NoList) is created. Equivalent to python-docx Document.styles.
 func (d *Document) Styles() *styles.Styles {
-	if d.stylesPart == nil {
-		sp := d.part.StylesPart()
-		if sp == nil {
-			ct := oxml.NewCT_Styles()
-			ct.GetOrAddLatentStyles()
-
-			addStyleWithName := func(typ, styleId, name string) {
-				s := ct.AddStyle()
-				s.SetType(typ)
-				s.SetStyleId(styleId)
-				nameEl := dom.NewElement(ns.NsMap["w"], "name")
-				nameEl.SetAttr(ns.NsMap["w"], "val", name)
-				s.Element.AddChild(nameEl)
-			}
-			addStyleWithName("paragraph", "Normal", "Normal")
-			addStyleWithName("character", "DefaultParagraphFont", "Default Paragraph Font")
-			addStyleWithName("table", "TableNormal", "Normal Table")
-			addStyleWithName("numbering", "NoList", "No List")
-			return styles.NewStyles(ct)
+	sp := d.stylesLazy.Get(func() *parts.StylesPart {
+		p := d.part.StylesPart()
+		if p != nil {
+			return parts.NewStylesPart(p)
 		}
-		d.stylesPart = parts.NewStylesPart(sp)
+		return nil
+	})
+	if sp != nil {
+		return sp.Styles()
 	}
-	return d.stylesPart.Styles()
+
+	ct := oxml.NewCT_Styles()
+	ct.GetOrAddLatentStyles()
+
+	addStyleWithName := func(typ, styleId, name string) {
+		s := ct.AddStyle()
+		s.SetType(typ)
+		s.SetStyleId(styleId)
+		nameEl := dom.NewElement(ns.NsMap["w"], "name")
+		nameEl.SetAttr(ns.NsMap["w"], "val", name)
+		s.Element.AddChild(nameEl)
+	}
+	addStyleWithName("paragraph", "Normal", "Normal")
+	addStyleWithName("character", "DefaultParagraphFont", "Default Paragraph Font")
+	addStyleWithName("table", "TableNormal", "Normal Table")
+	addStyleWithName("numbering", "NoList", "No List")
+	return styles.NewStyles(ct)
 }
 
 // Settings returns the document-level settings (w:settings element).
@@ -457,23 +461,19 @@ func (d *Document) loadCommentsPart() {
 // exists, it is parsed; otherwise an empty Comments collection is created.
 // Equivalent to python-docx document.comments.
 func (d *Document) Comments() *Comments {
-	if d.comments != nil {
-		return d.comments
-	}
-	d.loadCommentsPart()
-	if d.commentsPart != nil {
-		blob := d.commentsPart.Blob()
-		if len(blob) > 0 {
-			el, err := dom.Parse(blob)
-			if err == nil && el != nil {
-				ct := &oxml.CT_Comments{Element: el}
-				d.comments = NewCommentsFromCT(ct)
-				return d.comments
+	return d.commentsLazy.Get(func() *Comments {
+		d.loadCommentsPart()
+		if d.commentsPart != nil {
+			blob := d.commentsPart.Blob()
+			if len(blob) > 0 {
+				el, err := dom.Parse(blob)
+				if err == nil && el != nil {
+					return NewCommentsFromCT(&oxml.CT_Comments{Element: el})
+				}
 			}
 		}
-	}
-	d.comments = NewComments()
-	return d.comments
+		return NewComments()
+	})
 }
 
 // AddComment adds a new comment to the document with the given text, author,
@@ -493,7 +493,7 @@ func (d *Document) AddComment(text, author, initials string) *Comment {
 // exists, a new empty one is created. Equivalent to python-docx
 // document.part.numbering_part.
 func (d *Document) NumberingPart() *NumberingPart {
-	if d.numberingState == nil {
+	return d.numberingLazy.Get(func() *NumberingPart {
 		relType := "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering"
 		numPart := d.part.Part().PartRelatedBy(relType)
 		if numPart != nil {
@@ -501,24 +501,21 @@ func (d *Document) NumberingPart() *NumberingPart {
 			if len(blob) > 0 {
 				el, err := dom.Parse(blob)
 				if err == nil && el != nil {
-					d.numberingState = NewNumberingPartFromElement(el)
-					return d.numberingState
+					return NewNumberingPartFromElement(el)
 				}
 			}
 		}
-		d.numberingState = NewNumberingPart()
-	}
-	return d.numberingState
+		return NewNumberingPart()
+	})
 }
 
 // InlineShapes returns the document's inline shapes collection (pictures,
 // drawings inserted inline with text). Equivalent to python-docx
 // Document.inline_shapes.
 func (d *Document) InlineShapes() *InlineShapes {
-	if d.inlineShapesState == nil {
-		d.inlineShapesState = NewInlineShapes()
-	}
-	return d.inlineShapesState
+	return d.inlineShapesLazy.Get(func() *InlineShapes {
+		return NewInlineShapes()
+	})
 }
 
 // IterInnerContent returns paragraphs and tables in document order.
