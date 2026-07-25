@@ -1,6 +1,12 @@
 // Package odoc provides the core document implementation for opening, creating,
 // saving, and manipulating WordprocessingML documents. It wraps the lower-level
 // OPC package and OOXML types to present a Document-centric API.
+//
+// Responsibility boundaries:
+//   - Document: high-level user API (AddParagraph, AddTable, AddSection, etc.)
+//   - _Body: low-level block item container (paragraphs/tables via DOM traversal)
+//   - Package: Word-layer package management (core properties, image parts, save)
+//   - PartProvider: parent-chain for content objects to access document part
 package odoc
 
 import (
@@ -21,6 +27,12 @@ import (
 	"github.com/SamYue1/go-docx/internal/parts"
 	"github.com/SamYue1/go-docx/internal/shared"
 	"github.com/SamYue1/go-docx/internal/styles"
+)
+
+const (
+	defaultPageW  = 12240 // twips, US Letter width
+	defaultLeftM  = 1800  // twips
+	defaultRightM = 1800  // twips
 )
 
 // isImageContentType returns true if the given content type is a supported image type.
@@ -394,9 +406,9 @@ func colWidthFromSectPr(sectPr *oxml.CT_SectPr, cols int) int {
 	if sectPr == nil || cols == 0 {
 		return 0
 	}
-	pageW := 12240
-	leftM := 1800
-	rightM := 1800
+	pageW := defaultPageW
+	leftM := defaultLeftM
+	rightM := defaultRightM
 	if pgSz := sectPr.PgSz(); pgSz != nil {
 		if w, ok := pgSz.W(); ok {
 			pageW = w
