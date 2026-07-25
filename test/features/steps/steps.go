@@ -310,6 +310,28 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		return nil
 	})
 
+	ctx.Step(`^I add a paragraph specifying its style as a style name$`, func() error {
+		s.paragraph = s.document.AddParagraph()
+		s.paragraph.SetStyle("Heading 1")
+		sty := s.document.Styles().Style("Heading 1")
+		if sty == nil {
+			sty = s.document.Styles().AddStyle("paragraph", "Heading 1")
+		}
+		s.style = sty
+		return nil
+	})
+
+	ctx.Step(`^I add a paragraph specifying its style as a style object$`, func() error {
+		style := s.document.Styles().Style("Heading 1")
+		if style == nil {
+			style = s.document.Styles().AddStyle("paragraph", "Heading 1")
+		}
+		s.style = style
+		s.paragraph = s.document.AddParagraph()
+		s.paragraph.SetStyle("Heading 1")
+		return nil
+	})
+
 	ctx.Step(`^I add a paragraph specifying its text$`, func() error {
 		s.paragraphText = "foobar"
 		s.paragraph = s.document.AddParagraph()
@@ -326,7 +348,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.document == nil {
 			return fmt.Errorf("no document")
 		}
-		s.document.AddPicture("test_image.png", docx.Inches(1.75), docx.Inches(2.5))
+		s.document.AddPicture(testFilePath("test.png"), docx.Inches(1.75), docx.Inches(2.5))
 		is := s.document.InlineShapes()
 		if is.Len() > 0 {
 			s.picture = is.Get(is.Len() - 1)
@@ -338,7 +360,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.document == nil {
 			return fmt.Errorf("no document")
 		}
-		s.document.AddPicture("test_image.png", docx.Inches(1), docx.Inches(1.5))
+		s.document.AddPicture(testFilePath("test.png"), docx.Inches(1), docx.Inches(1.5))
 		is := s.document.InlineShapes()
 		if is.Len() > 0 {
 			s.picture = is.Get(is.Len() - 1)
@@ -350,7 +372,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.document == nil {
 			return fmt.Errorf("no document")
 		}
-		s.document.AddPicture("test_image.png", docx.Inches(1.5), docx.Inches(1))
+		s.document.AddPicture(testFilePath("test.png"), docx.Inches(1.5), docx.Inches(1))
 		is := s.document.InlineShapes()
 		if is.Len() > 0 {
 			s.picture = is.Get(is.Len() - 1)
@@ -362,7 +384,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.document == nil {
 			return fmt.Errorf("no document")
 		}
-		s.document.AddPicture("test_image.png", 0, 0)
+		s.document.AddPicture(testFilePath("test.png"), 0, 0)
 		is := s.document.InlineShapes()
 		if is.Len() > 0 {
 			s.picture = is.Get(is.Len() - 1)
@@ -558,6 +580,32 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	})
 
 	ctx.Step(`^a Header object with paragraphs and tables as header$`, func() error {
+		err := openTestDoc(s, "hdr-header-footer")
+		if err != nil {
+			return err
+		}
+		sections := s.document.Sections()
+		if len(sections) == 0 {
+			return fmt.Errorf("no sections")
+		}
+		s.header = sections[0].Header()
+		return nil
+	})
+
+	ctx.Step(`^a Footer object with paragraphs and tables$`, func() error {
+		err := openTestDoc(s, "hdr-header-footer")
+		if err != nil {
+			return err
+		}
+		sections := s.document.Sections()
+		if len(sections) == 0 {
+			return fmt.Errorf("no sections")
+		}
+		s.footer = sections[0].Footer()
+		return nil
+	})
+
+	ctx.Step(`^a Header object with paragraphs and tables$`, func() error {
 		err := openTestDoc(s, "hdr-header-footer")
 		if err != nil {
 			return err
@@ -915,7 +963,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		return nil
 	})
 
-	ctx.Step(`^the paragraph alignment property value is (\w+)$`, func(alignValue string) error {
+	ctx.Step(`^the paragraph alignment property value is ([\w.]+)$`, func(alignValue string) error {
 		ensureParFormat(s)
 		mapping := map[string]string{
 			"None":                      "",
@@ -1201,6 +1249,17 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		return nil
 	})
 
+	ctx.Step(`^a table having an autofit layout of no explicit setting$`, func() error {
+		if err := openTestDoc(s, "tbl-props"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
+	})
+
 	ctx.Step(`^a table having (\w+(?: \w+)*) style$`, func(style string) error {
 		if err := openTestDoc(s, "tbl-having-applied-style"); err != nil {
 			return err
@@ -1221,6 +1280,20 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		return nil
 	})
 
+	ctx.Step(`^a table having Light Shading - Accent (\d+) style$`, func(n int) error {
+		if err := openTestDoc(s, "tbl-having-applied-style"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		idx := 2
+		if len(tables) > idx {
+			s.table = tables[idx]
+		} else if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
+	})
+
 	ctx.Step(`^a table having table direction set (\w+(?:-\w+)*)$`, func(setting string) error {
 		if err := openTestDoc(s, "tbl-on-off-props"); err != nil {
 			return err
@@ -1233,6 +1306,19 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		}
 		if i, ok := idx[setting]; ok && i < len(tables) {
 			s.table = tables[i]
+		} else if len(tables) > 0 {
+			s.table = tables[0]
+		}
+		return nil
+	})
+
+	ctx.Step(`^a table having table direction set to inherit$`, func() error {
+		if err := openTestDoc(s, "tbl-on-off-props"); err != nil {
+			return err
+		}
+		tables := extractTables(s)
+		if len(tables) > 0 {
+			s.table = tables[0]
 		} else if len(tables) > 0 {
 			s.table = tables[0]
 		}
@@ -1369,7 +1455,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		return nil
 	})
 
-	ctx.Step(`^I assign (\w+) to cell\.vertical_alignment$`, func(value string) error {
+	ctx.Step(`^I assign ([\w.]+) to cell\.vertical_alignment$`, func(value string) error {
 		if s.cell == nil {
 			return fmt.Errorf("no cell")
 		}
@@ -1437,6 +1523,38 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		} else {
 			s.table.SetStyle(value)
 		}
+		return nil
+	})
+
+	ctx.Step(`^I assign Normal Table to table\.style$`, func() error {
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
+		s.table.SetStyle("Normal Table")
+		return nil
+	})
+
+	ctx.Step(`^I assign Table Grid to table\.style$`, func() error {
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
+		s.table.SetStyle("Table Grid")
+		return nil
+	})
+
+	ctx.Step(`^I assign styles\[\'Normal Table\'\] to table\.style$`, func() error {
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
+		s.table.SetStyle("Normal Table")
+		return nil
+	})
+
+	ctx.Step(`^I assign styles\[\'Table Grid\'\] to table\.style$`, func() error {
+		if s.table == nil {
+			return fmt.Errorf("no table")
+		}
+		s.table.SetStyle("Table Grid")
 		return nil
 	})
 
@@ -2768,6 +2886,22 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		return nil
 	})
 
+	ctx.Step(`^I assign styles\[\'Emphasis\'\] to run\.style$`, func() error {
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
+		s.run.SetStyle("Emphasis")
+		return nil
+	})
+
+	ctx.Step(`^I assign styles\[\'Strong\'\] to run\.style$`, func() error {
+		if s.run == nil {
+			return fmt.Errorf("no run")
+		}
+		s.run.SetStyle("Strong")
+		return nil
+	})
+
 	ctx.Step(`^I clear the run$`, func() error {
 		s.run.Clear()
 		return nil
@@ -3053,11 +3187,21 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.document == nil {
 			return fmt.Errorf("no document")
 		}
-		paras := s.document.Paragraphs()
-		if len(paras) > 0 && len(paras[0].Runs()) > 0 {
-			s.font = paras[0].Runs()[0].Font()
+		if name == "not specified" {
+			paras := s.document.Paragraphs()
+			if len(paras) > 0 && len(paras[0].Runs()) > 0 {
+				s.font = paras[0].Runs()[0].Font()
+			}
+			return nil
 		}
-		return nil
+		for _, style := range s.document.Styles().List() {
+			f := style.Font()
+			if f != nil && f.Name() == name {
+				s.font = f
+				return nil
+			}
+		}
+		return fmt.Errorf("no font")
 	})
 
 	ctx.Step(`^a font having (\w+(?:-\w+)*) underline$`, func(underlineType string) error {
@@ -3154,8 +3298,39 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.font == nil {
 			return fmt.Errorf("no font")
 		}
-		if value != "None" {
+		if value == "None" {
+			s.font.SetName("")
+		} else {
 			s.font.SetName(value)
+		}
+		return nil
+	})
+
+	ctx.Step(`^I assign Avenir Black to font\.name$`, func() error {
+		if s.font == nil {
+			return fmt.Errorf("no font")
+		}
+		s.font.SetName("Avenir Black")
+		return nil
+	})
+
+	ctx.Step(`^font\.name is Avenir Black$`, func() error {
+		if s.font == nil {
+			return fmt.Errorf("no font")
+		}
+		actual := s.font.Name()
+		if actual != "Avenir Black" {
+			return fmt.Errorf("expected font name 'Avenir Black', got '%s'", actual)
+		}
+		return nil
+	})
+
+	ctx.Step(`^font\.name is None$`, func() error {
+		if s.font == nil {
+			return nil
+		}
+		if name := s.font.Name(); name != "" {
+			return fmt.Errorf("expected no font name, got %q", name)
 		}
 		return nil
 	})
@@ -3486,18 +3661,30 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.document == nil || s.document.Styles() == nil {
 			return fmt.Errorf("no styles")
 		}
-		styleName := baseStyle
 		if baseStyle == "no style" {
-			styleName = "Normal"
-		}
-		s.style = s.document.Styles().Style(styleName)
-		if s.style == nil {
-			return fmt.Errorf("no style")
+			s.style = s.document.Styles().AddStyle("paragraph", "TestNoBase")
+		} else {
+			s.style = s.document.Styles().AddStyle("paragraph", "TestBased")
+			s.style.SetBaseStyle(baseStyle)
 		}
 		return nil
 	})
 
 	ctx.Step(`^a style having a known (\w+)$`, func(attrName string) error {
+		if err := openTestDoc(s, "sty-having-styles-part"); err != nil {
+			return err
+		}
+		if s.document == nil || s.document.Styles() == nil {
+			return fmt.Errorf("no styles")
+		}
+		s.style = s.document.Styles().Style("Normal")
+		if s.style == nil {
+			return fmt.Errorf("Normal style not found")
+		}
+		return nil
+	})
+
+	ctx.Step(`^a style having a known style id$`, func() error {
 		if err := openTestDoc(s, "sty-having-styles-part"); err != nil {
 			return err
 		}
@@ -3717,9 +3904,27 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		if s.style == nil {
 			return fmt.Errorf("no style")
 		}
-		if valueKey != "None" {
-			s.style.SetBaseStyle("Normal")
+		if valueKey == "None" || valueKey == "" {
+			s.style.ClearBaseStyle()
+		} else {
+			s.style.SetBaseStyle(valueKey)
 		}
+		return nil
+	})
+
+	ctx.Step(`^I assign styles\[\'Normal\'\] to style\.base_style$`, func() error {
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		s.style.SetBaseStyle("Normal")
+		return nil
+	})
+
+	ctx.Step(`^I assign styles\[\'Base\'\] to style\.base_style$`, func() error {
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		s.style.SetBaseStyle("Base")
 		return nil
 	})
 
@@ -4093,6 +4298,34 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		}
 		if baseName != valueKey {
 			return fmt.Errorf("expected base style %q, got %q", valueKey, baseName)
+		}
+		return nil
+	})
+
+	ctx.Step(`^style\.base_style is styles\[\'Normal\'\]$`, func() error {
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		baseName, ok := s.style.BaseStyle()
+		if !ok {
+			return fmt.Errorf("expected base style 'Normal', got none")
+		}
+		if baseName != "Normal" {
+			return fmt.Errorf("expected base style 'Normal', got %q", baseName)
+		}
+		return nil
+	})
+
+	ctx.Step(`^style\.base_style is styles\[\'Base\'\]$`, func() error {
+		if s.style == nil {
+			return fmt.Errorf("no style")
+		}
+		baseName, ok := s.style.BaseStyle()
+		if !ok {
+			return fmt.Errorf("expected base style 'Base', got none")
+		}
+		if baseName != "Base" {
+			return fmt.Errorf("expected base style 'Base', got %q", baseName)
 		}
 		return nil
 	})
@@ -4508,6 +4741,48 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		return nil
 	})
 
+	ctx.Step(`^a paragraph format having first_line indent of (\d+) pt$`, func(pt int) error {
+		s.document = docx.NewDocument()
+		s.paragraph = s.document.AddParagraph()
+		pf := s.paragraph.ParagraphFormat()
+		pf.SetFirstLineIndent(docx.Pt(float64(pt)))
+		s.paragraphFormat = pf
+		return nil
+	})
+
+	ctx.Step(`^a paragraph format having first_line indent of -(\d+)\.(\d+) pt$`, func(whole, frac int) error {
+		s.document = docx.NewDocument()
+		s.paragraph = s.document.AddParagraph()
+		pf := s.paragraph.ParagraphFormat()
+		sv := strconv.Itoa(whole) + "." + strconv.Itoa(frac)
+		v, _ := strconv.ParseFloat(sv, 64)
+		pf.SetFirstLineIndent(docx.Pt(-v))
+		s.paragraphFormat = pf
+		return nil
+	})
+
+	ctx.Step(`^a paragraph format having left indent of (\d+)\.(\d+) pt$`, func(whole, frac int) error {
+		s.document = docx.NewDocument()
+		s.paragraph = s.document.AddParagraph()
+		pf := s.paragraph.ParagraphFormat()
+		sv := strconv.Itoa(whole) + "." + strconv.Itoa(frac)
+		v, _ := strconv.ParseFloat(sv, 64)
+		pf.SetLeftIndent(docx.Pt(v))
+		s.paragraphFormat = pf
+		return nil
+	})
+
+	ctx.Step(`^a paragraph format having right indent of (\d+)\.(\d+) pt$`, func(whole, frac int) error {
+		s.document = docx.NewDocument()
+		s.paragraph = s.document.AddParagraph()
+		pf := s.paragraph.ParagraphFormat()
+		sv := strconv.Itoa(whole) + "." + strconv.Itoa(frac)
+		v, _ := strconv.ParseFloat(sv, 64)
+		pf.SetRightIndent(docx.Pt(v))
+		s.paragraphFormat = pf
+		return nil
+	})
+
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to paragraph_format\.line_spacing$`, func(value string) error {
 		ensureParFormat(s)
 		if value == "Pt(14)" {
@@ -4520,6 +4795,25 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			s.paragraphFormat.SetLineSpacing(int(v * 240))
 			s.paragraphFormat.SetLineSpacingRule("auto")
 		}
+		return nil
+	})
+
+	ctx.Step(`^I assign Pt\((\d+)\) to paragraph_format\.line_spacing$`, func(pt int) error {
+		ensureParFormat(s)
+		s.paragraphFormat.SetLineSpacing(pt * 20)
+		s.paragraphFormat.SetLineSpacingRule("exactly")
+		return nil
+	})
+
+	ctx.Step(`^I assign Pt\((\d+)\) to paragraph_format\.space_before$`, func(pt int) error {
+		ensureParFormat(s)
+		s.paragraphFormat.SetSpaceBefore(docx.Pt(float64(pt)))
+		return nil
+	})
+
+	ctx.Step(`^I assign Pt\((\d+)\) to paragraph_format\.space_after$`, func(pt int) error {
+		ensureParFormat(s)
+		s.paragraphFormat.SetSpaceAfter(docx.Pt(float64(pt)))
 		return nil
 	})
 
@@ -4579,17 +4873,55 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to paragraph_format\.(\w+)_indent$`, func(value, type_ string) error {
 		ensureParFormat(s)
-		if value != "None" {
-			v := shared.Pt(18)
-			switch type_ {
-			case "left":
-				s.paragraphFormat.SetLeftIndent(v)
-			case "right":
-				s.paragraphFormat.SetRightIndent(v)
-			case "firstLine":
-				s.paragraphFormat.SetFirstLineIndent(v)
-			}
+		if value == "None" {
+			s.paragraphFormat.ClearIndent()
+			return nil
 		}
+		v := shared.Pt(18)
+		switch type_ {
+		case "left":
+			s.paragraphFormat.SetLeftIndent(v)
+		case "right":
+			s.paragraphFormat.SetRightIndent(v)
+		case "first_line":
+			s.paragraphFormat.SetFirstLineIndent(v)
+		}
+		return nil
+	})
+
+	ctx.Step(`^I assign (\d+) pt to paragraph_format\.first_line_indent$`, func(pt int) error {
+		ensureParFormat(s)
+		s.paragraphFormat.SetFirstLineIndent(docx.Pt(float64(pt)))
+		return nil
+	})
+
+	ctx.Step(`^I assign -(\d+) pt to paragraph_format\.first_line_indent$`, func(pt int) error {
+		ensureParFormat(s)
+		s.paragraphFormat.SetFirstLineIndent(docx.Pt(-float64(pt)))
+		return nil
+	})
+
+	ctx.Step(`^I assign (\d+) pt to paragraph_format\.left_indent$`, func(pt int) error {
+		ensureParFormat(s)
+		s.paragraphFormat.SetLeftIndent(docx.Pt(float64(pt)))
+		return nil
+	})
+
+	ctx.Step(`^I assign -(\d+) pt to paragraph_format\.left_indent$`, func(pt int) error {
+		ensureParFormat(s)
+		s.paragraphFormat.SetLeftIndent(docx.Pt(-float64(pt)))
+		return nil
+	})
+
+	ctx.Step(`^I assign (\d+) pt to paragraph_format\.right_indent$`, func(pt int) error {
+		ensureParFormat(s)
+		s.paragraphFormat.SetRightIndent(docx.Pt(float64(pt)))
+		return nil
+	})
+
+	ctx.Step(`^I assign -(\d+) pt to paragraph_format\.right_indent$`, func(pt int) error {
+		ensureParFormat(s)
+		s.paragraphFormat.SetRightIndent(docx.Pt(-float64(pt)))
 		return nil
 	})
 
@@ -4751,6 +5083,45 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return nil
 		}
 		expected, _ := strconv.Atoi(value)
+		if actual == nil {
+			return fmt.Errorf("expected %d, got nil", expected)
+		}
+		if int(*actual) != expected {
+			return fmt.Errorf("expected %d, got %d", expected, int(*actual))
+		}
+		return nil
+	})
+
+	ctx.Step(`^paragraph_format\.first_line_indent is -(\d+)$`, func(val int) error {
+		ensureParFormat(s)
+		actual := s.paragraphFormat.FirstLineIndent()
+		expected := -val
+		if actual == nil {
+			return fmt.Errorf("expected %d, got nil", expected)
+		}
+		if int(*actual) != expected {
+			return fmt.Errorf("expected %d, got %d", expected, int(*actual))
+		}
+		return nil
+	})
+
+	ctx.Step(`^paragraph_format\.left_indent is -(\d+)$`, func(val int) error {
+		ensureParFormat(s)
+		actual := s.paragraphFormat.LeftIndent()
+		expected := -val
+		if actual == nil {
+			return fmt.Errorf("expected %d, got nil", expected)
+		}
+		if int(*actual) != expected {
+			return fmt.Errorf("expected %d, got %d", expected, int(*actual))
+		}
+		return nil
+	})
+
+	ctx.Step(`^paragraph_format\.right_indent is -(\d+)$`, func(val int) error {
+		ensureParFormat(s)
+		actual := s.paragraphFormat.RightIndent()
+		expected := -val
 		if actual == nil {
 			return fmt.Errorf("expected %d, got nil", expected)
 		}
@@ -4946,6 +5317,14 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		return nil
 	})
 
+	ctx.Step(`^I assign -(\d+) to tab_stop\.position$`, func(val int) error {
+		if s.tabStop == nil {
+			return fmt.Errorf("no tab stop")
+		}
+		s.tabStop.SetPosition(-val)
+		return nil
+	})
+
 	ctx.Step(`^I call tab_stops\.clear_all\(\)$`, func() error {
 		if s.tabStops == nil {
 			return fmt.Errorf("no tab stops")
@@ -5033,6 +5412,21 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no tab stop")
 		}
 		expected, _ := strconv.Atoi(position)
+		pos := s.tabStop.Position()
+		if pos == nil {
+			return fmt.Errorf("expected %d, got nil", expected)
+		}
+		if int(*pos) != expected {
+			return fmt.Errorf("expected %d, got %d", expected, int(*pos))
+		}
+		return nil
+	})
+
+	ctx.Step(`^tab_stop\.position is -(\d+)$`, func(val int) error {
+		if s.tabStop == nil {
+			return fmt.Errorf("no tab stop")
+		}
+		expected := -val
 		pos := s.tabStop.Position()
 		if pos == nil {
 			return fmt.Errorf("expected %d, got nil", expected)
@@ -6214,6 +6608,17 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		}
 		s.inlineShapes = s.document.InlineShapes()
 		s.inlineShape = docx.NewInlineShape("WD_INLINE_SHAPE.PICTURE", docx.Inches(2), docx.Inches(3))
+		s.inlineShapes.Add(s.inlineShape)
+		return nil
+	})
+
+	ctx.Step(`^an inline shape known to be a link\+embed picture$`, func() error {
+		err := openTestDoc(s, "shp-inline-shape-access")
+		if err != nil {
+			return err
+		}
+		s.inlineShapes = s.document.InlineShapes()
+		s.inlineShape = docx.NewInlineShape("WD_INLINE_SHAPE.LINKED_PICTURE", docx.Inches(1), docx.Inches(1))
 		s.inlineShapes.Add(s.inlineShape)
 		return nil
 	})

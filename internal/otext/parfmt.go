@@ -107,6 +107,18 @@ func (pf *ParagraphFormat) SetFirstLineIndent(length shared.Length) {
 	ind.SetFirstLine(length)
 }
 
+// ClearIndent removes the indentation element entirely.
+// After calling this, FirstLineIndent, LeftIndent, RightIndent all return nil.
+func (pf *ParagraphFormat) ClearIndent() {
+	if pf == nil || pf.pPr == nil {
+		return
+	}
+	ind := pf.pPr.Ind()
+	if ind != nil {
+		pf.pPr.Element.RemoveChild(ind.Element)
+	}
+}
+
 // LeftIndent returns the left indentation as a Length, or nil if not set.
 func (pf *ParagraphFormat) LeftIndent() *shared.Length {
 	if pf == nil || pf.pPr == nil {

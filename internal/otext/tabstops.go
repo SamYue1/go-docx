@@ -79,12 +79,36 @@ func (ts *TabStops) Len() int {
 }
 
 // Get returns the TabStop at the given index, or nil if out of range.
+// Tab stops are returned in position-sorted order.
 func (ts *TabStops) Get(idx int) *TabStop {
-	tabs := ts.tabs.Tab_lst()
+	tabs := ts.sortedTabs()
 	if idx < 0 || idx >= len(tabs) {
 		return nil
 	}
 	return &TabStop{tab: tabs[idx]}
+}
+
+// sortedTabs returns tab stop elements sorted by position (ascending).
+func (ts *TabStops) sortedTabs() []*text.CT_TabStop {
+	tabs := ts.tabs.Tab_lst()
+	sorted := make([]*text.CT_TabStop, len(tabs))
+	copy(sorted, tabs)
+	for i := 0; i < len(sorted); i++ {
+		for j := i + 1; j < len(sorted); j++ {
+			pi := tabStopRawPos(sorted[i])
+			pj := tabStopRawPos(sorted[j])
+			if pi > pj {
+				sorted[i], sorted[j] = sorted[j], sorted[i]
+			}
+		}
+	}
+	return sorted
+}
+
+// tabStopRawPos extracts the raw position value from a tab stop element.
+func tabStopRawPos(t *text.CT_TabStop) int {
+	v, _ := t.Pos()
+	return v
 }
 
 // Remove removes the tab stop at the given index. If the collection becomes empty,

@@ -220,6 +220,17 @@ func (s *Style) SetBaseStyle(name string) {
 	}
 }
 
+// ClearBaseStyle removes the basedOn element, making this style not based on any other style.
+func (s *Style) ClearBaseStyle() {
+	if s == nil || s.style == nil {
+		return
+	}
+	b := s.style.BasedOn()
+	if b != nil {
+		s.style.Element.RemoveChild(b.Element)
+	}
+}
+
 // NextStyle returns the name of the next (following) paragraph style, and whether it was set.
 func (s *Style) NextStyle() (string, bool) {
 	if s == nil || s.style == nil {
