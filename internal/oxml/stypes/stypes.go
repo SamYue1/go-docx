@@ -63,7 +63,11 @@ func (STOnOff) ToXML(v any) (string, error) {
 	if err := (STOnOff{}).Validate(v); err != nil {
 		return "", err
 	}
-	if v.(bool) {
+	b, ok := v.(bool)
+	if !ok {
+		return "", fmt.Errorf("STOnOff: expected bool, got %T", v)
+	}
+	if b {
 		return "true", nil
 	}
 	return "false", nil
@@ -90,7 +94,11 @@ func (STDecimalNumber) ToXML(v any) (string, error) {
 	if err := (STDecimalNumber{}).Validate(v); err != nil {
 		return "", err
 	}
-	return strconv.Itoa(v.(int)), nil
+	n, ok := v.(int)
+	if !ok {
+		return "", fmt.Errorf("STDecimalNumber: expected int, got %T", v)
+	}
+	return strconv.Itoa(n), nil
 }
 
 // STString is a pass-through converter for OOXML ST_String values.
@@ -106,7 +114,11 @@ func (STString) ToXML(v any) (string, error) {
 	if err := (STString{}).Validate(v); err != nil {
 		return "", err
 	}
-	return v.(string), nil
+	s, ok := v.(string)
+	if !ok {
+		return "", fmt.Errorf("STString: expected string, got %T", v)
+	}
+	return s, nil
 }
 
 // STHexColor converts OOXML ST_HexColor values (6-digit hex, or "auto") to
@@ -127,7 +139,11 @@ func (STHexColor) ToXML(v any) (string, error) {
 	if err := (STHexColor{}).Validate(v); err != nil {
 		return "", err
 	}
-	return v.(shared.RGBColor).String(), nil
+	c, ok := v.(shared.RGBColor)
+	if !ok {
+		return "", fmt.Errorf("STHexColor: expected RGBColor, got %T", v)
+	}
+	return c.String(), nil
 }
 
 func (STHexColor) Validate(v any) error {

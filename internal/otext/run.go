@@ -102,8 +102,8 @@ func (rn *Run) Bold() bool {
 	return rn.Font().Bold()
 }
 
-// BoldSet enables or disables bold formatting on the run.
-func (rn *Run) BoldSet(val bool) {
+// SetBold enables or disables bold formatting on the run.
+func (rn *Run) SetBold(val bool) {
 	rn.Font().SetBold(val)
 }
 
@@ -112,8 +112,8 @@ func (rn *Run) Italic() bool {
 	return rn.Font().Italic()
 }
 
-// ItalicSet enables or disables italic formatting on the run.
-func (rn *Run) ItalicSet(val bool) {
+// SetItalic enables or disables italic formatting on the run.
+func (rn *Run) SetItalic(val bool) {
 	rn.Font().SetItalic(val)
 }
 

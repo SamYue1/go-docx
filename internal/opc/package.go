@@ -14,9 +14,9 @@ import (
 // relationships, provides access to all parts, and coordinates open/save
 // lifecycle (reading from zip, unmarshalling, marshalling, writing to zip).
 type OpcPackage struct {
-	rels             *Relationships
-	partFactory      func(PackURI, string, string, []byte) *Part
-	cachedCoreProps  *CoreProperties
+	rels            *Relationships
+	partFactory     func(PackURI, string, string, []byte) *Part
+	cachedCoreProps *CoreProperties
 }
 
 // NewOpcPackage creates and returns a new empty OpcPackage with no parts and

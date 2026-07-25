@@ -61,7 +61,7 @@ func (t *Table) Columns() []*Column {
 // Cell returns the cell at the given row and column indices.
 // Returns nil if either index is out of range.
 func (t *Table) Cell(rowIdx, colIdx int) *Cell {
-	if t == nil {
+	if t == nil || t.tbl == nil {
 		return nil
 	}
 	rows := t.Rows()
@@ -300,7 +300,7 @@ func (c *Column) SetWidth(width shared.Length) {
 
 // Cells returns all Cell objects in this column, one per row.
 func (c *Column) Cells() []*Cell {
-	if c == nil || c.table == nil {
+	if c == nil || c.table == nil || c.gridCol == nil {
 		return nil
 	}
 	var cells []*Cell
@@ -316,6 +316,9 @@ func (c *Column) Cells() []*Cell {
 
 // index returns the zero-based index of this column within the table grid.
 func (c *Column) index() int {
+	if c == nil || c.table == nil || c.gridCol == nil {
+		return -1
+	}
 	for i, col := range c.table.Columns() {
 		if col.gridCol.Element == c.gridCol.Element {
 			return i

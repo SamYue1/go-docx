@@ -55,8 +55,19 @@ func (t *CT_Tbl) GetOrAddTblGrid() *CT_TblGrid {
 	if el == nil {
 		el = dom.NewElement(ns.NsMap["w"], "tblGrid")
 		tblPr := findChild(t.Element, wqn("tblPr"))
-		t.Element.InsertBefore(el, tblPr)
-		if el.Parent() == nil {
+		if tblPr != nil {
+			children := t.Element.Children()
+			for i, c := range children {
+				if c == tblPr {
+					if i+1 < len(children) {
+						t.Element.InsertBefore(el, children[i+1])
+					} else {
+						t.Element.AddChild(el)
+					}
+					break
+				}
+			}
+		} else {
 			t.Element.InsertBefore(el, nil)
 		}
 	}
@@ -593,17 +604,17 @@ type CT_TblLayoutType struct {
 func NewCT_TblLayoutType(val string) *CT_TblLayoutType {
 	e := dom.NewElement(ns.NsMap["w"], "tblLayout")
 	l := &CT_TblLayoutType{Element: e}
-	l.SetVal(val)
+	l.SetType(val)
 	return l
 }
 
-// Val returns the w:type attribute value.
-func (l *CT_TblLayoutType) Val() (string, bool) {
+// Type returns the w:type attribute value.
+func (l *CT_TblLayoutType) Type() (string, bool) {
 	return l.Element.GetAttr(ns.NsMap["w"], "type")
 }
 
-// SetVal sets the w:type attribute.
-func (l *CT_TblLayoutType) SetVal(val string) {
+// SetType sets the w:type attribute.
+func (l *CT_TblLayoutType) SetType(val string) {
 	l.Element.SetAttr(ns.NsMap["w"], "type", val)
 }
 

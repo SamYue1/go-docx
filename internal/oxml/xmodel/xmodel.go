@@ -16,11 +16,17 @@ import (
 func newElement(clarkTag string) *dom.Element {
 	if strings.HasPrefix(clarkTag, "{") {
 		idx := strings.IndexByte(clarkTag, '}')
+		if idx < 0 {
+			return nil
+		}
 		return dom.NewElement(clarkTag[1:idx], clarkTag[idx+1:])
 	}
 	if strings.Contains(clarkTag, ":") {
 		clark := ns.Qn(clarkTag)
 		idx := strings.IndexByte(clark, '}')
+		if idx < 0 || len(clark) < 2 {
+			return nil
+		}
 		return dom.NewElement(clark[1:idx], clark[idx+1:])
 	}
 	return dom.NewElement("", clarkTag)

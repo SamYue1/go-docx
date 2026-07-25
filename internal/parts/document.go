@@ -27,6 +27,9 @@ func (dp *DocumentPart) Part() *opc.Part {
 
 // Document returns the CT_Document XML element, lazily parsing it from the OPC blob if not yet loaded.
 func (dp *DocumentPart) Document() *oxml.CT_Document {
+	if dp == nil || dp.part == nil {
+		return nil
+	}
 	if dp.doc == nil {
 		blob := dp.part.Blob()
 		if len(blob) > 0 {
@@ -44,12 +47,21 @@ func (dp *DocumentPart) Document() *oxml.CT_Document {
 
 // SetDocument sets the document XML and writes it back to the OPC blob.
 func (dp *DocumentPart) SetDocument(doc *oxml.CT_Document) {
+	if dp == nil || dp.part == nil {
+		return
+	}
 	dp.doc = doc
+	if doc == nil {
+		return
+	}
 	dp.part.SetBlob([]byte(doc.String()))
 }
 
 // Save persists the current document XML to the OPC blob if modified.
 func (dp *DocumentPart) Save() {
+	if dp == nil || dp.part == nil {
+		return
+	}
 	if dp.doc != nil {
 		dp.part.SetBlob([]byte(dp.doc.String()))
 	}
@@ -100,7 +112,7 @@ func (dp *DocumentPart) AddImagePart(contentType string, blob []byte) (*opc.Part
 	case "image/svg+xml":
 		ext = "svg"
 	}
-	partname := dp.part.Package().NextPartname("/word/media/image" + ext + "{1}")
+	partname := dp.part.Package().NextPartname("/word/media/image" + ext + "%d")
 	part := opc.NewPart(partname, contentType, blob, dp.part.Package())
 	rId := dp.part.RelateTo(part, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image", false)
 	return part, rId

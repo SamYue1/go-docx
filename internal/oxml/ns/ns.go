@@ -4,7 +4,10 @@
 // documents (w, r, wp, a, pic, etc.) are registered.
 package ns
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // NsMap maps namespace prefixes to their full OOXML URIs.
 var NsMap = map[string]string{
@@ -41,16 +44,18 @@ func init() {
 func Qn(tag string) string {
 	prefix, local := splitTag(tag)
 	uri := NsMap[prefix]
+	if uri == "" {
+		return ""
+	}
 	return fmt.Sprintf("{%s}%s", uri, local)
 }
 
 // splitTag splits a "prefix:local" string into (prefix, local). If there is
 // no colon, it returns ("", tag).
 func splitTag(tag string) (string, string) {
-	for i := 0; i < len(tag); i++ {
-		if tag[i] == ':' {
-			return tag[:i], tag[i+1:]
-		}
+	prefix, local, found := strings.Cut(tag, ":")
+	if found {
+		return prefix, local
 	}
 	return "", tag
 }
@@ -140,11 +145,15 @@ func (t NamespacePrefixedTag) NsURI() string {
 // Nsdecls generates an XML namespace declaration string for each given prefix,
 // e.g. ` xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"`.
 func Nsdecls(prefixes ...string) string {
-	result := ""
+	var b strings.Builder
 	for _, pfx := range prefixes {
-		result += fmt.Sprintf(` xmlns:%s="%s"`, pfx, NsMap[pfx])
+		b.WriteString(` xmlns:`)
+		b.WriteString(pfx)
+		b.WriteString(`="`)
+		b.WriteString(NsMap[pfx])
+		b.WriteString(`"`)
 	}
-	return result
+	return b.String()
 }
 
 // Nspfxmap builds a map from the given prefixes to their namespace URIs.

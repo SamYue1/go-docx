@@ -1,13 +1,15 @@
 package oxml
 
 import (
+	"strings"
+
 	"github.com/SamYue1/go-docx/internal/oxml/dom"
 	"github.com/SamYue1/go-docx/internal/oxml/ns"
 )
 
 var (
-	cpqn = func(local string) string { return ns.Qn("cp:" + local) }
-	dcqn = func(local string) string { return ns.Qn("dc:" + local) }
+	cpqn      = func(local string) string { return ns.Qn("cp:" + local) }
+	dcqn      = func(local string) string { return ns.Qn("dc:" + local) }
 	dctermsqn = func(local string) string { return ns.Qn("dcterms:" + local) }
 )
 
@@ -120,13 +122,7 @@ func (p *CT_CoreProperties) setTextOf(prefixedTag, val string) {
 	clarkTag := ns.Qn(prefixedTag)
 	el := findChild(p.Element, clarkTag)
 	if el == nil {
-		idx := 0
-		for i := 0; i < len(clarkTag); i++ {
-			if clarkTag[i] == '}' {
-				idx = i
-				break
-			}
-		}
+		idx := strings.IndexByte(clarkTag, '}')
 		el = dom.NewElement(clarkTag[1:idx], clarkTag[idx+1:])
 		p.Element.AddChild(el)
 	}

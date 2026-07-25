@@ -25,6 +25,9 @@ func (sp *StylesPart) Part() *opc.Part {
 
 // CT_Styles returns the CT_Styles XML element, lazily parsed from the OPC blob if not yet loaded.
 func (sp *StylesPart) CT_Styles() *oxml.CT_Styles {
+	if sp == nil || sp.part == nil {
+		return nil
+	}
 	if sp.styles == nil {
 		blob := sp.part.Blob()
 		if len(blob) > 0 {
@@ -47,6 +50,9 @@ func (sp *StylesPart) Styles() *styles.Styles {
 
 // Save persists the styles XML to the OPC blob if modified.
 func (sp *StylesPart) Save() {
+	if sp == nil || sp.part == nil {
+		return
+	}
 	if sp.styles != nil {
 		sp.part.SetBlob([]byte(sp.styles.String()))
 	}

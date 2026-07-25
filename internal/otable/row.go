@@ -1,7 +1,6 @@
 package otable
 
 import (
-	"github.com/SamYue1/go-docx/internal/oxml"
 	"github.com/SamYue1/go-docx/internal/oxml/ns"
 	"github.com/SamYue1/go-docx/internal/shared"
 )
@@ -262,8 +261,4 @@ func mergeCells(r *Row, start, end int) *Cell {
 	firstPr := first.GetOrAddTcPr()
 	firstPr.SetGridSpan(totalSpan)
 	return &Cell{tc: first, table: r.table}
-}
-
-func init() {
-	_ = oxml.CT_Row{}
 }

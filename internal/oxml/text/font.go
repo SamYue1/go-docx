@@ -160,10 +160,14 @@ func (r *CT_RPr) SetHighlightVal(val string) {
 
 // RemoveHighlight removes the w:highlight child if present.
 func (r *CT_RPr) RemoveHighlight() {
+	var toRemove []*dom.Element
 	for _, c := range r.Element.Children() {
 		if c.ClarkTag() == ns.Qn("w:highlight") {
-			r.Element.RemoveChild(c)
+			toRemove = append(toRemove, c)
 		}
+	}
+	for _, c := range toRemove {
+		r.Element.RemoveChild(c)
 	}
 }
 
@@ -192,10 +196,14 @@ func (r *CT_RPr) SetVertAlignVal(val string) {
 
 // RemoveVertAlign removes the w:vertAlign child if present.
 func (r *CT_RPr) RemoveVertAlign() {
+	var toRemove []*dom.Element
 	for _, c := range r.Element.Children() {
 		if c.ClarkTag() == ns.Qn("w:vertAlign") {
-			r.Element.RemoveChild(c)
+			toRemove = append(toRemove, c)
 		}
+	}
+	for _, c := range toRemove {
+		r.Element.RemoveChild(c)
 	}
 }
 
@@ -293,7 +301,7 @@ type CT_HpsMeasure struct {
 
 // NewCT_HpsMeasure creates a new element with the given half-point value.
 func NewCT_HpsMeasure(val int) *CT_HpsMeasure {
-    e := dom.NewElement(ns.NsMap["w"], "sz")
+	e := dom.NewElement(ns.NsMap["w"], "sz")
 	h := &CT_HpsMeasure{Element: e}
 	h.SetVal(val)
 	return h

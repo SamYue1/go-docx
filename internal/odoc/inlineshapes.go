@@ -13,9 +13,9 @@ type InlineShapes struct {
 // document. It stores the shape type, current display dimensions, and the
 // original unscaled dimensions. See python-docx InlineShape class.
 type InlineShape struct {
-	typ           string
-	width         shared.Length
-	height        shared.Length
+	typ            string
+	width          shared.Length
+	height         shared.Length
 	originalWidth  shared.Length
 	originalHeight shared.Length
 }

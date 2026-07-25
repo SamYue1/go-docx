@@ -2,10 +2,11 @@ package opc
 
 import (
 	"archive/zip"
-	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 // PhysPkgReader is the interface for reading a physical OPC package (a zip
@@ -42,6 +43,9 @@ func NewPhysPkgReaderFromReaderAt(r io.ReaderAt, size int64) (PhysPkgReader, err
 func NewPhysPkgWriter(path string) (PhysPkgWriter, error) {
 	return newZipPkgWriter(path)
 }
+
+// ErrMemberNotFound indicates that a zip member was not found in the package.
+var ErrMemberNotFound = fmt.Errorf("opc: member not found")
 
 // zipPkgReader is a PhysPkgReader backed by a zip archive on disk or in
 // memory. It wraps Go's archive/zip package.
@@ -86,7 +90,7 @@ func (r *zipPkgReader) blobForMember(name string) ([]byte, error) {
 			return io.ReadAll(rc)
 		}
 	}
-	return nil, fmt.Errorf("opc: member '%s' not found in package", name)
+	return nil, fmt.Errorf("%w: %s", ErrMemberNotFound, name)
 }
 
 // BlobFor returns the raw bytes of the part identified by the given pack URI.
@@ -105,7 +109,10 @@ func (r *zipPkgReader) RelsXMLFor(sourceURI PackURI) ([]byte, error) {
 	relsURI := sourceURI.RelsURI()
 	blob, err := r.BlobFor(relsURI)
 	if err != nil {
-		return nil, nil
+		if errors.Is(err, ErrMemberNotFound) {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return blob, nil
 }
@@ -118,7 +125,7 @@ func (r *zipPkgReader) Close() error {
 // zipPkgWriter is a PhysPkgWriter backed by a zip file on disk.
 type zipPkgWriter struct {
 	zipf *zip.Writer
-	buf  *bytes.Buffer
+	file *os.File
 }
 
 // newZipPkgWriter creates a new zip file at the given path for writing.
@@ -127,12 +134,15 @@ func newZipPkgWriter(path string) (*zipPkgWriter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("opc: failed to create zip package: %w", err)
 	}
-	return &zipPkgWriter{zipf: zip.NewWriter(f)}, nil
+	return &zipPkgWriter{zipf: zip.NewWriter(f), file: f}, nil
 }
 
 // Write writes a blob as a zip entry identified by the given pack URI.
 func (w *zipPkgWriter) Write(packURI PackURI, blob []byte) error {
 	membername := packURI.Membername()
+	if strings.Contains(membername, "..") {
+		return fmt.Errorf("opc: invalid pack URI with parent directory traversal: %q", packURI)
+	}
 	f, err := w.zipf.Create(membername)
 	if err != nil {
 		return fmt.Errorf("opc: failed to create zip entry '%s': %w", membername, err)
@@ -143,7 +153,11 @@ func (w *zipPkgWriter) Write(packURI PackURI, blob []byte) error {
 
 // Close finalises the zip archive and closes the underlying file.
 func (w *zipPkgWriter) Close() error {
-	return w.zipf.Close()
+	if err := w.zipf.Close(); err != nil {
+		_ = w.file.Close()
+		return err
+	}
+	return w.file.Close()
 }
 
 // writerPkgWriter is a PhysPkgWriter that writes to an arbitrary io.Writer

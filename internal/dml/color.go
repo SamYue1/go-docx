@@ -37,18 +37,18 @@ const (
 )
 
 var themeColorNames = map[MsoThemeColor]string{
-	MsoThemeColorDark1:              "dark1",
-	MsoThemeColorLight1:             "light1",
-	MsoThemeColorDark2:              "dark2",
-	MsoThemeColorLight2:             "light2",
-	MsoThemeColorAccent1:            "accent1",
-	MsoThemeColorAccent2:            "accent2",
-	MsoThemeColorAccent3:            "accent3",
-	MsoThemeColorAccent4:            "accent4",
-	MsoThemeColorAccent5:            "accent5",
-	MsoThemeColorAccent6:            "accent6",
-	MsoThemeColorHyperlink:          "hyperlink",
-	MsoThemeColorFollowedHyperlink:  "followedHyperlink",
+	MsoThemeColorDark1:             "dark1",
+	MsoThemeColorLight1:            "light1",
+	MsoThemeColorDark2:             "dark2",
+	MsoThemeColorLight2:            "light2",
+	MsoThemeColorAccent1:           "accent1",
+	MsoThemeColorAccent2:           "accent2",
+	MsoThemeColorAccent3:           "accent3",
+	MsoThemeColorAccent4:           "accent4",
+	MsoThemeColorAccent5:           "accent5",
+	MsoThemeColorAccent6:           "accent6",
+	MsoThemeColorHyperlink:         "hyperlink",
+	MsoThemeColorFollowedHyperlink: "followedHyperlink",
 }
 
 var themeColorFromName = func() map[string]MsoThemeColor {

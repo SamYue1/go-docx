@@ -89,10 +89,14 @@ func (r *CT_R) GetOrAddRPr() *CT_RPr {
 
 // ClearContent removes all children from the run except w:rPr.
 func (r *CT_R) ClearContent() {
+	var toRemove []*dom.Element
 	for _, c := range r.Element.Children() {
 		if c.ClarkTag() != wqn("rPr") {
-			r.Element.RemoveChild(c)
+			toRemove = append(toRemove, c)
 		}
+	}
+	for _, c := range toRemove {
+		r.Element.RemoveChild(c)
 	}
 }
 

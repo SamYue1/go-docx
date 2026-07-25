@@ -1,11 +1,11 @@
 package otable
 
 import (
+	"github.com/SamYue1/go-docx/internal/otext"
 	"github.com/SamYue1/go-docx/internal/oxml"
 	"github.com/SamYue1/go-docx/internal/oxml/dom"
 	"github.com/SamYue1/go-docx/internal/oxml/ns"
 	text "github.com/SamYue1/go-docx/internal/oxml/text"
-	"github.com/SamYue1/go-docx/internal/otext"
 	"github.com/SamYue1/go-docx/internal/shared"
 )
 

@@ -384,5 +384,3 @@ func (pf *ParagraphFormat) TabStops() *TabStops {
 	tabs := pf.pPr.GetOrAddTabs()
 	return NewTabStops(tabs, pf.pPr)
 }
-
-

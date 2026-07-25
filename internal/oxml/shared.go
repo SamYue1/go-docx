@@ -42,11 +42,17 @@ func findChildren(parent *dom.Element, tag string) []*dom.Element {
 
 // getWVal is a shorthand for reading the w:val attribute from an element.
 func getWVal(e *dom.Element) (string, bool) {
+	if e == nil {
+		return "", false
+	}
 	return e.GetAttr(ns.NsMap["w"], "val")
 }
 
 // setWVal is a shorthand for writing the w:val attribute on an element.
 func setWVal(e *dom.Element, v string) {
+	if e == nil {
+		return
+	}
 	e.SetAttr(ns.NsMap["w"], "val", v)
 }
 
@@ -57,8 +63,8 @@ type CT_DecimalNumber struct {
 }
 
 // NewCT_DecimalNumber creates a new DecimalNumber element with the given value.
-func NewCT_DecimalNumber(val int) *CT_DecimalNumber {
-	e := dom.NewElement(ns.NsMap["w"], "CT_DecimalNumber")
+func NewCT_DecimalNumber(local string, val int) *CT_DecimalNumber {
+	e := dom.NewElement(ns.NsMap["w"], local)
 	v := &CT_DecimalNumber{Element: e}
 	v.SetVal(val)
 	return v
@@ -91,8 +97,8 @@ type CT_OnOff struct {
 }
 
 // NewCT_OnOff creates a new OnOff element with the given boolean value.
-func NewCT_OnOff(val bool) *CT_OnOff {
-	e := dom.NewElement(ns.NsMap["w"], "CT_OnOff")
+func NewCT_OnOff(local string, val bool) *CT_OnOff {
+	e := dom.NewElement(ns.NsMap["w"], local)
 	v := &CT_OnOff{Element: e}
 	v.SetVal(val)
 	return v
@@ -129,8 +135,8 @@ type CT_String struct {
 }
 
 // NewCT_String creates a new CT_String element with the given value.
-func NewCT_String(val string) *CT_String {
-	e := dom.NewElement(ns.NsMap["w"], "CT_String")
+func NewCT_String(local string, val string) *CT_String {
+	e := dom.NewElement(ns.NsMap["w"], local)
 	v := &CT_String{Element: e}
 	v.SetVal(val)
 	return v

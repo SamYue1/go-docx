@@ -182,10 +182,9 @@ func readBMPDPI(data []byte) DPI {
 	return dpi
 }
 
-func readTIFFDPI(data []byte) DPI {
-	dpi := DPI{Horizontal: DefaultDPI, Vertical: DefaultDPI}
+func parseTIFFIFD(data []byte) (float64, float64, int, error) {
 	if len(data) < 8 {
-		return dpi
+		return 0, 0, 2, fmt.Errorf("image: invalid TIFF")
 	}
 	var bo binary.ByteOrder
 	switch string(data[0:2]) {
@@ -194,14 +193,14 @@ func readTIFFDPI(data []byte) DPI {
 	case "MM":
 		bo = binary.BigEndian
 	default:
-		return dpi
+		return 0, 0, 2, fmt.Errorf("image: invalid TIFF byte order")
 	}
 	if bo.Uint16(data[2:4]) != 42 {
-		return dpi
+		return 0, 0, 2, fmt.Errorf("image: invalid TIFF magic")
 	}
 	ifdOffset := int(bo.Uint32(data[4:8]))
 	if ifdOffset+2 > len(data) {
-		return dpi
+		return 0, 0, 2, fmt.Errorf("image: truncated TIFF IFD")
 	}
 	numEntries := int(bo.Uint16(data[ifdOffset : ifdOffset+2]))
 	ifdOffset += 2
@@ -227,15 +226,22 @@ func readTIFFDPI(data []byte) DPI {
 			}
 		}
 	}
-	if xResolution > 0 && yResolution > 0 {
-		switch resolutionUnit {
-		case 2:
-			dpi.Horizontal = int(math.Round(xResolution))
-			dpi.Vertical = int(math.Round(yResolution))
-		case 3:
-			dpi.Horizontal = int(math.Round(xResolution * 2.54))
-			dpi.Vertical = int(math.Round(yResolution * 2.54))
-		}
+	return xResolution, yResolution, resolutionUnit, nil
+}
+
+func readTIFFDPI(data []byte) DPI {
+	dpi := DPI{Horizontal: DefaultDPI, Vertical: DefaultDPI}
+	xResolution, yResolution, resolutionUnit, err := parseTIFFIFD(data)
+	if err != nil || xResolution == 0 || yResolution == 0 {
+		return dpi
+	}
+	switch resolutionUnit {
+	case 2:
+		dpi.Horizontal = int(math.Round(xResolution))
+		dpi.Vertical = int(math.Round(yResolution))
+	case 3:
+		dpi.Horizontal = int(math.Round(xResolution * 2.54))
+		dpi.Vertical = int(math.Round(yResolution * 2.54))
 	}
 	return dpi
 }

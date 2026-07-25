@@ -67,13 +67,15 @@ func (f *Font) Size() float64 {
 // SetSize sets the font size in EMU. If emu is 0, both sz and szCs elements are removed.
 func (f *Font) SetSize(emu float64) {
 	if emu == 0 {
+		var toRemove []*dom.Element
 		for _, c := range f.rPr.Element.Children() {
-			if c.ClarkTag() == ns.Qn("w:sz") {
-				f.rPr.Element.RemoveChild(c)
+			tag := c.ClarkTag()
+			if tag == ns.Qn("w:sz") || tag == ns.Qn("w:szCs") {
+				toRemove = append(toRemove, c)
 			}
-			if c.ClarkTag() == ns.Qn("w:szCs") {
-				f.rPr.Element.RemoveChild(c)
-			}
+		}
+		for _, c := range toRemove {
+			f.rPr.Element.RemoveChild(c)
 		}
 		return
 	}

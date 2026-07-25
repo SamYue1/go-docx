@@ -81,7 +81,7 @@ func Parse(xmlBytes []byte) (*Element, error) {
 			}
 			if root == nil {
 				root = el
-			} else {
+			} else if len(stack) > 0 {
 				parent := stack[len(stack)-1]
 				parent.children = append(parent.children, el)
 				el.parent = parent
@@ -108,13 +108,14 @@ func Parse(xmlBytes []byte) (*Element, error) {
 // (after leading whitespace or a processing instruction).
 func hasDOCTYPE(data []byte) bool {
 	s := strings.ToUpper(string(bytes.TrimLeft(data, " \t\r\n")))
-	const marker = "<!DOCTYPE"
-	idx := strings.Index(s, marker)
-	if idx < 0 {
-		return false
+	// Skip an optional <?...?> processing instruction (e.g. <?xml version="1.0"?>)
+	// before checking for <!DOCTYPE.
+	if strings.HasPrefix(s, "<?") {
+		if idx := strings.Index(s, "?>"); idx >= 0 {
+			s = strings.TrimSpace(s[idx+2:])
+		}
 	}
-	before := strings.TrimSpace(s[:idx])
-	return before == "" || strings.HasSuffix(before, "?>")
+	return strings.HasPrefix(s, "<!DOCTYPE")
 }
 
 // AddChild appends a child element to the end of this element's children list
@@ -203,7 +204,9 @@ func (e *Element) InsertBefore(child, before *Element) {
 	child.parent = e
 	for i, c := range e.children {
 		if c == before {
-			e.children = append(e.children[:i], append([]*Element{child}, e.children[i:]...)...)
+			e.children = append(e.children, nil)
+			copy(e.children[i+1:], e.children[i:])
+			e.children[i] = child
 			return
 		}
 	}
@@ -234,13 +237,13 @@ func (e *Element) ClarkTag() string {
 }
 
 // URI returns the element's namespace URI.
-func (e *Element) URI() string    { return e.uri }
+func (e *Element) URI() string { return e.uri }
 
 // Local returns the element's local name (without prefix).
-func (e *Element) Local() string  { return e.local }
+func (e *Element) Local() string { return e.local }
 
 // Attrs returns the element's attribute slice.
-func (e *Element) Attrs() []Attr  { return e.attrs }
+func (e *Element) Attrs() []Attr { return e.attrs }
 
 // Children returns the element's direct children, or nil if there are none.
 func (e *Element) Children() []*Element {
@@ -249,8 +252,9 @@ func (e *Element) Children() []*Element {
 	}
 	return e.children
 }
+
 // Text returns the element's text content (character data).
-func (e *Element) Text() string     { return e.text }
+func (e *Element) Text() string { return e.text }
 
 // Parent returns the element's parent, or nil if it is a root.
 func (e *Element) Parent() *Element { return e.parent }
@@ -263,8 +267,13 @@ func (e *Element) SetText(text string) { e.text = text }
 func (e *Element) SetParent(p *Element) { e.parent = p }
 
 // ReplaceChildren replaces the element's entire child list with c. Parent
-// pointers of removed children are not cleared.
-func (e *Element) ReplaceChildren(c []*Element) { e.children = c }
+// pointers of removed children are cleared.
+func (e *Element) ReplaceChildren(c []*Element) {
+	for _, child := range e.children {
+		child.parent = nil
+	}
+	e.children = c
+}
 
 func (e *Element) findPrefix(uri string) (string, bool) {
 	for _, a := range e.attrs {

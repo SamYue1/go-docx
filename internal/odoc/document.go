@@ -13,10 +13,10 @@ import (
 	"github.com/SamYue1/go-docx/internal/oxml"
 	"github.com/SamYue1/go-docx/internal/oxml/dom"
 	"github.com/SamYue1/go-docx/internal/oxml/ns"
+	text "github.com/SamYue1/go-docx/internal/oxml/text"
 	"github.com/SamYue1/go-docx/internal/parts"
 	"github.com/SamYue1/go-docx/internal/shared"
 	"github.com/SamYue1/go-docx/internal/styles"
-	text "github.com/SamYue1/go-docx/internal/oxml/text"
 )
 
 // Document represents a WordprocessingML (docx) document. It provides methods
@@ -549,5 +549,3 @@ func (d *Document) IterInnerContent() []interface{} {
 	}
 	return items
 }
-
-
