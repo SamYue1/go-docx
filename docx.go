@@ -7,6 +7,7 @@ package docx
 import (
 	"io"
 
+	"github.com/SamYue1/go-docx/internal/dml"
 	"github.com/SamYue1/go-docx/internal/odoc"
 	"github.com/SamYue1/go-docx/internal/osect"
 	"github.com/SamYue1/go-docx/internal/otable"
@@ -102,6 +103,15 @@ type InlineShape = odoc.InlineShape
 // Image represents an image with metadata such as path, DPI, and pixel dimensions.
 type Image = odoc.Image
 
+// ColorFormat represents the color formatting properties.
+type ColorFormat = dml.ColorFormat
+
+// MsoColorType identifies the type of color specification.
+type MsoColorType = dml.MsoColorType
+
+// MsoThemeColor identifies a theme color in the document theme.
+type MsoThemeColor = dml.MsoThemeColor
+
 // NumberingPart manages numbered list definitions and numbering instances.
 type NumberingPart = odoc.NumberingPart
 
@@ -182,4 +192,9 @@ func Pt(v float64) shared.Length {
 // Emu converts a value in EMUs to Length.
 func Emu(v int) shared.Length {
 	return shared.Emu(v)
+}
+
+// Twips converts a value in twips to Length (EMU).
+func Twips(v float64) shared.Length {
+	return shared.Twips(v)
 }
