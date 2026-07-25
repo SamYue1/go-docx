@@ -17,45 +17,45 @@ import (
 )
 
 type featureSuite struct {
-	document           *docx.Document
-	paragraph          *docx.Paragraph
-	run                *docx.Run
-	table              *docx.Table
-	cell               *docx.Cell
-	row                *docx.Row
-	column             *docx.Column
-	section            *docx.Section
-	sections           []*docx.Section
-	styles             *docx.Styles
-	style              *docx.Style
-	latentStyles       *docx.LatentStyles
-	latentStyle        *docx.LatentStyle
-	header             *docx.HeaderFooter
-	footer             *docx.HeaderFooter
-	footer2            *docx.HeaderFooter
-	header2            *docx.HeaderFooter
-	settings           *docx.Settings
-	hyperlink          *docx.Hyperlink
-	tabStops           *docx.TabStops
-	tabStop            *docx.TabStop
-	lastBreak          *docx.Run
-	comment            *docx.Comment
-	comments           *docx.Comments
-	numberingPart      *docx.NumberingPart
-	inlineShapes       *docx.InlineShapes
-	inlineShape        *docx.InlineShape
-	picture            interface{}
-	paragraphFormat    *docx.ParagraphFormat
-	font               *docx.Font
-	renderedPageBreak  *docx.RenderedPageBreak
-	headingText        string
-	paragraphText      string
-	styleCount         int
-	latentStyleCount   int
-	originalWidth      *shared.Length
-	originalHeight     *shared.Length
-	expectedCellText   string
-	testImage          *docxImage.Image
+	document          *docx.Document
+	paragraph         *docx.Paragraph
+	run               *docx.Run
+	table             *docx.Table
+	cell              *docx.Cell
+	row               *docx.Row
+	column            *docx.Column
+	section           *docx.Section
+	sections          []*docx.Section
+	styles            *docx.Styles
+	style             *docx.Style
+	latentStyles      *docx.LatentStyles
+	latentStyle       *docx.LatentStyle
+	header            *docx.HeaderFooter
+	footer            *docx.HeaderFooter
+	footer2           *docx.HeaderFooter
+	header2           *docx.HeaderFooter
+	settings          *docx.Settings
+	hyperlink         *docx.Hyperlink
+	tabStops          *docx.TabStops
+	tabStop           *docx.TabStop
+	lastBreak         *docx.Run
+	comment           *docx.Comment
+	comments          *docx.Comments
+	numberingPart     *docx.NumberingPart
+	inlineShapes      *docx.InlineShapes
+	inlineShape       *docx.InlineShape
+	picture           interface{}
+	paragraphFormat   *docx.ParagraphFormat
+	font              *docx.Font
+	renderedPageBreak *docx.RenderedPageBreak
+	headingText       string
+	paragraphText     string
+	styleCount        int
+	latentStyleCount  int
+	originalWidth     *shared.Length
+	originalHeight    *shared.Length
+	expectedCellText  string
+	testImage         *docxImage.Image
 }
 
 func stepNotImplemented(name string) error {
@@ -1374,7 +1374,7 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no cell")
 		}
 		mapping := map[string]string{
-			"None":                   "",
+			"None":                     "",
 			"WD_ALIGN_VERTICAL.BOTTOM": "bottom",
 			"WD_ALIGN_VERTICAL.CENTER": "center",
 		}
@@ -1548,11 +1548,11 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 			return fmt.Errorf("no cell")
 		}
 		mapping := map[string]string{
-			"None": "",
-			"TOP": "top",
-			"CENTER": "center",
-			"BOTTOM": "bottom",
-			"WD_ALIGN_VERTICAL.TOP": "top",
+			"None":                     "",
+			"TOP":                      "top",
+			"CENTER":                   "center",
+			"BOTTOM":                   "bottom",
+			"WD_ALIGN_VERTICAL.TOP":    "top",
 			"WD_ALIGN_VERTICAL.CENTER": "center",
 			"WD_ALIGN_VERTICAL.BOTTOM": "bottom",
 		}
@@ -2548,9 +2548,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		s.run = s.paragraph.AddRun("")
 		switch boolPropName {
 		case "bold":
-			s.run.BoldSet(true)
+			s.run.SetBold(true)
 		case "italic":
-			s.run.ItalicSet(true)
+			s.run.SetItalic(true)
 		}
 		return nil
 	})
@@ -2559,8 +2559,8 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		s.document = docx.NewDocument()
 		s.paragraph = s.document.AddParagraph()
 		s.run = s.paragraph.AddRun("foobar")
-		s.run.BoldSet(true)
-		s.run.ItalicSet(true)
+		s.run.SetBold(true)
+		s.run.SetItalic(true)
 		return nil
 	})
 
@@ -2749,9 +2749,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		}
 		switch boolPropName {
 		case "bold":
-			s.run.BoldSet(val)
+			s.run.SetBold(val)
 		case "italic":
-			s.run.ItalicSet(val)
+			s.run.SetItalic(val)
 		}
 		return nil
 	})
@@ -2775,9 +2775,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 
 	ctx.Step(`^I set the run underline to (\w+(?:\.\w+)*)$`, func(underlineValue string) error {
 		mapping := map[string]string{
-			"True":               "single",
-			"False":              "",
-			"None":               "",
+			"True":                "single",
+			"False":               "",
+			"None":                "",
 			"WD_UNDERLINE.SINGLE": "single",
 			"WD_UNDERLINE.DOUBLE": "double",
 		}
@@ -4526,12 +4526,12 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to paragraph_format\.line_spacing_rule$`, func(value string) error {
 		ensureParFormat(s)
 		mapping := map[string]string{
-			"None":                       "",
-			"WD_LINE_SPACING.EXACTLY":    "exactly",
-			"WD_LINE_SPACING.MULTIPLE":   "auto",
-			"WD_LINE_SPACING.SINGLE":     "auto",
-			"WD_LINE_SPACING.DOUBLE":     "auto",
-			"WD_LINE_SPACING.AT_LEAST":   "atLeast",
+			"None":                           "",
+			"WD_LINE_SPACING.EXACTLY":        "exactly",
+			"WD_LINE_SPACING.MULTIPLE":       "auto",
+			"WD_LINE_SPACING.SINGLE":         "auto",
+			"WD_LINE_SPACING.DOUBLE":         "auto",
+			"WD_LINE_SPACING.AT_LEAST":       "atLeast",
 			"WD_LINE_SPACING.ONE_POINT_FIVE": "auto",
 		}
 		if v, ok := mapping[value]; ok {
@@ -4550,9 +4550,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to paragraph_format\.alignment$`, func(value string) error {
 		ensureParFormat(s)
 		mapping := map[string]string{
-			"None":                         "",
-			"WD_ALIGN_PARAGRAPH.CENTER":    "center",
-			"WD_ALIGN_PARAGRAPH.RIGHT":     "right",
+			"None":                      "",
+			"WD_ALIGN_PARAGRAPH.CENTER": "center",
+			"WD_ALIGN_PARAGRAPH.RIGHT":  "right",
 		}
 		if v, ok := mapping[value]; ok {
 			s.paragraphFormat.SetAlignment(v)
@@ -4563,9 +4563,9 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I assign (\w+(?:\.\w+)*) to paragraph_format\.space_(\w+)$`, func(value, side string) error {
 		ensureParFormat(s)
 		mapping := map[string]shared.Length{
-			"None":    0,
-			"Pt(12)":  shared.Pt(12),
-			"Pt(18)":  shared.Pt(18),
+			"None":   0,
+			"Pt(12)": shared.Pt(12),
+			"Pt(18)": shared.Pt(18),
 		}
 		if l, ok := mapping[value]; ok {
 			if side == "before" {
@@ -4691,12 +4691,12 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 	ctx.Step(`^paragraph_format\.line_spacing_rule is (\w+(?:\.\w+)*)$`, func(value string) error {
 		ensureParFormat(s)
 		expected := map[string]string{
-			"None":                          "",
-			"WD_LINE_SPACING.EXACTLY":       "exactly",
-			"WD_LINE_SPACING.MULTIPLE":      "auto",
-			"WD_LINE_SPACING.AT_LEAST":      "atLeast",
-			"WD_LINE_SPACING.SINGLE":        "single",
-			"WD_LINE_SPACING.DOUBLE":        "double",
+			"None":                           "",
+			"WD_LINE_SPACING.EXACTLY":        "exactly",
+			"WD_LINE_SPACING.MULTIPLE":       "auto",
+			"WD_LINE_SPACING.AT_LEAST":       "atLeast",
+			"WD_LINE_SPACING.SINGLE":         "single",
+			"WD_LINE_SPACING.DOUBLE":         "double",
 			"WD_LINE_SPACING.ONE_POINT_FIVE": "onePtFive",
 		}[value]
 		actual, ok := s.paragraphFormat.LineSpacingRule()
@@ -5942,12 +5942,12 @@ func RegisterSteps(ctx *godog.ScenarioContext) {
 		address = strings.Trim(address, "'")
 		fragment = strings.Trim(fragment, "'")
 		paragraphIdxs := map[string]int{
-			"/linkedBookmark":          1,
-			"https://foo.com/":         2,
-			"https://foo.com?q=bar/":   3,
-			"http://foo.com//intro":    4,
+			"/linkedBookmark":            1,
+			"https://foo.com/":           2,
+			"https://foo.com?q=bar/":     3,
+			"http://foo.com//intro":      4,
 			"https://foo.com?q=bar#baz/": 5,
-			"court-exif.jpg/":          7,
+			"court-exif.jpg/":            7,
 		}
 		key := address + "/" + fragment
 		paras := s.document.Paragraphs()
@@ -6492,23 +6492,23 @@ var highlightXMLMap = map[string]string{
 }
 
 var themeXMLMap = map[string]string{
-	"None":                "",
-	"DARK_1":              "dark1",
-	"LIGHT_1":             "light1",
-	"DARK_2":              "dark2",
-	"LIGHT_2":             "light2",
-	"ACCENT_1":            "accent1",
-	"ACCENT_2":            "accent2",
-	"ACCENT_3":            "accent3",
-	"ACCENT_4":            "accent4",
-	"ACCENT_5":            "accent5",
-	"ACCENT_6":            "accent6",
-	"HYPERLINK":           "hyperlink",
-	"FOLLOWED_HYPERLINK":  "followedHyperlink",
-	"TEXT_1":              "text1",
-	"TEXT_2":              "text2",
-	"BACKGROUND_1":        "background1",
-	"BACKGROUND_2":        "background2",
+	"None":               "",
+	"DARK_1":             "dark1",
+	"LIGHT_1":            "light1",
+	"DARK_2":             "dark2",
+	"LIGHT_2":            "light2",
+	"ACCENT_1":           "accent1",
+	"ACCENT_2":           "accent2",
+	"ACCENT_3":           "accent3",
+	"ACCENT_4":           "accent4",
+	"ACCENT_5":           "accent5",
+	"ACCENT_6":           "accent6",
+	"HYPERLINK":          "hyperlink",
+	"FOLLOWED_HYPERLINK": "followedHyperlink",
+	"TEXT_1":             "text1",
+	"TEXT_2":             "text2",
+	"BACKGROUND_1":       "background1",
+	"BACKGROUND_2":       "background2",
 }
 
 func highlightStepToXML(key string) string {

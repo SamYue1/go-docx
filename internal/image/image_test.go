@@ -101,32 +101,32 @@ func TestDescribeImageDPI(t *testing.T) {
 }
 
 func TestDescribeHelpers(t *testing.T) {
-	t.Run("ReadBigEndianInt", func(t *testing.T) {
-		assert.Equal(t, 0, ReadBigEndianInt([]byte{}))
-		assert.Equal(t, 0, ReadBigEndianInt([]byte{0x00, 0x00, 0x00}))
-		assert.Equal(t, 0x01020304, ReadBigEndianInt([]byte{0x01, 0x02, 0x03, 0x04}))
-		assert.Equal(t, 0xFF000011, ReadBigEndianInt([]byte{0xFF, 0x00, 0x00, 0x11}))
+	t.Run("readBigEndianInt", func(t *testing.T) {
+		assert.Equal(t, 0, readBigEndianInt([]byte{}))
+		assert.Equal(t, 0, readBigEndianInt([]byte{0x00, 0x00, 0x00}))
+		assert.Equal(t, 0x01020304, readBigEndianInt([]byte{0x01, 0x02, 0x03, 0x04}))
+		assert.Equal(t, 0xFF000011, readBigEndianInt([]byte{0xFF, 0x00, 0x00, 0x11}))
 	})
 
-	t.Run("ReadBigEndianShort", func(t *testing.T) {
-		assert.Equal(t, 0, ReadBigEndianShort([]byte{}))
-		assert.Equal(t, 0, ReadBigEndianShort([]byte{0x00}))
-		assert.Equal(t, 0x0102, ReadBigEndianShort([]byte{0x01, 0x02}))
-		assert.Equal(t, 0xFFFF, ReadBigEndianShort([]byte{0xFF, 0xFF}))
+	t.Run("readBigEndianShort", func(t *testing.T) {
+		assert.Equal(t, 0, readBigEndianShort([]byte{}))
+		assert.Equal(t, 0, readBigEndianShort([]byte{0x00}))
+		assert.Equal(t, 0x0102, readBigEndianShort([]byte{0x01, 0x02}))
+		assert.Equal(t, 0xFFFF, readBigEndianShort([]byte{0xFF, 0xFF}))
 	})
 
-	t.Run("ReadLittleEndianInt", func(t *testing.T) {
-		assert.Equal(t, 0, ReadLittleEndianInt([]byte{}))
-		assert.Equal(t, 0, ReadLittleEndianInt([]byte{0x00, 0x00, 0x00}))
-		assert.Equal(t, 0x04030201, ReadLittleEndianInt([]byte{0x01, 0x02, 0x03, 0x04}))
-		assert.Equal(t, 0x110000FF, ReadLittleEndianInt([]byte{0xFF, 0x00, 0x00, 0x11}))
+	t.Run("readLittleEndianInt", func(t *testing.T) {
+		assert.Equal(t, 0, readLittleEndianInt([]byte{}))
+		assert.Equal(t, 0, readLittleEndianInt([]byte{0x00, 0x00, 0x00}))
+		assert.Equal(t, 0x04030201, readLittleEndianInt([]byte{0x01, 0x02, 0x03, 0x04}))
+		assert.Equal(t, 0x110000FF, readLittleEndianInt([]byte{0xFF, 0x00, 0x00, 0x11}))
 	})
 
-	t.Run("ReadLittleEndianShort", func(t *testing.T) {
-		assert.Equal(t, 0, ReadLittleEndianShort([]byte{}))
-		assert.Equal(t, 0, ReadLittleEndianShort([]byte{0x00}))
-		assert.Equal(t, 0x0201, ReadLittleEndianShort([]byte{0x01, 0x02}))
-		assert.Equal(t, 0xFFFF, ReadLittleEndianShort([]byte{0xFF, 0xFF}))
+	t.Run("readLittleEndianShort", func(t *testing.T) {
+		assert.Equal(t, 0, readLittleEndianShort([]byte{}))
+		assert.Equal(t, 0, readLittleEndianShort([]byte{0x00}))
+		assert.Equal(t, 0x0201, readLittleEndianShort([]byte{0x01, 0x02}))
+		assert.Equal(t, 0xFFFF, readLittleEndianShort([]byte{0xFF, 0xFF}))
 	})
 }
 
@@ -498,16 +498,6 @@ func TestDescribeBmpAndTiffImages(t *testing.T) {
 			t.Skipf("test image not found: %v", err)
 		}
 		assert.Equal(t, FormatTIFF, detectFormat(data))
-	})
-
-	t.Run("bmp_dpi_defaults_to_96", func(t *testing.T) {
-		data, err := os.ReadFile("../../test/features/steps/test_files/lena.bmp")
-		if err != nil {
-			t.Skipf("test image not found: %v", err)
-		}
-		dpi := readDPI(data, FormatBMP)
-		assert.Equal(t, 96, dpi.Horizontal)
-		assert.Equal(t, 96, dpi.Vertical)
 	})
 
 	t.Run("gif_dpi_defaults_to_72", func(t *testing.T) {

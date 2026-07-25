@@ -30,8 +30,8 @@ func TestDescribeSerializedRelationship(t *testing.T) {
 
 	t.Run("it_knows_when_it_is_external", func(t *testing.T) {
 		cases := []struct {
-			mode         string
-			isExternal   bool
+			mode       string
+			isExternal bool
 		}{
 			{RTM_INTERNAL, false},
 			{RTM_EXTERNAL, true},
@@ -45,9 +45,9 @@ func TestDescribeSerializedRelationship(t *testing.T) {
 
 	t.Run("it_can_calculate_its_target_partname", func(t *testing.T) {
 		cases := []struct {
-			baseURI    string
-			targetRef  string
-			expected   PackURI
+			baseURI   string
+			targetRef string
+			expected  PackURI
 		}{
 			{"/", "docProps/core.xml", "/docProps/core.xml"},
 			{"/ppt", "viewProps.xml", "/ppt/viewProps.xml"},

@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/cucumber/godog"
 	"github.com/SamYue1/go-docx/test/features/steps"
+	"github.com/cucumber/godog"
 )
 
 func TestMain(m *testing.M) {

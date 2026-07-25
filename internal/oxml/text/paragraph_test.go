@@ -103,5 +103,3 @@ func TestDescribeCT_P(t *testing.T) {
 		assert.Equal(t, r.Element, children[1])
 	})
 }
-
-

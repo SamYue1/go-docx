@@ -8,7 +8,7 @@ import (
 
 func TestDescribeCT_DecimalNumber(t *testing.T) {
 	t.Run("it_sets_and_gets_val", func(t *testing.T) {
-		d := NewCT_DecimalNumber(42)
+		d := NewCT_DecimalNumber("testElem", 42)
 		val, ok := d.Val()
 		assert.True(t, ok)
 		assert.Equal(t, 42, val)
@@ -21,14 +21,14 @@ func TestDescribeCT_DecimalNumber(t *testing.T) {
 
 func TestDescribeCT_OnOff(t *testing.T) {
 	t.Run("it_defaults_to_true", func(t *testing.T) {
-		o := NewCT_OnOff(true)
+		o := NewCT_OnOff("testElem", true)
 		val, ok := o.Val()
 		assert.True(t, ok)
 		assert.True(t, val)
 	})
 
 	t.Run("it_sets_false", func(t *testing.T) {
-		o := NewCT_OnOff(false)
+		o := NewCT_OnOff("testElem", false)
 		val, ok := o.Val()
 		assert.True(t, ok)
 		assert.False(t, val)
@@ -37,7 +37,7 @@ func TestDescribeCT_OnOff(t *testing.T) {
 
 func TestDescribeCT_String(t *testing.T) {
 	t.Run("it_sets_and_gets_val", func(t *testing.T) {
-		s := NewCT_String("Heading1")
+		s := NewCT_String("testElem", "Heading1")
 		val, ok := s.Val()
 		assert.True(t, ok)
 		assert.Equal(t, "Heading1", val)

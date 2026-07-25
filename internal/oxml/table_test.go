@@ -438,15 +438,15 @@ func TestDescribeCT_TblStyle(t *testing.T) {
 func TestDescribeCT_TblLayoutType(t *testing.T) {
 	t.Run("it_sets_and_gets_layout_type", func(t *testing.T) {
 		lt := NewCT_TblLayoutType("fixed")
-		val, ok := lt.Val()
+		val, ok := lt.Type()
 		assert.True(t, ok)
 		assert.Equal(t, "fixed", val)
 	})
 
 	t.Run("it_changes_layout_type", func(t *testing.T) {
 		lt := NewCT_TblLayoutType("fixed")
-		lt.SetVal("autofit")
-		val, _ := lt.Val()
+		lt.SetType("autofit")
+		val, _ := lt.Type()
 		assert.Equal(t, "autofit", val)
 	})
 }

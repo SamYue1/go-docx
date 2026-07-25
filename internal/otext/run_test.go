@@ -33,20 +33,20 @@ func TestDescribeRun(t *testing.T) {
 	t.Run("it_sets_bold", func(t *testing.T) {
 		r := NewRun(text.NewCT_R())
 		assert.False(t, r.Bold())
-		r.BoldSet(true)
+		r.SetBold(true)
 		assert.True(t, r.Bold())
 	})
 
 	t.Run("it_sets_italic", func(t *testing.T) {
 		r := NewRun(text.NewCT_R())
 		assert.False(t, r.Italic())
-		r.ItalicSet(true)
+		r.SetItalic(true)
 		assert.True(t, r.Italic())
 	})
 
 	t.Run("it_clears_content_with_formatting", func(t *testing.T) {
 		r := NewRun(text.NewCT_R())
-		r.BoldSet(true)
+		r.SetBold(true)
 		r.AddText("Hello")
 		r.Clear()
 		assert.Equal(t, "", r.Text())
@@ -95,13 +95,13 @@ func TestDescribeRun(t *testing.T) {
 
 	t.Run("it_delegates_bold_to_font", func(t *testing.T) {
 		r := NewRun(text.NewCT_R())
-		r.BoldSet(true)
+		r.SetBold(true)
 		assert.True(t, r.Font().Bold())
 	})
 
 	t.Run("it_delegates_italic_to_font", func(t *testing.T) {
 		r := NewRun(text.NewCT_R())
-		r.ItalicSet(true)
+		r.SetItalic(true)
 		assert.True(t, r.Font().Italic())
 	})
 }

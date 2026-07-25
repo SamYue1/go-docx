@@ -139,10 +139,10 @@ func TestDescribeColorFormat(t *testing.T) {
 
 	t.Run("it_can_change_its_theme_color", func(t *testing.T) {
 		cases := []struct {
-			name        string
-			xml         string
-			newTheme    MsoThemeColor
-			expected    string
+			name     string
+			xml      string
+			newTheme MsoThemeColor
+			expected string
 		}{
 			{"from_no_rPr_to_accent1", "<w:r xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'/>",
 				MsoThemeColorAccent1,

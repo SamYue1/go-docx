@@ -247,5 +247,3 @@ func TestDescribeGetOrAddChild(t *testing.T) {
 		assert.Len(t, parent.Children(), 1)
 	})
 }
-
-
