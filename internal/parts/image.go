@@ -104,12 +104,12 @@ func ImagePartFromImage(img *image.Image, partname opc.PackURI) *ImagePart {
 	if ext == "jpeg" {
 		ext = "jpg"
 	}
-	contentType := contentTypeForExt(ext)
+	contentType := ContentTypeForExt(ext)
 	return NewImagePart(partname, contentType, img.Blob, img)
 }
 
-// contentTypeForExt maps a file extension to its corresponding MIME content type string.
-func contentTypeForExt(ext string) string {
+// ContentTypeForExt maps a file extension to its corresponding MIME content type string.
+func ContentTypeForExt(ext string) string {
 	switch ext {
 	case "png":
 		return opc.CT_PNG

@@ -4,8 +4,12 @@
 package odoc
 
 import (
+	"crypto/sha1"
+	"fmt"
 	"io"
+	"os"
 
+	"github.com/SamYue1/go-docx/internal/image"
 	"github.com/SamYue1/go-docx/internal/opc"
 	"github.com/SamYue1/go-docx/internal/osect"
 	"github.com/SamYue1/go-docx/internal/otable"
@@ -18,6 +22,66 @@ import (
 	"github.com/SamYue1/go-docx/internal/shared"
 	"github.com/SamYue1/go-docx/internal/styles"
 )
+
+// isImageContentType returns true if the given content type is a supported image type.
+func isImageContentType(ct string) bool {
+	switch ct {
+	case opc.CT_PNG, opc.CT_JPEG, opc.CT_GIF, opc.CT_BMP, opc.CT_TIFF:
+		return true
+	}
+	return false
+}
+
+// GetOrAddImagePart finds or creates an image part for the given image file path,
+// deduplicating by SHA-1 hash. Returns the relationship ID, the ImagePart, and any error.
+func (d *Document) GetOrAddImagePart(imagePath string) (string, *parts.ImagePart, error) {
+	blob, err := os.ReadFile(imagePath)
+	if err != nil {
+		return "", nil, err
+	}
+
+	img, err := image.FromBytes(blob)
+	if err != nil {
+		return "", nil, err
+	}
+
+	sha1Hash := fmt.Sprintf("%x", sha1.Sum(blob))
+
+	// Dedup: check existing parts for matching SHA-1
+	for _, part := range d.pkg.Parts() {
+		if !isImageContentType(part.ContentType()) {
+			continue
+		}
+		if fmt.Sprintf("%x", sha1.Sum(part.Blob())) != sha1Hash {
+			continue
+		}
+
+		imagePart := parts.NewImagePart(part.Partname(), part.ContentType(), part.Blob(), nil)
+
+		// Look for existing relationship from document part
+		for rId, targetPart := range d.part.Relationships().RelatedParts() {
+			if targetPart == part {
+				return rId, imagePart, nil
+			}
+		}
+
+		// Create new relationship from document part to existing part
+		rId := d.part.Part().RelateTo(part, opc.RT_IMAGE, false)
+		return rId, imagePart, nil
+	}
+
+	// Create new image part
+	ext := img.Ext
+	if ext == "jpeg" {
+		ext = "jpg"
+	}
+	contentType := parts.ContentTypeForExt(ext)
+	partname := d.pkg.NextPartname(fmt.Sprintf("/word/media/image%%d.%s", ext))
+	opcPart := opc.NewPart(partname, contentType, blob, d.pkg.OpcPackage)
+	rId := d.part.Part().RelateTo(opcPart, opc.RT_IMAGE, false)
+	imagePart := parts.NewImagePart(partname, contentType, blob, img)
+	return rId, imagePart, nil
+}
 
 // Document represents a WordprocessingML (docx) document. It provides methods
 // for accessing and modifying paragraphs, tables, sections, styles, comments,
@@ -357,15 +421,120 @@ func colWidthFromSectPr(sectPr *oxml.CT_SectPr, cols int) int {
 // image at the given path. The width and height control the display size.
 // Equivalent to python-docx Document.add_picture().
 func (d *Document) AddPicture(imagePath string, width, height shared.Length) error {
+	rId, imagePart, err := d.GetOrAddImagePart(imagePath)
+	if err != nil {
+		return err
+	}
+
 	p := d.AddParagraph()
 	if p == nil {
 		return nil
 	}
 	run := p.AddRun("")
-	drawing := dom.NewElement(ns.NsMap["w"], "drawing")
-	run.CT_R().Element.AddChild(drawing)
-	is := NewInlineShape("WD_INLINE_SHAPE.PICTURE", width, height)
+
+	// Calculate display dimensions in EMU
+	cx := int64(width)
+	cy := int64(height)
+
+	if width == 0 && height == 0 {
+		cx = imagePart.DefaultCx()
+		cy = imagePart.DefaultCy()
+	} else if width == 0 {
+		img := imagePart.Image()
+		if img != nil && img.Width > 0 {
+			ratio := float64(height.Emu()) / float64(imagePart.DefaultCy())
+			cx = int64(float64(imagePart.DefaultCx()) * ratio)
+		} else {
+			cx = cy
+		}
+	} else if height == 0 {
+		img := imagePart.Image()
+		if img != nil && img.Height > 0 {
+			ratio := float64(width.Emu()) / float64(imagePart.DefaultCx())
+			cy = int64(float64(imagePart.DefaultCy()) * ratio)
+		} else {
+			cy = cx
+		}
+	}
+
+	// Build w:drawing/wp:inline picture XML using CT_* types
+	drawing := oxml.NewCT_Drawing()
+
+	inline := oxml.NewCT_Inline()
+	inline.Element.SetAttr("", "distT", "0")
+	inline.Element.SetAttr("", "distB", "0")
+	inline.Element.SetAttr("", "distL", "0")
+	inline.Element.SetAttr("", "distR", "0")
+
+	extent := oxml.NewCT_PositiveSize2D(cx, cy)
+	inline.Element.AddChild(extent.Element)
+
+	effectExtent := dom.NewElement(ns.NsMap["wp"], "effectExtent")
+	effectExtent.SetAttr("", "l", "0")
+	effectExtent.SetAttr("", "t", "0")
+	effectExtent.SetAttr("", "r", "0")
+	effectExtent.SetAttr("", "b", "0")
+	inline.Element.AddChild(effectExtent)
+
+	docPr := oxml.NewCT_NonVisualDrawingProps(1, "Picture 1")
+	inline.Element.AddChild(docPr.Element)
+
+	cNvGraphicFramePr := dom.NewElement(ns.NsMap["wp"], "cNvGraphicFramePr")
+	graphicFrameLocks := dom.NewElement(ns.NsMap["a"], "graphicFrameLocks")
+	graphicFrameLocks.SetAttr("", "noChangeAspect", "1")
+	cNvGraphicFramePr.AddChild(graphicFrameLocks)
+	inline.Element.AddChild(cNvGraphicFramePr)
+
+	graphic := oxml.NewCT_GraphicalObject()
+
+	graphicData := oxml.NewCT_GraphicalObjectData()
+	graphicData.SetURI("http://schemas.openxmlformats.org/drawingml/2006/picture")
+
+	pic := oxml.NewCT_Picture()
+
+	nvPicPr := oxml.NewCT_PictureNonVisual()
+	cNvPr := dom.NewElement(ns.NsMap["pic"], "cNvPr")
+	cNvPr.SetAttr("", "id", "0")
+	cNvPr.SetAttr("", "name", "Picture 1")
+	nvPicPr.Element.AddChild(cNvPr)
+	cNvPicPr := dom.NewElement(ns.NsMap["pic"], "cNvPicPr")
+	nvPicPr.Element.AddChild(cNvPicPr)
+	pic.Element.AddChild(nvPicPr.Element)
+
+	blipFill := oxml.NewCT_BlipFillProperties()
+	blip := oxml.NewCT_Blip()
+	blip.SetEmbed(rId)
+	blipFill.Element.AddChild(blip.Element)
+	stretch := dom.NewElement(ns.NsMap["a"], "stretch")
+	fillRect := dom.NewElement(ns.NsMap["a"], "fillRect")
+	stretch.AddChild(fillRect)
+	blipFill.Element.AddChild(stretch)
+	pic.Element.AddChild(blipFill.Element)
+
+	spPr := oxml.NewCT_ShapeProperties()
+	xfrm := oxml.NewCT_Transform2D()
+	off := oxml.NewCT_Point2D(0, 0)
+	xfrm.Element.AddChild(off.Element)
+	aExt := dom.NewElement(ns.NsMap["a"], "ext")
+	aExt.SetAttr("", "cx", fmt.Sprintf("%d", cx))
+	aExt.SetAttr("", "cy", fmt.Sprintf("%d", cy))
+	xfrm.Element.AddChild(aExt)
+	spPr.Element.AddChild(xfrm.Element)
+	prstGeom := dom.NewElement(ns.NsMap["a"], "prstGeom")
+	prstGeom.SetAttr("", "prst", "rect")
+	spPr.Element.AddChild(prstGeom)
+	pic.Element.AddChild(spPr.Element)
+
+	graphicData.Element.AddChild(pic.Element)
+	graphic.Element.AddChild(graphicData.Element)
+	inline.Element.AddChild(graphic.Element)
+	drawing.Element.AddChild(inline.Element)
+
+	run.CT_R().Element.AddChild(drawing.Element)
+
+	is := NewInlineShape("WD_INLINE_SHAPE.PICTURE", shared.Length(cx), shared.Length(cy))
 	d.InlineShapes().Add(is)
+
 	return nil
 }
 
