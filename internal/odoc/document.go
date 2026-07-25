@@ -27,7 +27,7 @@ import (
 
 type Document struct {
 	part             *parts.DocumentPart
-	pkg              *opc.OpcPackage
+	pkg              *Package
 	commentsPart     *opc.Part
 	stylesLazy       lazy[*parts.StylesPart]
 	commentsLazy     lazy[*Comments]
@@ -39,7 +39,7 @@ type Document struct {
 // core properties, and minimal styles. This is the equivalent of python-docx's
 // Document() constructor.
 func NewDocument() *Document {
-	pkg := opc.NewOpcPackage()
+	pkg := NewPackage()
 	doc := oxml.NewCT_Document()
 	body := doc.Body()
 	if body != nil {
@@ -49,33 +49,18 @@ func NewDocument() *Document {
 		"/word/document.xml",
 		"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml",
 		[]byte(doc.String()),
-		pkg,
+		pkg.OpcPackage,
 	)
 	pkg.RelateTo(part, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument")
 	dp := parts.NewDocumentPart(part)
 	dp.SetDocument(doc)
-	ensureCoreProps(pkg)
+	pkg.EnsureCoreProps()
 	return &Document{part: dp, pkg: pkg}
-}
-
-// ensureCoreProps creates a core-properties part (/docProps/core.xml) with
-// default values and relates it to the package. The core properties part
-// stores document metadata such as title, creator, and modification dates.
-func ensureCoreProps(pkg *opc.OpcPackage) {
-	cpEl := opc.NewDefaultCorePropertiesElement()
-	blob := []byte(cpEl.String())
-	cpPart := opc.NewPart(
-		"/docProps/core.xml",
-		"application/vnd.openxmlformats-package.core-properties+xml",
-		blob,
-		pkg,
-	)
-	_ = pkg.RelateTo(cpPart, "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties")
 }
 
 // openFromPkg constructs a Document from an already-opened OPC package by
 // locating the main document part. Returns nil if no main document part exists.
-func openFromPkg(pkg *opc.OpcPackage) (*Document, error) {
+func openFromPkg(pkg *Package) (*Document, error) {
 	mainPart := pkg.MainDocumentPart()
 	if mainPart == nil {
 		return nil, nil
@@ -88,7 +73,7 @@ func openFromPkg(pkg *opc.OpcPackage) (*Document, error) {
 // returns the parsed Document. Equivalent to python-docx's Document() when
 // passed a file-like object.
 func Open(r io.ReaderAt, size int64) (*Document, error) {
-	pkg, err := opc.Open(r, size)
+	pkg, err := OpenPackage(r, size)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +83,7 @@ func Open(r io.ReaderAt, size int64) (*Document, error) {
 // OpenPath opens a docx file from a file system path and returns the parsed
 // Document. Equivalent to python-docx's Document(path).
 func OpenPath(path string) (*Document, error) {
-	pkg, err := opc.OpenFromPath(path)
+	pkg, err := OpenPackageFromPath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +91,7 @@ func OpenPath(path string) (*Document, error) {
 }
 
 // Package returns the underlying OPC package of the document.
-func (d *Document) Package() *opc.OpcPackage {
+func (d *Document) Package() *Package {
 	return d.pkg
 }
 
@@ -184,7 +169,7 @@ func (d *Document) Sections() []*osect.Section {
 		}
 		sec := osect.NewSection(&oxml.CT_SectPr{Element: el})
 		sec.SetRels(d.part.Relationships())
-		sec.SetPackage(d.pkg)
+		sec.SetPackage(d.pkg.OpcPackage)
 		result = append(result, sec)
 	}
 	for _, tbl := range body.Tbl_lst() {
@@ -198,13 +183,13 @@ func (d *Document) Sections() []*osect.Section {
 		}
 		sec := osect.NewSection(sp)
 		sec.SetRels(d.part.Relationships())
-		sec.SetPackage(d.pkg)
+		sec.SetPackage(d.pkg.OpcPackage)
 		result = append(result, sec)
 	}
 	for _, sp := range body.SectPr_lst() {
 		sec := osect.NewSection(sp)
 		sec.SetRels(d.part.Relationships())
-		sec.SetPackage(d.pkg)
+		sec.SetPackage(d.pkg.OpcPackage)
 		result = append(result, sec)
 	}
 	for _, sec := range result {
@@ -378,7 +363,7 @@ func (d *Document) AddSection() *osect.Section {
 	body.Element.AddChild(sp)
 	sec := osect.NewSection(&oxml.CT_SectPr{Element: sp})
 	sec.SetRels(d.part.Relationships())
-	sec.SetPackage(d.pkg)
+	sec.SetPackage(d.pkg.OpcPackage)
 	return sec
 }
 
