@@ -64,6 +64,16 @@ func (b *CT_Body) Tbl_lst() []*CT_Tbl {
 	return result
 }
 
+// SectPr_lst returns all direct w:sectPr child elements.
+func (b *CT_Body) SectPr_lst() []*CT_SectPr {
+	els := findChildren(b.Element, wqn("sectPr"))
+	result := make([]*CT_SectPr, len(els))
+	for i, el := range els {
+		result[i] = &CT_SectPr{Element: el}
+	}
+	return result
+}
+
 // SectPr returns the w:sectPr (section properties) child, or nil.
 func (b *CT_Body) SectPr() *CT_SectPr {
 	el := findChild(b.Element, wqn("sectPr"))

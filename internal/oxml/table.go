@@ -452,6 +452,15 @@ func (h *CT_Height) SetHRule(val string) {
 	h.Element.SetAttr(ns.NsMap["w"], "hRule", val)
 }
 
+// SectPr returns the w:sectPr child, or nil if absent.
+func (p *CT_TblPr) SectPr() *CT_SectPr {
+	el := findChild(p.Element, wqn("sectPr"))
+	if el == nil {
+		return nil
+	}
+	return &CT_SectPr{Element: el}
+}
+
 // CT_TblPr maps to w:tblPr — table-level properties including style, width,
 // justification, and bidi visual setting.
 type CT_TblPr struct {

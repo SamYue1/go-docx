@@ -171,48 +171,40 @@ func (d *Document) Sections() []*osect.Section {
 		return nil
 	}
 	var result []*osect.Section
-	// Walk the body's children looking for sectPr elements.
-	// A sectPr can appear:
-	//   - inside a paragraph's pPr element (last paragraph of a section)
-	//   - inside a table's tblPr element (last table of a section)
-	//   - as a direct child of the body (the final section)
-	for _, child := range body.Element.Children() {
-		switch child.Local() {
-		case "p":
-			for _, ppr := range child.Children() {
-				if ppr.Local() == "pPr" {
-					for _, sp := range ppr.Children() {
-						if sp.Local() == "sectPr" {
-							sec := osect.NewSection(&oxml.CT_SectPr{Element: sp})
-							sec.SetRels(d.part.Relationships())
-							sec.SetPackage(d.pkg)
-							result = append(result, sec)
-						}
-					}
-				}
-			}
-		case "tbl":
-			for _, tpr := range child.Children() {
-				if tpr.Local() == "tblPr" {
-					for _, sp := range tpr.Children() {
-						if sp.Local() == "sectPr" {
-							sec := osect.NewSection(&oxml.CT_SectPr{Element: sp})
-							sec.SetRels(d.part.Relationships())
-							sec.SetPackage(d.pkg)
-							result = append(result, sec)
-						}
-					}
-				}
-			}
-		case "sectPr":
-			sec := osect.NewSection(&oxml.CT_SectPr{Element: child})
-			sec.SetRels(d.part.Relationships())
-			sec.SetPackage(d.pkg)
-			result = append(result, sec)
+	for _, p := range body.P_lst() {
+		pPr := p.PPr()
+		if pPr == nil {
+			continue
 		}
+		el := pPr.SectPrEl()
+		if el == nil {
+			continue
+		}
+		sec := osect.NewSection(&oxml.CT_SectPr{Element: el})
+		sec.SetRels(d.part.Relationships())
+		sec.SetPackage(d.pkg)
+		result = append(result, sec)
 	}
-	// Provide each section with the full list so linked headers/footers
-	// can walk back to previous sections.
+	for _, tbl := range body.Tbl_lst() {
+		tblPr := tbl.TblPr()
+		if tblPr == nil {
+			continue
+		}
+		sp := tblPr.SectPr()
+		if sp == nil {
+			continue
+		}
+		sec := osect.NewSection(sp)
+		sec.SetRels(d.part.Relationships())
+		sec.SetPackage(d.pkg)
+		result = append(result, sec)
+	}
+	for _, sp := range body.SectPr_lst() {
+		sec := osect.NewSection(sp)
+		sec.SetRels(d.part.Relationships())
+		sec.SetPackage(d.pkg)
+		result = append(result, sec)
+	}
 	for _, sec := range result {
 		sec.SetAllSections(result)
 	}

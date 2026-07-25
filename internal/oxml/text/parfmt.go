@@ -113,6 +113,11 @@ func (p *CT_PPr) PageBreakBefore() *dom.Element {
 	return findChild(p.Element, wqn("pageBreakBefore"))
 }
 
+// SectPrEl returns the w:sectPr child element, or nil if absent.
+func (p *CT_PPr) SectPrEl() *dom.Element {
+	return findChild(p.Element, wqn("sectPr"))
+}
+
 // WidowControl returns the w:widowControl child element (control widow/orphan), or nil if absent.
 func (p *CT_PPr) WidowControl() *dom.Element {
 	return findChild(p.Element, wqn("widowControl"))
