@@ -84,7 +84,7 @@ func (c *Cell) AddTable() *Table {
 	tbl := oxml.NewCT_Tbl()
 	grid := oxml.NewCT_TblGrid()
 	for i := 0; i < cols; i++ {
-		gc := oxml.NewCT_TblGridCol(colWidth.Twips())
+		gc := oxml.NewCT_TblGridCol(int(colWidth.Twips()))
 		grid.Element.AddChild(gc.Element)
 	}
 	tbl.Element.AddChild(grid.Element)
@@ -94,7 +94,7 @@ func (c *Cell) AddTable() *Table {
 			tc := oxml.NewCT_Tc()
 			tcPr := tc.GetOrAddTcPr()
 			tcW := tcPr.GetOrAddTcW()
-			tcW.SetW(colWidth.Twips())
+			tcW.SetW(int(colWidth.Twips()))
 			tcW.SetType("dxa")
 			tr.Element.AddChild(tc.Element)
 		}
@@ -147,7 +147,7 @@ func (c *Cell) Width() *shared.Length {
 func (c *Cell) SetWidth(width shared.Length) {
 	tcPr := c.tc.GetOrAddTcPr()
 	tcW := tcPr.GetOrAddTcW()
-	tcW.SetW(width.Twips())
+	tcW.SetW(int(width.Twips()))
 	tcW.SetType("dxa")
 }
 
@@ -184,7 +184,7 @@ func (c *Cell) SetVerticalAlignment(val string) {
 // or column) and returns the resulting top-left cell. Content from merged
 // cells is copied into the top-left cell.
 func (c *Cell) Merge(other *Cell) *Cell {
-	if c == nil || other == nil || c.table == nil || other.table == nil {
+	if c == nil || other == nil || c.tc == nil || other.tc == nil || c.table == nil || other.table == nil {
 		return nil
 	}
 	if c.tc.Element == other.tc.Element {

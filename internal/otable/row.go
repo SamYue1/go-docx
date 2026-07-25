@@ -125,6 +125,9 @@ func (r *Row) Cells() []*Cell {
 
 // Height returns the row height, or nil if not set.
 func (r *Row) Height() *shared.Length {
+	if r == nil || r.tr == nil {
+		return nil
+	}
 	trPr := r.tr.TrPr()
 	if trPr == nil {
 		return nil
@@ -143,6 +146,9 @@ func (r *Row) Height() *shared.Length {
 
 // SetHeight sets the row height. A zero length removes the height setting.
 func (r *Row) SetHeight(length shared.Length) {
+	if r == nil || r.tr == nil {
+		return
+	}
 	if length == 0 {
 		if trPr := r.tr.TrPr(); trPr != nil {
 			h := trPr.TrHeight()
@@ -154,7 +160,7 @@ func (r *Row) SetHeight(length shared.Length) {
 	}
 	trPr := r.tr.GetOrAddTrPr()
 	h := trPr.GetOrAddTrHeight()
-	h.SetVal(length.Twips())
+	h.SetVal(int(length.Twips()))
 }
 
 // HeightRule returns the row height rule (e.g. "atLeast", "exactly") and

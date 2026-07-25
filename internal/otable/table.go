@@ -105,12 +105,12 @@ func (t *Table) AddColumn(width shared.Length) *Column {
 	}
 	grid := t.tbl.GetOrAddTblGrid()
 	gc := grid.AddGridCol()
-	gc.SetW(width.Twips())
+	gc.SetW(int(width.Twips()))
 	for _, tr := range t.tbl.Tr_lst() {
 		tc := tr.AddTc()
 		tcPr := tc.GetOrAddTcPr()
 		tcW := tcPr.GetOrAddTcW()
-		tcW.SetW(width.Twips())
+		tcW.SetW(int(width.Twips()))
 		tcW.SetType("dxa")
 	}
 	return &Column{gridCol: gc, table: t}
@@ -305,7 +305,7 @@ func (c *Column) SetWidth(width shared.Length) {
 	if c == nil || c.gridCol == nil {
 		return
 	}
-	c.gridCol.SetW(width.Twips())
+	c.gridCol.SetW(int(width.Twips()))
 }
 
 // Cells returns all Cell objects in this column, one per row.

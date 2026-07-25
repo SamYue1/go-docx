@@ -20,6 +20,9 @@ func wqn(local string) string {
 // findChild returns the first direct child of parent whose ClarkTag matches
 // tag, or nil if not found.
 func findChild(parent *dom.Element, tag string) *dom.Element {
+	if parent == nil {
+		return nil
+	}
 	for _, c := range parent.Children() {
 		if c.ClarkTag() == tag {
 			return c
@@ -31,6 +34,9 @@ func findChild(parent *dom.Element, tag string) *dom.Element {
 // findChildren returns all direct children of parent whose ClarkTag matches
 // tag.
 func findChildren(parent *dom.Element, tag string) []*dom.Element {
+	if parent == nil {
+		return nil
+	}
 	var result []*dom.Element
 	for _, c := range parent.Children() {
 		if c.ClarkTag() == tag {
@@ -73,6 +79,9 @@ func NewCT_DecimalNumber(local string, val int) *CT_DecimalNumber {
 // Val returns the integer value of the w:val attribute, or (0, false) if
 // absent or unparsable.
 func (d *CT_DecimalNumber) Val() (int, bool) {
+	if d == nil || d.Element == nil {
+		return 0, false
+	}
 	s, ok := getWVal(d.Element)
 	if !ok {
 		return 0, false
@@ -107,6 +116,9 @@ func NewCT_OnOff(local string, val bool) *CT_OnOff {
 // Val returns the boolean value of the w:val attribute. If the attribute is
 // absent it returns (true, false) per OOXML default semantics.
 func (o *CT_OnOff) Val() (bool, bool) {
+	if o == nil || o.Element == nil {
+		return false, false
+	}
 	s, ok := getWVal(o.Element)
 	if !ok {
 		return true, false
@@ -144,6 +156,9 @@ func NewCT_String(local string, val string) *CT_String {
 
 // Val returns the value of the w:val attribute, or ("", false) if absent.
 func (s *CT_String) Val() (string, bool) {
+	if s == nil || s.Element == nil {
+		return "", false
+	}
 	return getWVal(s.Element)
 }
 

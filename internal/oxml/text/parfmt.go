@@ -346,7 +346,7 @@ func (i *CT_Ind) Left() (shared.Length, bool) {
 
 // SetLeft sets the left indentation.
 func (i *CT_Ind) SetLeft(val shared.Length) {
-	i.Element.SetAttr(ns.NsMap["w"], "left", strconv.Itoa(val.Twips()))
+	i.Element.SetAttr(ns.NsMap["w"], "left", strconv.Itoa(int(val.Twips())))
 }
 
 // Right returns the right indentation as a Length and whether it was set.
@@ -364,7 +364,7 @@ func (i *CT_Ind) Right() (shared.Length, bool) {
 
 // SetRight sets the right indentation.
 func (i *CT_Ind) SetRight(val shared.Length) {
-	i.Element.SetAttr(ns.NsMap["w"], "right", strconv.Itoa(val.Twips()))
+	i.Element.SetAttr(ns.NsMap["w"], "right", strconv.Itoa(int(val.Twips())))
 }
 
 // FirstLine returns the first-line indentation as a Length and whether it was set.
@@ -382,7 +382,7 @@ func (i *CT_Ind) FirstLine() (shared.Length, bool) {
 
 // SetFirstLine sets the first-line indentation.
 func (i *CT_Ind) SetFirstLine(val shared.Length) {
-	i.Element.SetAttr(ns.NsMap["w"], "firstLine", strconv.Itoa(val.Twips()))
+	i.Element.SetAttr(ns.NsMap["w"], "firstLine", strconv.Itoa(int(val.Twips())))
 }
 
 // Hanging returns the hanging indentation as a Length and whether it was set.
@@ -400,7 +400,7 @@ func (i *CT_Ind) Hanging() (shared.Length, bool) {
 
 // SetHanging sets the hanging indentation.
 func (i *CT_Ind) SetHanging(val shared.Length) {
-	i.Element.SetAttr(ns.NsMap["w"], "hanging", strconv.Itoa(val.Twips()))
+	i.Element.SetAttr(ns.NsMap["w"], "hanging", strconv.Itoa(int(val.Twips())))
 }
 
 // CT_TabStop wraps a single w:tab element inside a w:tabs collection —

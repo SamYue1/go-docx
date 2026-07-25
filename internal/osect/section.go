@@ -107,7 +107,7 @@ func (s *Section) SetPageWidth(length shared.Length) {
 		return
 	}
 	pgSz := s.sectPr.GetOrAddPgSz()
-	pgSz.SetW(length.Twips())
+	pgSz.SetW(int(length.Twips()))
 }
 
 // PageHeight returns the page height as a Length. Returns nil if not set.
@@ -134,7 +134,7 @@ func (s *Section) SetPageHeight(length shared.Length) {
 		return
 	}
 	pgSz := s.sectPr.GetOrAddPgSz()
-	pgSz.SetH(length.Twips())
+	pgSz.SetH(int(length.Twips()))
 }
 
 // Orientation returns the page orientation ("portrait" or "landscape").
@@ -194,7 +194,7 @@ func (s *Section) SetMarginTop(length shared.Length) {
 		return
 	}
 	pgMar := s.sectPr.GetOrAddPgMar()
-	pgMar.SetTop(length.Twips())
+	pgMar.SetTop(int(length.Twips()))
 }
 
 // MarginRight returns the right page margin. Returns nil if not set.
@@ -221,7 +221,7 @@ func (s *Section) SetMarginRight(length shared.Length) {
 		return
 	}
 	pgMar := s.sectPr.GetOrAddPgMar()
-	pgMar.SetRight(length.Twips())
+	pgMar.SetRight(int(length.Twips()))
 }
 
 // MarginBottom returns the bottom page margin. Returns nil if not set.
@@ -248,7 +248,7 @@ func (s *Section) SetMarginBottom(length shared.Length) {
 		return
 	}
 	pgMar := s.sectPr.GetOrAddPgMar()
-	pgMar.SetBottom(length.Twips())
+	pgMar.SetBottom(int(length.Twips()))
 }
 
 // MarginLeft returns the left page margin. Returns nil if not set.
@@ -275,7 +275,7 @@ func (s *Section) SetMarginLeft(length shared.Length) {
 		return
 	}
 	pgMar := s.sectPr.GetOrAddPgMar()
-	pgMar.SetLeft(length.Twips())
+	pgMar.SetLeft(int(length.Twips()))
 }
 
 // StartType returns the section start type (e.g., "newPage", "newColumn",
@@ -620,18 +620,18 @@ func (hf *HeaderFooter) ensureRef() {
 	}
 }
 
-// Paragraphs returns the paragraphs in this header/footer. If the header/footer
-// is linked to the previous section, it recursively returns the paragraphs from
-// the preceding section's corresponding header/footer.
-// Equivalent to python-docx HeaderFooter.paragraphs.
-func (hf *HeaderFooter) Paragraphs() []*otext.Paragraph {
+// paragraphsWithVisited returns the paragraphs in this header/footer, using
+// a visited set to prevent infinite recursion through linked sections.
+func (hf *HeaderFooter) paragraphsWithVisited(visited map[*dom.Element]bool) []*otext.Paragraph {
 	root, err := hf.hdrFtrElement()
 	if err != nil || root == nil {
 		if hf.IsLinkedToPrevious() && hf.sections != nil {
-			// Walk backward through sections to find the previous section's
-			// header/footer of the same type and delegate to it.
 			for i, sec := range hf.sections {
 				if sec.sectPr.Element == hf.sectPr.Element && i > 0 {
+					if visited[sec.sectPr.Element] {
+						return nil
+					}
+					visited[sec.sectPr.Element] = true
 					prev := hf.sections[i-1]
 					var prevHf *HeaderFooter
 					if hf.isFooter {
@@ -639,7 +639,7 @@ func (hf *HeaderFooter) Paragraphs() []*otext.Paragraph {
 					} else {
 						prevHf = prev.HeaderByType(hf.typFromString())
 					}
-					return prevHf.Paragraphs()
+					return prevHf.paragraphsWithVisited(visited)
 				}
 			}
 		}
@@ -651,6 +651,14 @@ func (hf *HeaderFooter) Paragraphs() []*otext.Paragraph {
 		result[i] = otext.NewParagraph(&text.CT_P{Element: c})
 	}
 	return result
+}
+
+// Paragraphs returns the paragraphs in this header/footer. If the header/footer
+// is linked to the previous section, it recursively returns the paragraphs from
+// the preceding section's corresponding header/footer.
+// Equivalent to python-docx HeaderFooter.paragraphs.
+func (hf *HeaderFooter) Paragraphs() []*otext.Paragraph {
+	return hf.paragraphsWithVisited(make(map[*dom.Element]bool))
 }
 
 // typFromString converts the header/footer type string ("default", "first",
@@ -724,7 +732,7 @@ func (s *Section) SetHeaderDistance(length shared.Length) {
 		return
 	}
 	pgMar := s.sectPr.GetOrAddPgMar()
-	pgMar.SetHeader(length.Twips())
+	pgMar.SetHeader(int(length.Twips()))
 }
 
 // FooterDistance returns the distance from the bottom of the page to the footer.
@@ -751,7 +759,7 @@ func (s *Section) SetFooterDistance(length shared.Length) {
 		return
 	}
 	pgMar := s.sectPr.GetOrAddPgMar()
-	pgMar.SetFooter(length.Twips())
+	pgMar.SetFooter(int(length.Twips()))
 }
 
 // Gutter returns the gutter margin (extra space for binding). Returns nil if
@@ -778,5 +786,5 @@ func (s *Section) SetGutter(length shared.Length) {
 		return
 	}
 	pgMar := s.sectPr.GetOrAddPgMar()
-	pgMar.SetGutter(length.Twips())
+	pgMar.SetGutter(int(length.Twips()))
 }

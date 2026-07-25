@@ -43,20 +43,20 @@ func TestDescribeLength(t *testing.T) {
 
 		assert.Equal(t, 1.0, l.Inches())
 		assert.Equal(t, 2.54, l.Cm())
-		assert.Equal(t, 914400, l.Emu())
+		assert.Equal(t, int64(914400), l.Emu())
 		assert.Equal(t, 25.4, l.Mm())
 		assert.Equal(t, 72.0, l.Pt())
-		assert.Equal(t, 1440, l.Twips())
+		assert.Equal(t, int64(1440), l.Twips())
 	})
 
 	t.Run("it_converts_zero_correctly", func(t *testing.T) {
 		l := Length(0)
 		assert.Equal(t, 0.0, l.Inches())
 		assert.Equal(t, 0.0, l.Cm())
-		assert.Equal(t, 0, l.Emu())
+		assert.Equal(t, int64(0), l.Emu())
 		assert.Equal(t, 0.0, l.Mm())
 		assert.Equal(t, 0.0, l.Pt())
-		assert.Equal(t, 0, l.Twips())
+		assert.Equal(t, int64(0), l.Twips())
 	})
 }
 

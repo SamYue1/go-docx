@@ -49,8 +49,8 @@ func Twips(v float64) Length {
 }
 
 // Emu returns the length in EMUs.
-func (l Length) Emu() int {
-	return int(l)
+func (l Length) Emu() int64 {
+	return int64(l)
 }
 
 // Inches returns the length in inches.
@@ -74,8 +74,8 @@ func (l Length) Pt() float64 {
 }
 
 // Twips returns the length in twips (twentieths of a point), rounded to the nearest integer.
-func (l Length) Twips() int {
-	return int(round(float64(l) / float64(EMUsPerTwip)))
+func (l Length) Twips() int64 {
+	return int64(round(float64(l) / float64(EMUsPerTwip)))
 }
 
 // round rounds a float64 to the nearest integer.
@@ -115,6 +115,9 @@ func (c RGBColor) Repr() string {
 
 // RGBColorFromString parses a hex color string (e.g. "FF0000") into an RGBColor.
 func RGBColorFromString(s string) (RGBColor, error) {
+	if len(s) < 6 {
+		return RGBColor{}, fmt.Errorf("invalid color hex string: %q", s)
+	}
 	r, err := strconv.ParseInt(s[0:2], 16, 0)
 	if err != nil {
 		return RGBColor{}, err

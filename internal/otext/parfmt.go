@@ -59,7 +59,7 @@ func (pf *ParagraphFormat) SpaceBefore() *shared.Length {
 // SetSpaceBefore sets the spacing before the paragraph.
 func (pf *ParagraphFormat) SetSpaceBefore(length shared.Length) {
 	spacing := pf.pPr.GetOrAddSpacing()
-	spacing.SetBefore(length.Twips())
+	spacing.SetBefore(int(length.Twips()))
 }
 
 // SpaceAfter returns the spacing after the paragraph as a Length, or nil if not set.
@@ -82,7 +82,7 @@ func (pf *ParagraphFormat) SpaceAfter() *shared.Length {
 // SetSpaceAfter sets the spacing after the paragraph.
 func (pf *ParagraphFormat) SetSpaceAfter(length shared.Length) {
 	spacing := pf.pPr.GetOrAddSpacing()
-	spacing.SetAfter(length.Twips())
+	spacing.SetAfter(int(length.Twips()))
 }
 
 // FirstLineIndent returns the first-line indentation as a Length, or nil if not set.

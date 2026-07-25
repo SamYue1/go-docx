@@ -28,7 +28,7 @@ func NewTabStops(tabs *text.CT_TabStops, pPr *text.CT_PPr) *TabStops {
 // and leader style, inserting it in position-sorted order. Returns the new TabStop.
 func (ts *TabStops) AddTabStop(position shared.Length, alignment, leader string) *TabStop {
 	tab := text.NewCT_TabStop()
-	pos := position.Twips()
+	pos := int(position.Twips())
 	tab.SetPos(pos)
 	if alignment != "" {
 		tab.SetVal(alignment)

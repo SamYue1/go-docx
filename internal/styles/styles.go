@@ -66,6 +66,9 @@ func (s *Styles) Style(name string) *Style {
 
 // AddStyle creates and returns a new style of the given type and name, marking it as a custom style.
 func (s *Styles) AddStyle(typ, name string) *Style {
+	if s == nil || s.styles == nil {
+		return nil
+	}
 	st := s.styles.AddStyle()
 	st.SetType(typ)
 	st.SetStyleId(name)

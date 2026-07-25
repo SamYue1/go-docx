@@ -64,6 +64,9 @@ func (hl *Hyperlink) Text() string {
 
 // Runs returns all runs within the hyperlink in document order.
 func (hl *Hyperlink) Runs() []*Run {
+	if hl == nil || hl.h == nil {
+		return nil
+	}
 	runs := hl.h.R_lst()
 	result := make([]*Run, len(runs))
 	for i, r := range runs {

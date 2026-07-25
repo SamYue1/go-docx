@@ -8,6 +8,7 @@ package opc
 import (
 	"fmt"
 	"io"
+	"strings"
 )
 
 // OpcPackage is the root of an OPC package. It owns the package-level
@@ -130,6 +131,14 @@ func (pkg *OpcPackage) MainDocumentPart() *Part {
 // fmt template (e.g. "/word/chapter%d.xml") with the lowest positive
 // integer not already used by an existing part in the package.
 func (pkg *OpcPackage) NextPartname(template string) PackURI {
+	if !strings.Contains(template, "%d") {
+		pu, err := NewPackURI(template)
+		if err == nil {
+			return pu
+		}
+		pu, _ = NewPackURI(template + "1")
+		return pu
+	}
 	existing := make(map[string]bool)
 	for _, part := range pkg.walkParts() {
 		existing[string(part.Partname())] = true

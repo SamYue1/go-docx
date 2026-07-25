@@ -1,6 +1,10 @@
 package opc
 
-import "github.com/SamYue1/go-docx/internal/oxml/dom"
+import (
+	"sync"
+
+	"github.com/SamYue1/go-docx/internal/oxml/dom"
+)
 
 // Part represents a single part in an OPC package. Each part has a pack URI
 // (its name within the zip), a content type, raw bytes (the blob), a back-
@@ -135,6 +139,8 @@ func (p *Part) TargetRef(rID string) string {
 type PartFactory struct{}
 
 var (
+	partMu sync.RWMutex
+
 	// PartClassSelector is an optional function that, given a content type and
 	// relationship type, returns a PartCreator factory. If set, it is checked
 	// first during part creation.
@@ -180,6 +186,7 @@ func (l *xmlPartLoader) Load(partname PackURI, contentType string, blob []byte, 
 // PartClassSelector -> PartTypeFor -> DefaultPartType. This allows
 // specialised Part types to be created based on content type / rel type.
 func NewPartFromFactory(partname PackURI, contentType, relType string, blob []byte, pkg *OpcPackage) *Part {
+	partMu.RLock()
 	var loader func() PartCreator
 	if PartClassSelector != nil {
 		if f := PartClassSelector(contentType, relType); f != nil {
@@ -194,6 +201,7 @@ func NewPartFromFactory(partname PackURI, contentType, relType string, blob []by
 	if loader == nil {
 		loader = DefaultPartType
 	}
+	partMu.RUnlock()
 	result := loader().Load(partname, contentType, blob, pkg)
 	return result
 }
